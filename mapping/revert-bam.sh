@@ -77,13 +77,20 @@ if [ -e $reference ];
 then
   echo "Mapping, marking duplicates and chromosome order sorting $outfile into ${bamfile%%.bam}.srt.bam"
 # WARNING: This is NOT according to the Broad Institute GATK 4.0 Best Practices, but leaving it here for reference
+  # Identify Complete Genomics style read names for library complexity estimation
+  try_regex='CL10.......L.C([0-9]+)R([0-9]+)_([0-9]+)'
+  if samtools view $outfile | head -1 | cut -f1 | grep -q -E "$try_regex";
+  then
+    regex="READ_NAME_REGEX=\"$try_regex\""
+  fi
+
   samtools view -H $outfile > ${outfile}.hdr
   samtools fastq -t $outfile \
     | bwa mem -p -t $cores -M -C -H ${outfile}.hdr $reference - \
     | samtools view -b -o ${bamfile%%.bam}.mem.bam
 # Unfortunately, MarkDuplicates seeks back to beginning of the BAM so alignment can't just be piped in; improve later
   java -jar picard.jar MarkDuplicates INPUT=${bamfile%%.bam}.mem.bam OUTPUT=/dev/stdout METRICS_FILE=${bamfile}.dup \
-    TAGGING_POLICY=All OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 ASSUME_SORT_ORDER=queryname COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
-    READ_NAME_REGEX="CL10.......L.C([0-9]+)R([0-9]+)_([0-9]+)" \
+    ASSUME_SORT_ORDER=queryname TAGGIN_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
+    OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 $regex \
     | samtools sort -T $tmp/$bamfile -@$cores -m${coremem}G -l9 -o ${bamfile%%.bam}.srt.bam
 fi
