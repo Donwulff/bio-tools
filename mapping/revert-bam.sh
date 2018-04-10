@@ -6,7 +6,7 @@
 set -x
 
 bamfile=${1:-sample1.bam}
-outfile=${bamfile%%.bam}.u.bam
+outfile=${bamfile%%.bam}.unmapped.bam
 reference=hs38DH.fa
 
 if [ ! -e $bamfile ];
