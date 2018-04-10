@@ -88,9 +88,14 @@ then
   samtools fastq -t $outfile \
     | bwa mem -p -t $cores -M -C -H ${outfile}.hdr $reference - \
     | samtools view -b -o ${bamfile%%.bam}.mem.bam
+  rm ${outfile}.hdr
 # Unfortunately, MarkDuplicates seeks back to beginning of the BAM so alignment can't just be piped in; improve later
   java -jar picard.jar MarkDuplicates INPUT=${bamfile%%.bam}.mem.bam OUTPUT=/dev/stdout METRICS_FILE=${bamfile}.dup \
     ASSUME_SORT_ORDER=queryname TAGGIN_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
     OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 $regex \
     | samtools sort -T $tmp/$bamfile -@$cores -m${coremem}G -l9 -o ${bamfile%%.bam}.srt.bam
+  if [ $? -eq 0 ];
+  then
+    rm ${bamfile%%.bam}.mem.bam
+  fi
 fi
