@@ -3,6 +3,9 @@
 # Tested to work on Windows 10 WSL Ubuntu; install a java JRE
 # Leaves nh and qf tags in BigY BAM; they seem properietary, so they shouldn't hurt
 
+# Different fs from data files, prefer SSD
+tmp=${TMP:-"/tmp"}
+
 bamfile=${1:-sample1.bam}
 outfile=${bamfile%%.bam}.unmapped.bam
 reference=hs38DH.fa
@@ -18,9 +21,6 @@ if [ ! -e picard.jar ];
 then
   wget https://github.com/broadinstitute/picard/releases/download/2.18.2/picard.jar
 fi
-
-# Different fs from data files, prefer SSD
-tmp=${TMP:-"/tmp"}
 
 # Sizes in bytes
 inputsize=`du -D -b $bamfile | gawk '{print $1}'`
