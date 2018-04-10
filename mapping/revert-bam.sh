@@ -1,4 +1,8 @@
 #!/bin/sh
+
+# Tested to work on Windows 10 WSL Ubuntu; install a java JRE
+# Leaves nh and qf tags in BigY BAM; they seem properietary, so they shouldn't hurt
+
 bamfile=${1:-"sample1.bam"}
 outfile=${bamfile%%.bam}.u.bam
 
@@ -41,6 +45,8 @@ totalmem=`LC_ALL=C free | grep -e "^Mem:" | gawk '{print $7}'`
 javamem=${2:-$((totalmem/1024/1024-2))}
 # https://sourceforge.net/p/picard/wiki/Main_Page/#q-a-picard-program-that-sorts-its-output-sambam-file-is-taking-a-very-long-time-andor-running-out-of-memory-what-can-i-do
 bamrecords=$((javamem*250000))
+cores=8
+coremem=$((javamem/$cores))
 
 # Ref: https://gatkforums.broadinstitute.org/gatk/discussion/6484
 java -Xmx${javamem}G -jar picard.jar RevertSam \
@@ -61,3 +67,17 @@ java -Xmx${javamem}G -jar picard.jar RevertSam \
     REMOVE_ALIGNMENT_INFORMATION=true \
     MAX_RECORDS_IN_RAM=$bamrecords \
     TMP_DIR=$tmp
+
+exit
+
+# WARNING: This is NOT according to the Broad Institute GATK 4.0 Best Practices, but leaving it here for reference
+(
+samtools fastq -tn $outfile \
+  | bwa mem -p -t $cores -M hs38DH.fa - \
+  | samtools view -b -o ${bamfile%%.bam}.mem.bam
+# Unfortunately, MarkDuplicates seeks back to beginning of the BAM so alignment can't just be piped in; improve later
+java -jar picard.jar MarkDuplicates INPUT=${outfile%%.bam}.mem.bam OUTPUT=/dev/stdout METRICS_FILE=${bamfile}.dup \
+    TAGGING_POLICY=All OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 ASSUME_SORT_ORDER=queryname COMPRESSION_LEVEL=0 \
+    READ_NAME_REGEX="CL10.......L.C([0-9]+)R([0-9]+)_([0-9]+)" \
+  | samtools sort -@$cores -m${coremem}G -l9 -o ${bamfile%%.bam}.srt.bam
+) 2>&1 | tee ${bamfile}.log
