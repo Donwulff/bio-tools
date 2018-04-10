@@ -1,11 +1,16 @@
 #!/bin/sh
 
-# Tested to work on Windows 10 WSL Ubuntu; install a java JRE
-# Leaves nh and qf tags in BigY BAM; they seem properietary, so they shouldn't hurt
+# Tested to work on Windows 10 WSL Ubuntu & Ubuntu Xenial
+# Leaves nh and qf tags in BigY BAM; they seem properietary
+# If if bwa index reference exists (f.e. bwakit), simple mapping is performed
+# Mapping requires significantly more storage space, currently not checked
+
+# DEPENDENCIES: modern java; samtools (htslib) and bwa if mapping
 
 # Different fs from data files, prefer SSD
 tmp=${TMP:-"/tmp"}
 
+# File locations
 bamfile=${1:-sample1.bam}
 outfile=${bamfile%%.bam}.unmapped.bam
 reference=hs38DH.fa
@@ -17,12 +22,13 @@ then
   exit
 fi
 
+# Get a tested version of Picard Tools
 if [ ! -e picard.jar ];
 then
   wget https://github.com/broadinstitute/picard/releases/download/2.18.2/picard.jar
 fi
 
-# Sizes in bytes
+# Figure out sizes in bytes
 inputsize=`du -D -b $bamfile | gawk '{print $1}'`
 tempsize=$((inputsize+(inputsize/2)))
 outfree=`LC_ALL=C df -B1 $bamfile | grep -v "^File" | gawk '{print $4}'`
@@ -41,6 +47,7 @@ then
   exit
 fi
 
+# Cores and memory
 totalmem=`LC_ALL=C free | grep -e "^Mem:" | gawk '{print $7}'`
 # Allow 2 gigabytes for runtime
 javamem=${2:-$((totalmem/1024/1024-2))}
@@ -49,10 +56,10 @@ bamrecords=$((javamem*250000))
 cores=`nproc`
 coremem=$((javamem/$cores))
 
+# Ref: https://gatkforums.broadinstitute.org/gatk/discussion/6484
 if [ ! -e $outfile ];
 then
-echo "Reverting $bamfile into $outfile with Picard Tools"
-# Ref: https://gatkforums.broadinstitute.org/gatk/discussion/6484
+  echo "Reverting $bamfile into $outfile with Picard Tools"
   java -Xmx${javamem}G -jar picard.jar RevertSam \
     I=$bamfile \
     O=$outfile \
@@ -73,10 +80,11 @@ echo "Reverting $bamfile into $outfile with Picard Tools"
     TMP_DIR=$tmp
 fi
 
+# WARNING: This is NOT according to the Broad Institute GATK 4.0 Best Practices, but leaving it here for reference
+# Does not perform quality control, adapter trimming or base quality score recalibration
 if [ -e $reference ];
 then
   echo "Mapping, marking duplicates and chromosome order sorting $outfile into ${bamfile%%.bam}.srt.bam"
-# WARNING: This is NOT according to the Broad Institute GATK 4.0 Best Practices, but leaving it here for reference
   # Identify Complete Genomics style read names for library complexity estimation
   try_regex='CL10.......L.C([0-9]+)R([0-9]+)_([0-9]+)'
   if samtools view $outfile | head -1 | cut -f1 | grep -q -E "$try_regex";
@@ -89,7 +97,7 @@ then
     | bwa mem -p -t $cores -M -C -H ${outfile}.hdr $reference - \
     | samtools view -b -o ${bamfile%%.bam}.mem.bam
   rm ${outfile}.hdr
-# Unfortunately, MarkDuplicates seeks back to beginning of the BAM so alignment can't just be piped in; improve later
+  # Unfortunately, MarkDuplicates seeks back to beginning of the input BAM so mapping can't just be piped in
   java -jar picard.jar MarkDuplicates INPUT=${bamfile%%.bam}.mem.bam OUTPUT=/dev/stdout METRICS_FILE=${bamfile}.dup \
     ASSUME_SORT_ORDER=queryname TAGGIN_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
     OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 $regex \
