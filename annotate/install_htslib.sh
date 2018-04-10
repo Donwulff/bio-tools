@@ -22,14 +22,6 @@ sed -i "s/^wget http:/wget -N http:/g" bigY_hg38_pipeline.sh
 sed -i "/snps_hg38.vcf.gz.tbi$/a \
 # The ; in middle of INFO data confuses bcftools 1.8, swap the downloaded files around and remove the char\n\
 mv -f snps_hg38.vcf.gz snps_hg38.vcf.gz.bak\n\
-mv -f snps_hg38.vcf.gz.tbi snps_hg38.vcf.gz.tbi.bak\n\
-\n\
-zcat snps_hg38.vcf.gz.bak | sed 's/R1b-_;L1066/R1b-_L1066/g' | bgzip -c > snps_hg38.vcf.gz\n\
-tabix -f snps_hg38.vcf.gz\n\
-\n\
-touch snps_hg38.vcf.gz -f snps_hg38.vcf.gz.bak\n\
-touch snps_hg38.vcf.gz.tbi -f snps_hg38.vcf.gz.tbi.bak\n\
-echo \"modifying annotation file complete\"" bigY_hg38_pipeline.sh
 chmod a+x bigY_hg38_pipeline.sh
 unzip /mnt/c/Users/*/Downloads/bigy2-*.zip
 ./bigY_hg38_pipeline.sh
