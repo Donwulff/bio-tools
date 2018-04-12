@@ -99,7 +99,7 @@ then
   rm ${outfile}.hdr
   # Unfortunately, MarkDuplicates seeks back to beginning of the input BAM so mapping can't just be piped in
   java -jar picard.jar MarkDuplicates INPUT=${bamfile%%.bam}.mem.bam OUTPUT=/dev/stdout METRICS_FILE=${bamfile}.dup \
-    ASSUME_SORT_ORDER=queryname TAGGIN_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
+    ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
     OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 $regex \
     | samtools sort -T $tmp/$bamfile -@$cores -m${coremem}G -l9 -o ${bamfile%%.bam}.srt.bam
   if [ $? -eq 0 ];
