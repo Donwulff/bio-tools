@@ -14,6 +14,7 @@ tmp=${TMP:-"/tmp"}
 bamfile=${1:-sample1.bam}
 outfile=${bamfile%%.bam}.unmapped.bam
 reference=hs38DH.fa
+compress=5
 
 if [ ! -e $bamfile ];
 then
@@ -77,6 +78,7 @@ then
     REMOVE_DUPLICATE_INFORMATION=true \
     REMOVE_ALIGNMENT_INFORMATION=true \
     MAX_RECORDS_IN_RAM=$bamrecords \
+    COMPRESSION_LEVEL=$compress \
     TMP_DIR=$tmp
 fi
 
@@ -108,7 +110,7 @@ then
     java -jar picard.jar MarkDuplicates INPUT=${bamfile%%.bam}.mem.bam OUTPUT=/dev/stdout METRICS_FILE=${bamfile}.dup \
       ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
       OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 $regex \
-        | samtools sort -T $tmp/$bamfile -@$cores -m${coremem}G -l9 -o ${bamfile%%.bam}.srt.bam
+        | samtools sort -T $tmp/$bamfile -@$cores -m${coremem}G -l${compress} -o ${bamfile%%.bam}.srt.bam
   )
   # Check result of previous subshell, set -e and set -o pipefail not an option without bash
   if [ $? -eq 0 ];
