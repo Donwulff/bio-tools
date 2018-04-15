@@ -92,7 +92,7 @@ then
   try_regex='CL10.......L.C([0-9]+)R([0-9]+)_([0-9]+)'
   if samtools view $outfile | head -1 | cut -f1 | grep -q -E "$try_regex";
   then
-    regex="READ_NAME_REGEX=\"$try_regex\""
+    regex="READ_NAME_REGEX=$try_regex"
   fi
 
   # Uses .hdr file also as a flag of whether mapping finished, in case we restart
