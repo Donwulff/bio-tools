@@ -106,14 +106,12 @@ then
   fi
 
   # Unfortunately, MarkDuplicates seeks back to beginning of the input BAM so mapping can't just be piped in
-  (
-    java -jar picard.jar MarkDuplicates INPUT=${bamfile%%.bam}.mem.bam OUTPUT=/dev/stdout METRICS_FILE=${bamfile}.dup \
-      ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
-      OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 $regex \
-        | samtools sort -T $tmp/${bamfile##*/} -@$cores -m${coremem}G -l${compress} -o ${bamfile%%.bam}.srt.bam
-  )
-  # Check result of previous subshell, set -e and set -o pipefail not an option without bash
-  if [ $? -eq 0 ];
+  java -jar picard.jar MarkDuplicates INPUT=${bamfile%%.bam}.mem.bam OUTPUT=/dev/stdout METRICS_FILE=${bamfile}.dup \
+    ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
+    OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 $regex \
+      | samtools sort -T $tmp/${bamfile##*/} -@$cores -m${coremem}G -l${compress} -o ${bamfile%%.bam}.srt.bam
+  # set -e and set -o pipefail require bash, so check the final file is intact instead
+  if samtools quickcheck ${bamfile%%.bam}.srt.bam;
   then
     rm ${bamfile%%.bam}.mem.bam
   fi
