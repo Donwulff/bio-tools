@@ -55,7 +55,8 @@ javamem=${2:-$((totalmem/1024/1024-2))}
 # https://sourceforge.net/p/picard/wiki/Main_Page/#q-a-picard-program-that-sorts-its-output-sambam-file-is-taking-a-very-long-time-andor-running-out-of-memory-what-can-i-do
 bamrecords=$((javamem*250000))
 cores=`nproc`
-coremem=$((javamem/$cores))
+# From Java 6 update 18 max. heap is 1/4th of physical memory, so we can split 3/4th between cores for sorting.
+coremem=$((javamem*3/4/cores))
 
 # Ref: https://gatkforums.broadinstitute.org/gatk/discussion/6484
 if [ ! -e $outfile ];
