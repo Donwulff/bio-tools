@@ -5,7 +5,7 @@
 # If if bwa index reference exists (f.e. bwakit), simple mapping is performed
 # Mapping requires significantly more storage space, currently not checked
 
-# DEPENDENCIES: modern java; samtools (htslib) and bwa if mapping
+# DEPENDENCIES: gawk; modern java; samtools (htslib) and bwa + index from bwakit if mapping
 
 # Different fs from data files, prefer SSD
 tmp=${TMP:-"/tmp"}
@@ -29,24 +29,31 @@ then
   wget https://github.com/broadinstitute/picard/releases/download/2.18.2/picard.jar
 fi
 
-# Figure out sizes in bytes
-inputsize=`du -D -b $bamfile | gawk '{print $1}'`
-tempsize=$((inputsize+(inputsize/2)))
-outfree=`LC_ALL=C df -B1 $bamfile | grep -v "^File" | gawk '{print $4}'`
-tempfree=`LC_ALL=C df -B1 $tmp | grep -v "^File" | gawk '{print $4}'`
+check_space ()
+{
+  # Figure out sizes in bytes
+  inputsize=`du -D -b $bamfile | gawk '{print $1}'`
+  outfree=`LC_ALL=C df -B1 $bamfile | grep -v "^File" | gawk '{print $4}'`
 
-if [ $tempsize -gt $tempfree ];
-then
-  echo "Approximately 1.5X input size is required for temporary storage $tmp"
-  echo "Run with TMP=/path/to/tmp to use different path"
-  exit
-fi
+  if [ $inputsize -gt $outfree ];
+  then
+    echo "Output file $1 probably won't fit on remaining space"
+    exit
+  fi
 
-if [ $inputsize -gt $outfree ];
-then
-  echo "Output file $outfile probably won't fit on remaining space"
-  exit
-fi
+  # Figure out sizes in bytes - rule of thumb temporary is usually 1.5x times input
+  tempsize=$((inputsize+(inputsize/2)))
+  tempfree=`LC_ALL=C df -B1 $tmp | grep -v "^File" | gawk '{print $4}'`
+
+  if [ $tempsize -gt $tempfree ];
+  then
+    echo "Approximately 1.5X input size is required for temporary storage $tmp"
+    echo "Run with TMP=/path/to/tmp to use different path"
+    exit
+  fi
+}
+
+check_space $outfile
 
 # Cores and memory
 totalmem=`LC_ALL=C free | grep -e "^Mem:" | gawk '{print $7}'`
@@ -87,6 +94,8 @@ fi
 # Does not perform quality control, adapter trimming or base quality score recalibration
 if [ -e $reference ];
 then
+  check_space ${bamfile%%.bam}.mem.bam
+
   echo "Mapping, marking duplicates and chromosome order sorting $outfile into ${bamfile%%.bam}.srt.bam"
 
   # Identify Complete Genomics style read names for library complexity estimation
@@ -105,6 +114,8 @@ then
       | samtools view -b -o ${bamfile%%.bam}.mem.bam
     rm ${outfile}.hdr
   fi
+
+  check_space ${bamfile%%.bam}.srt.bam
 
   # Unfortunately, MarkDuplicates seeks back to beginning of the input BAM so mapping can't just be piped in
   java -jar picard.jar MarkDuplicates INPUT=${bamfile%%.bam}.mem.bam OUTPUT=/dev/stdout METRICS_FILE=${bamfile}.dup \
