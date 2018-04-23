@@ -63,7 +63,7 @@ javamem=${2:-$((totalmem/1024/1024-2))}
 bamrecords=$((javamem*250000))
 cores=`nproc`
 # From Java 6 update 18 max. heap is 1/4th of physical memory, so we can split 3/4th between cores for sorting.
-coremem=$((javamem*3/4/cores))
+percoremem=$((javamem*3/4/cores))
 
 # Ref: https://gatkforums.broadinstitute.org/gatk/discussion/6484
 if [ ! -e $outfile ];
@@ -121,7 +121,7 @@ then
   java -jar picard.jar MarkDuplicates INPUT=${bamfile%%.bam}.mem.bam OUTPUT=/dev/stdout METRICS_FILE=${bamfile}.dup \
     ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
     OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 $regex \
-      | samtools sort -T $tmp/${bamfile##*/} -@$cores -m${coremem}G -l${compress} -o ${bamfile%%.bam}.srt.bam
+      | samtools sort -T $tmp/${bamfile##*/} -@$cores -m${percoremem}G -l${compress} -o ${bamfile%%.bam}.srt.bam
   # set -e and set -o pipefail require bash, so check the final file is intact instead
   if samtools quickcheck ${bamfile%%.bam}.srt.bam;
   then
