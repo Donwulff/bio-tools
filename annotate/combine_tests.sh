@@ -11,12 +11,12 @@ WORK=work
 
 mkdir -p ${WORK}
 
-
-# bcftools norm: NON_ACGTN appears to be deleted with - alt or ref. s doesn't fix them. Leave for now, if they're indels
-
 convert_23andMe()
 {
   # WARNING: This is very incomplete, some 23andMe SNV's are on wrong orientation!
+  # bcftools convert --tsv2vcf only drops insertions and deletions:
+  # join --nocheck-order -j1 -v1  <(grep -v "^#" genome_v3_Full.txt | gawk '{ print $2":"$3,$1,$4 }') <(zgrep -v "^#" genome_v3_Full.norm.vcf.gz \
+  #   | gawk '{ print $1":"$2 }') | egrep -v "(I|D)"
   bcftools convert -f ${HS37D5} --tsv2vcf ${TSV}.txt -c ID,CHROM,POS,AA --samples PARTICIPANT 2> ${TSV}.log \
     | bcftools norm -f ${HS37D5} -cws 2> ${TSV}.norm.log \
     | bgzip -c > ${TSV}.norm.vcf.gz
@@ -27,7 +27,7 @@ convert_Genes4Good()
 {
   # bcftols norm will write zero length contigs if given file, so pipe it, and also filter out contigs just in case
   # It also marks deletions with - as alt, which makes most downstream analysis choke.
-  # Running norm after filtering out the -'s causes them to turn into SNP's, so avoid that.
+  # Running norm after blanking out the -'s causes them to turn into SNV's, so avoid that.
   zcat ${GFG}.vcf.gz \
     | bcftools norm -f ${HS37D5} -cws 2> ${GFG}.norm.log \
     | gawk '{ OFS="\t"; if ($5=="-") $5="."; print }' \
@@ -46,6 +46,7 @@ convert_AncestryDNA()
   cat ${ANC}.chr | gawk '{if($2!="X"&&$2!="Y"&&$2!="MT")print}' > ${ANC}.new
   cat ${ANC}.chr | gawk '{if($2=="X")print}' sort -k1,1V -k2,2n >> ${ANC}.new
   cat ${ANC}.chr | gawk '{if($2=="Y"||$2=="MT")print}' >> ${ANC}.new
+  # bcftools norm: NON_ACGTN appears to be deleted with - alt or ref. -cws's s doesn't fix them. Leave for now, if they're indels
   bcftools convert -f ${HS37D5} --tsv2vcf ${ANC}.new -c ID,CHROM,POS,AA --samples PARTICIPANT 2> ${ANC}.log \
     | bcftools norm -f ${HS37D5} -cws 2> ${ANC}.norm.log \
     | bgzip -c > ${ANC}.norm.vcf.gz
