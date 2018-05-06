@@ -53,8 +53,6 @@ check_space ()
   fi
 }
 
-check_space $outfile
-
 # Cores and memory
 totalmem=`LC_ALL=C free | grep -e "^Mem:" | gawk '{print $7}'`
 # Allow 2 gigabytes for runtime
@@ -68,6 +66,8 @@ percoremem=$((javamem*3/4/cores))
 # Ref: https://gatkforums.broadinstitute.org/gatk/discussion/6484
 if [ ! -e $outfile ];
 then
+  check_space $outfile
+
   echo "Reverting $bamfile into $outfile with Picard Tools"
   java -Xmx${javamem}G -jar picard.jar RevertSam \
     I=$bamfile \
@@ -94,8 +94,6 @@ fi
 # Does not perform quality control, adapter trimming or base quality score recalibration
 if [ -e $reference ];
 then
-  check_space ${bamfile%%.bam}.mem.bam
-
   echo "Mapping, marking duplicates and chromosome order sorting $outfile into ${bamfile%%.bam}.srt.bam"
 
   # Identify Complete Genomics style read names for library complexity estimation
@@ -108,6 +106,8 @@ then
   # Uses .hdr file also as a flag of whether mapping finished, in case we restart
   if [ ! -e ${bamfile%%.bam}.mem.bam ] && [ ! -e ${outfile}.hdr ];
   then
+    check_space ${bamfile%%.bam}.mem.bam
+
     samtools view -H $outfile > ${outfile}.hdr
     samtools fastq -t $outfile \
       | bwa mem -p -t $cores -M -C -H ${outfile}.hdr $reference - \
