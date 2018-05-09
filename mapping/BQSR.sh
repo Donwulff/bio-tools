@@ -52,3 +52,13 @@ then
   gatk-4.0.4.0/gatk GatherBQSRReports -I chr.list -O ${SAMPLE}.recal
   gatk-4.0.4.0/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.*X.recal --after ${SAMPLE}.*Y.recal --plots ${SAMPLE}.XY.pdf
 fi
+
+if [ ! -e ${SAMPLE%%.srt.bam}.bqsr.bam ];
+then
+  gatk-4.0.4.0/gatk ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${SAMPLE%%.srt.bam}.bqsr.bam
+fi
+
+CHR=`tabix -l ${DBSNP} | grep 20`
+gatk-4.0.4.0/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
+  --known-sites ${INDEL} --known-sites ${DBSNP} -I ${SAMPLE%%.srt.bam}.bqsr.bam -O ${SAMPLE}.${CHR}.after -L ${CHR}
+gatk-4.0.4.0/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.${CHR}.recal --after ${SAMPLE}.${CHR}.after --plots ${SAMPLE}.pdf
