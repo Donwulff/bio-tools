@@ -15,7 +15,7 @@ INDEL=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.nohla.vcf.gz
 #DBSNP=${DATA}/All_20180423_GRCh37p13.vcf.gz
 #INDEL=${DATA}/Mills_and_1000G_gold_standard.indels.b37.vcf.gz
 
-if [ -e ${SAMPLE}.bai ];
+if [ -e ${SAMPLE%%.bam}.bai ];
 then
   samtools index -@${CORES} ${SAMPLE}
 fi
