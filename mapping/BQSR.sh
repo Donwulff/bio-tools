@@ -4,16 +4,18 @@ SAMPLE=${1:-sample1.srt.bam}
 DATA=/mnt/GenomicData
 CORES=`nproc`
 
+set -x
 
 # GRCh38 based with chr* chromosomes
 REF=/mnt/GenomicData/GRCh38/hg38.fa
-DBSNP=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+DBSNP=${DATA}/All_20180418_GRCh38p7_GATK.vcf.gz
 INDEL=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.nohla.vcf.gz
 
 # hg37 based with numerical chromosomes
-#REF=/mnt/GenomicData/bwakit/hs37d5.fa
+#REF=/home/jsantala/src/bwakit/hs37d5.fa
 #DBSNP=${DATA}/All_20180423_GRCh37p13.vcf.gz
 #INDEL=${DATA}/Mills_and_1000G_gold_standard.indels.b37.vcf.gz
+#G1000=${DATA}/1000G_phase1.indels.b37.vcf.gz
 
 if [ -e ${SAMPLE%%.bam}.bai ];
 then
@@ -37,6 +39,10 @@ wget -nc ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/G
 tabix ${DATA}/All_20180418_GRCh38p7_GATK.vcf.gz
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/All_20180423.vcf.gz -O ${DATA}/All_20180423_GRCh37p13.vcf.gz
 tabix ${DATA}/All_20180423_GRCh37p13.vcf.gz
+
+# Equivalent doesn't exist for GRCh38.
+wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/1000G_phase1.indels.b37.vcf.gz -O ${DATA}/1000G_phase1.indels.b37.vcf.gz
+tabix ${DATA}/1000G_phase1.indels.b37.vcf.gz
 
 if [ ! -e ${SAMPLE}.recal ];
 then
