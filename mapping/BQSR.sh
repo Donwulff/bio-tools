@@ -3,6 +3,13 @@
 SAMPLE=${1:-sample1.srt.bam}
 DATA=/mnt/GenomicData
 CORES=`nproc`
+GATK=4.0.5.2
+
+if [ ! -e gatk-${GATK} ];
+then
+  wget -nc https://github.com/broadinstitute/gatk/releases/download/${GATK}/gatk-${GATK}.zip
+  unzip gatk-${GATK}.zip
+fi
 
 set -x
 
@@ -10,7 +17,7 @@ set -x
 REF=/mnt/GenomicData/GRCh38/hg38.fa
 DBSNP=${DATA}/All_20180418_GRCh38p7_GATK.vcf.gz
 INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
-INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz
+INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
 
 # hg37 based with numerical chromosomes
 #REF=/home/jsantala/src/bwakit/hs37d5.fa
@@ -28,8 +35,8 @@ wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/Mills_and_
 if [ ! -e ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz.tbi ];
 then
   # Unfortunately the header contigs include empty HLA contigs which depend on HLA release version, so we need to cut them out or GATK throws a fit
-  tabix -H ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz | grep -v "^##contig=<ID=HLA-" > ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.head
-  bcftools reheader -h ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.head ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
+  tabix -H ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz | grep -v "^##contig=<ID=HLA-" > ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.head
+  bcftools reheader -h ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.head ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
                     -o ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
   tabix ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
 fi
@@ -49,10 +56,10 @@ wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/beta/Homo_
 if [ ! -e ${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz ];
 then
   # Unfortunately the header contigs include empty HLA contigs which depend on HLA release version, so we need to cut them out or GATK throws a fit
-  tabix -H ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz | grep -v "^##contig=<ID=HLA-" > ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz.head
-  bcftools reheader -h ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz.head ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz.head \
-                    -o ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.noHLA.gz
-  tabix ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.noHLA.gz
+  tabix -H ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz | grep -v "^##contig=<ID=HLA-" > ${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.head
+  bcftools reheader -h ${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.head ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz \
+                    -o ${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
+  tabix ${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
 fi
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/1000G_phase1.indels.b37.vcf.gz -O ${DATA}/1000G_phase1.indels.b37.vcf.gz
 tabix ${DATA}/1000G_phase1.indels.b37.vcf.gz
@@ -60,24 +67,25 @@ tabix ${DATA}/1000G_phase1.indels.b37.vcf.gz
 if [ ! -e ${SAMPLE}.recal ];
 then
   tabix -l ${DBSNP} \
-    | xargs -IZ -P${CORES} gatk-4.0.4.0/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
-      --known-sites ${INDEL} \
+    | xargs -IZ -P${CORES} gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
       --known-sites ${DBSNP} \
+      --known-sites ${INDEL1} \
+      --known-sites ${INDEL2} \
       -I ${SAMPLE} -O ${SAMPLE}.Z.recal -L Z
 
   # Tests show that the male X and Y chromosome covariates differ from the rest of the genome, perhaps due to being phased. (Test this hypothesis on female X later)
   # Because we have no reason to expect the sequencing error profile to differ by chromosome, process autosomal chromosomes only.
   ls ${SAMPLE}.*[0-9].recal > chr.list
-  gatk-4.0.4.0/gatk GatherBQSRReports -I chr.list -O ${SAMPLE}.recal
-  gatk-4.0.4.0/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.*X.recal --after ${SAMPLE}.*Y.recal --plots ${SAMPLE}.XY.pdf
+  gatk-${GATK}/gatk GatherBQSRReports -I chr.list -O ${SAMPLE}.recal
+  gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.*X.recal --after ${SAMPLE}.*Y.recal --plots ${SAMPLE}.XY.pdf
 fi
 
 if [ ! -e ${SAMPLE%%.srt.bam}.bqsr.bam ];
 then
-  gatk-4.0.4.0/gatk ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${SAMPLE%%.srt.bam}.bqsr.bam
+  gatk-${GATK}/gatk ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${SAMPLE%%.srt.bam}.bqsr.bam
 fi
 
 CHR=`tabix -l ${DBSNP} | grep 20`
-gatk-4.0.4.0/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
+gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
   --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} -I ${SAMPLE%%.srt.bam}.bqsr.bam -O ${SAMPLE}.${CHR}.after -L ${CHR}
-gatk-4.0.4.0/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.${CHR}.recal --after ${SAMPLE}.${CHR}.after --plots ${SAMPLE}.pdf
+gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.${CHR}.recal --after ${SAMPLE}.${CHR}.after --plots ${SAMPLE}.pdf
