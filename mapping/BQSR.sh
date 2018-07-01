@@ -9,13 +9,14 @@ set -x
 # GRCh38 based with chr* chromosomes
 REF=/mnt/GenomicData/GRCh38/hg38.fa
 DBSNP=${DATA}/All_20180418_GRCh38p7_GATK.vcf.gz
-INDEL=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.nohla.vcf.gz
+INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
+INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz
 
 # hg37 based with numerical chromosomes
 #REF=/home/jsantala/src/bwakit/hs37d5.fa
 #DBSNP=${DATA}/All_20180423_GRCh37p13.vcf.gz
-#INDEL=${DATA}/Mills_and_1000G_gold_standard.indels.b37.vcf.gz
-#G1000=${DATA}/1000G_phase1.indels.b37.vcf.gz
+#INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.b37.vcf.gz
+#INDEL2=${DATA}/1000G_phase1.indels.b37.vcf.gz
 
 if [ -e ${SAMPLE%%.bam}.bai ];
 then
@@ -24,12 +25,13 @@ fi
 
 # Genome Analysis ToolKit at Broad Institute maintains a resource bundle including validated indels in human genome https://software.broadinstitute.org/gatk/download/bundle
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz -O ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
-if [ ! -e ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.nohla.vcf.gz.tbi ];
+if [ ! -e ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz.tbi ];
 then
   # Unfortunately the header contigs include empty HLA contigs which depend on HLA release version, so we need to cut them out or GATK throws a fit
-  tabix -H ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz | grep -v "^##contig=<ID=HLA-" > Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.head
-  bcftools reheader -h Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.head ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz -o ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.nohla.vcf.gz
-  tabix ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.nohla.vcf.gz
+  tabix -H ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz | grep -v "^##contig=<ID=HLA-" > ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.head
+  bcftools reheader -h ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.head ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
+                    -o ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
+  tabix ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
 fi
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/Mills_and_1000G_gold_standard.indels.b37.vcf.gz -O ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 tabix ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
@@ -40,7 +42,18 @@ tabix ${DATA}/All_20180418_GRCh38p7_GATK.vcf.gz
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/All_20180423.vcf.gz -O ${DATA}/All_20180423_GRCh37p13.vcf.gz
 tabix ${DATA}/All_20180423_GRCh37p13.vcf.gz
 
-# Equivalent doesn't exist for GRCh38.
+# Equivalent doesn't exist for GRCh38, however the new GATK 4.0 Best Practices scripts are using known_indels file.
+#wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/1000G_phase1.snps.high_confidence.hg38.vcf.gz -O ${DATA}/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+#tabix ${DATA}/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/beta/Homo_sapiens_assembly38.known_indels.vcf.gz -O ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz
+if [ ! -e ${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz ];
+then
+  # Unfortunately the header contigs include empty HLA contigs which depend on HLA release version, so we need to cut them out or GATK throws a fit
+  tabix -H ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz | grep -v "^##contig=<ID=HLA-" > ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz.head
+  bcftools reheader -h ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz.head ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz.head \
+                    -o ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.noHLA.gz
+  tabix ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.noHLA.gz
+fi
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/1000G_phase1.indels.b37.vcf.gz -O ${DATA}/1000G_phase1.indels.b37.vcf.gz
 tabix ${DATA}/1000G_phase1.indels.b37.vcf.gz
 
@@ -66,5 +79,5 @@ fi
 
 CHR=`tabix -l ${DBSNP} | grep 20`
 gatk-4.0.4.0/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
-  --known-sites ${INDEL} --known-sites ${DBSNP} -I ${SAMPLE%%.srt.bam}.bqsr.bam -O ${SAMPLE}.${CHR}.after -L ${CHR}
+  --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} -I ${SAMPLE%%.srt.bam}.bqsr.bam -O ${SAMPLE}.${CHR}.after -L ${CHR}
 gatk-4.0.4.0/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.${CHR}.recal --after ${SAMPLE}.${CHR}.after --plots ${SAMPLE}.pdf
