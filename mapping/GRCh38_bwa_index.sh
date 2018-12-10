@@ -19,6 +19,10 @@
 #ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.bwa_index.tar.gz
 #wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/unmasked_cognates_of_masked_CEN_PAR.txt
 
+# BWA alignment set without alt contigs or decoy sequences is used to determine mapping of alt contigs into the primary assembly for alt file
+wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
+tar zkxf GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
+
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
 
@@ -29,7 +33,7 @@ wget -nc http://hgdownload.cse.ucsc.edu/goldenPath/hg38/hg38Patch11/hg38Patch11.
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.27_GRCh38.p12/GCA_000001405.26_GRCh38.p11_genomic.fna.gz
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.27_GRCh38.p12/GCA_000001405.27_GRCh38.p12_genomic.fna.gz
 
-# European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/
+# European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 
 # I couldn't find a source for incremental patches to the human assembly, so we need to diff and clean it up.
@@ -41,19 +45,12 @@ sed "s/^>HLA:HLA..... />HLA-/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
 
 # There's no documentation for how the bwa alt-file should be constructed. This is just a basic starting point.
 # https://github.com/lh3/bwa/blob/master/README-alt.md
-bwa mem -x intractg -t4 hs38.fa hg38Patch11.fa.gz \
+cat hg38Patch11.fa.gz GRCh38patch12.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
+bwa mem -x intractg -t4 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
   | samtools view - \
-  | gawk '{ OFS="\t"; $10 = "*"; print }' > hg38Patch11.map
-
-bwa mem -x intractg -t4 hs38.fa GRCh38patch12.fa.gz \
-  | samtools view - \
-  | gawk '{ OFS="\t"; $10 = "*"; print }' > GRCh38patch12.map
-
-bwa mem -x intractg -t4 hs38.fa hla_gen.fasta.gz \
-  | samtools view - \
-  | gawk '{ OFS="\t"; $10 = "*"; print }' > hla_gen.map
+  | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.map
 
 zcat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz hg38Patch11.fa.gz GRCh38patch12.fa.gz hla_gen.fasta.gz > hg38-all.fa
-cat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.alt hg38Patch11.map GRCh38patch12.map hla_gen.map > hg38-all.fa.alt
+cat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.alt additional_hg38_contigs.map > hg38-all.fa.alt
 
 bwa index hg38-all.fa
