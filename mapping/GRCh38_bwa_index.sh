@@ -31,21 +31,24 @@ wget -nc http://hgdownload.cse.ucsc.edu/goldenPath/hg38/hg38Patch11/hg38Patch11.
 
 # Genome Reference Consortium https://www.ncbi.nlm.nih.gov/grc/human releases cumulative patches to the latest assembly
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.26_GRCh38.p11/GCA_000001405.26_GRCh38.p11_genomic.fna.gz
-wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.27_GRCh38.p12/GCA_000001405.27_GRCh38.p12_genomic.fna.gz
+wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.27_GRCh38.p11/GCA_000001405.27_GRCh38.p12_genomic.fna.gz
+wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 
 # I couldn't find a source for incremental patches to the human assembly, so we need to diff and clean it up.
 # These could be converted to the UCSC naming, but because they're not yet officially in UCSC, that could be misleading.
+# This is done stepwise to keep the new patches at the end of the file in case one needs to compare mappings etc.
 zdiff GCA_000001405.26_GRCh38.p11_genomic.fna.gz GCA_000001405.27_GRCh38.p12_genomic.fna.gz | grep "^> " | cut -c3- | gzip -c > GRCh38patch12.fa.gz
+zdiff GCA_000001405.27_GRCh38.p12_genomic.fna.gz GCA_000001405.28_GRCh38.p13_genomic.fna.gz | grep "^> " | cut -c3- | gzip -c > GRCh38patch13.fa.gz
 
 # Convert the HLA FASTA sequence names into the format used by bwa's bwa-kit release and compress it
 sed "s/^>HLA:HLA..... />HLA-/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
 
 # There's no documentation for how the bwa alt-file should be constructed. This is just a basic starting point.
 # https://github.com/lh3/bwa/blob/master/README-alt.md
-cat hg38Patch11.fa.gz GRCh38patch12.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
+cat hg38Patch11.fa.gz GRCh38patch12.fa.gz GRCh38patch13.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
 bwa mem -x intractg -t4 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
   | samtools view - \
   | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.map
