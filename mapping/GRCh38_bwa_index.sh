@@ -41,7 +41,7 @@ wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28
 # These could be converted to the UCSC naming, but because they're not yet officially in UCSC, that could be misleading.
 # This is done stepwise to keep the new patches at the end of the file in case one needs to compare mappings etc.
 # Patch 13 includes some changes that do not effect reference, ignore case and contig state change.
-zdiff --ignore-case GCA_000001405.26_GRCh38.p11_genomic.fna.gz GCA_000001405.27_GRCh38.p12_genomic.fna.gz | grep "^> " | cut -c3- | gzip -c > GRCh38Patch12.fa.gz
+zdiff --ignore-case GCA_000001405.26_GRCh38.p11_genomic.fna.gz GCA_000001405.27_GRCh38.p12_genomic.fna.gz | grep "^> " | grep -v "UNVERIFIED_ORG" | cut -c3- | gzip -c > GRCh38Patch12.fa.gz
 zdiff --ignore-case GCA_000001405.27_GRCh38.p12_genomic.fna.gz GCA_000001405.28_GRCh38.p13_genomic.fna.gz | grep "^> " | grep -v "UNVERIFIED_ORG" | cut -c3- | gzip -c > GRCh38Patch13.fa.gz
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
@@ -57,7 +57,7 @@ bwa mem -x intractg -t4 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna addition
   | samtools view - \
   | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.map
 
-zcat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz hg38Patch11.fa.gz GRCh38patch12.fa.gz hla_gen.fasta.gz > hg38-all.fa
-cat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.alt additional_hg38_contigs.map > hg38-all.fa.alt
+zcat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz hg38Patch11.fa.gz GRCh38patch12.fa.gz hla_gen.fasta.gz > hg38-p13-all.fa
+cat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.alt additional_hg38_contigs.map > hg38-p13-all.fa.alt
 
-bwa index hg38-all.fa
+bwa index hg38-p13-all.fa
