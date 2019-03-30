@@ -14,13 +14,13 @@ fi
 set -x
 
 # GRCh38 based with chr* chromosomes
-REF=/mnt/GenomicData/GRCh38/hg38.fa
+REF=${DATA}/GRCh38/hg38.fa
 DBSNP=${DATA}/All_20180418_GRCh38p7_GATK.vcf.gz
 INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
 INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
 
 # hg37 based with numerical chromosomes
-#REF=/home/jsantala/src/bwakit/hs37d5.fa
+#REF=${DATA}/bwakit/hs37d5.fa
 #DBSNP=${DATA}/All_20180423_GRCh37p13.vcf.gz
 #INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.b37.vcf.gz
 #INDEL2=${DATA}/1000G_phase1.indels.b37.vcf.gz
