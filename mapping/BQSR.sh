@@ -3,7 +3,7 @@
 SAMPLE=${1:-sample1.srt.bam}
 DATA=/mnt/GenomicData
 CORES=`nproc`
-GATK=4.0.5.2
+GATK=4.1.1.0
 
 if [ ! -e gatk-${GATK} ];
 then
