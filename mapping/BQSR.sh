@@ -25,7 +25,7 @@ INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
 #INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.b37.vcf.gz
 #INDEL2=${DATA}/1000G_phase1.indels.b37.vcf.gz
 
-if [ -e ${SAMPLE%%.bam}.bai ];
+if [ ! -e ${SAMPLE%%.bam}.bai ];
 then
   samtools index -@${CORES} ${SAMPLE}
 fi
