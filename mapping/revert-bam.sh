@@ -109,6 +109,12 @@ then
     check_space ${bamfile%%.bam}.mem.bam
 
     samtools view -H $outfile > ${outfile}.hdr
+    # FTDNA BigY doesn't have PL tag, so add it for downstream processing.
+    if ! grep -q "^@RG.*PL:" ${outfile}.hdr;
+    then
+      sed -i "s/^@RG\t.*/&\tPL:ILLUMINA/" ${outfile}.hdr
+    fi
+
     samtools fastq -t $outfile \
       | bwa mem -p -t $cores -M -C -H ${outfile}.hdr $reference - \
       | samtools view -b -o ${bamfile%%.bam}.mem.bam
