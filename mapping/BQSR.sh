@@ -14,10 +14,12 @@ fi
 set -x
 
 # GRCh38 based with chr* chromosomes
+#REF=${DATA}/GRCh38/hg38-p13-all.fa
 REF=${DATA}/GRCh38/hg38.fa
 DBSNP=${DATA}/All_20180418_GRCh38p7_GATK.vcf.gz
 INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
 INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
+YBROWSE=${DATA}/snps_hg38.vcf.gz
 
 # hg37 based with numerical chromosomes
 #REF=${DATA}/hs37d5/hs37d5.fa
@@ -28,6 +30,15 @@ INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
 if [ ! -e ${SAMPLE}.bai ];
 then
   samtools index -@${CORES} ${SAMPLE}
+fi
+
+# YBrowse Y-chromosome SNP list; this updates frequently, delete and redownload if needed.
+# We need to filter out incorrect contig-line and variants that match reference.
+wget -nc http://ybrowse.org/gbrowse2/gff/snps_hg38.vcf.gz
+if [ ! -e ${YBROWSE} ];
+then
+  zgrep -v "contig" snps_hg38.vcf.gz | gawk '{ if($1!="chrY"||$4!=$5) print }' | bgzip -c > ${YBROWSE}
+  tabix -f ${YBROWSE}
 fi
 
 # Genome Analysis ToolKit at Broad Institute maintains a resource bundle including validated indels in human genome https://software.broadinstitute.org/gatk/download/bundle
@@ -71,11 +82,13 @@ then
       --known-sites ${DBSNP} \
       --known-sites ${INDEL1} \
       --known-sites ${INDEL2} \
+      --known-sites ${YBROWSE} \
       -I ${SAMPLE} -O ${SAMPLE}.Z.recal -L Z
 
   # Tests show that the male X and Y chromosome covariates differ from the rest of the genome, perhaps due to being phased. (Test this hypothesis on female X later)
   # Because we have no reason to expect the sequencing error profile to differ by chromosome, process autosomal chromosomes only.
   ls ${SAMPLE}.*[0-9].recal > chr.list
+  ls ${SAMPLE}.chrX.recal ${SAMPLE}.chrY.recal >> chr.list
   gatk-${GATK}/gatk GatherBQSRReports -I chr.list -O ${SAMPLE}.recal
   gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.*X.recal --after ${SAMPLE}.*Y.recal --plots ${SAMPLE}.XY.pdf
 fi
@@ -87,5 +100,5 @@ fi
 
 CHR=`tabix -l ${DBSNP} | grep 20`
 gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
-  --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} -I ${SAMPLE%%.srt.bam}.bqsr.bam -O ${SAMPLE}.${CHR}.after -L ${CHR}
+  --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} --known-sites ${YBROWSE} -I ${SAMPLE%%.srt.bam}.bqsr.bam -O ${SAMPLE}.${CHR}.after -L ${CHR}
 gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.${CHR}.recal --after ${SAMPLE}.${CHR}.after --plots ${SAMPLE}.pdf
