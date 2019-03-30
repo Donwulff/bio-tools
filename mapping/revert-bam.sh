@@ -26,7 +26,7 @@ fi
 # Get a tested version of Picard Tools
 if [ ! -e picard.jar ];
 then
-  wget https://github.com/broadinstitute/picard/releases/download/2.18.2/picard.jar
+  wget https://github.com/broadinstitute/picard/releases/download/2.19.0/picard.jar
 fi
 
 check_space ()
