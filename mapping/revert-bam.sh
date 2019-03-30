@@ -16,6 +16,16 @@ outfile=${bamfile%%.bam}.unmapped.bam
 reference=hs38DH.fa
 compress=5
 
+## Combining BigY hs37 and GRCh38, I removed reference and SANITIZE=true and ran:
+# TMP=/mnt/SSD/ ./revert-bam.sh sample1BigY.bam
+# TMP=/mnt/SSD/ ./revert-bam.sh sample1BigY2.bam
+## Merging leaves reads from both files, apparently even with -c
+# samtools merge -@4 -c -f sample1BigYmerge.bam sample1BigY.unmapped.bam sample1BigY2.unmapped.bam
+## RevertSam expects reads in specific order, Picard Tools queryname order works.
+# java -Xmx30G -jar picard.jar SortSam I=sample1BigYmerge.bam O=sample1BigYmerge.qsort.bam SORT_ORDER=queryname
+## Added reference but not SANITIZE, bwa undocumented removed duplicate read-id's:
+# TMP=/mnt/SSD/ ./revert-bam.sh sample1BigYmerge.qsort.bam
+
 if [ ! -e $bamfile ];
 then
   echo "Runs Picard Tools on Java to create Broad Institute uBAM from input BAM"
@@ -72,7 +82,6 @@ then
   java -Xmx${javamem}G -jar picard.jar RevertSam \
     I=$bamfile \
     O=$outfile \
-    SANITIZE=true \
     MAX_DISCARD_FRACTION=0.005 \
     ATTRIBUTE_TO_CLEAR=XT \
     ATTRIBUTE_TO_CLEAR=XN \
@@ -88,6 +97,7 @@ then
     MAX_RECORDS_IN_RAM=$bamrecords \
     COMPRESSION_LEVEL=$compress \
     TMP_DIR=$tmp
+#    SANITIZE=true \
 fi
 
 # WARNING: This is NOT according to the Broad Institute GATK 4.0 Best Practices, but leaving it here for reference
