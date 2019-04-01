@@ -35,9 +35,9 @@ fi
 # YBrowse Y-chromosome SNP list; this updates frequently, delete and redownload if needed.
 # We need to filter out incorrect contig-line and variants that match reference.
 wget -nc http://ybrowse.org/gbrowse2/gff/snps_hg38.vcf.gz
-if [ ! -e ${YBROWSE} ];
+if [ ! -e ${YBROWSE}.tbi ];
 then
-  zgrep -v "contig" snps_hg38.vcf.gz | gawk '{ if($1!="chrY"||$4!=$5) print }' | bgzip -c > ${YBROWSE}
+  zgrep -v "contig" snps_hg38.vcf.gz | gawk -v OFS="\t" '{ if($1=="chrY"&&$4==$5) $5="."; print }' | bgzip -c > ${YBROWSE}
   tabix -f ${YBROWSE}
 fi
 
