@@ -23,6 +23,11 @@ INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
 INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
 YBROWSE=${DATA}/snps_hg38.vcf.gz
 
+if [ -e ./bio-tools.cfg ];
+then
+  . ./bio-tools.cfg
+fi
+
 # hg37 based with numerical chromosomes
 #REF=${DATA}/hs37d5/hs37d5.fa
 #DBSNP=${DATA}/All_20180423_GRCh37p13.vcf.gz
