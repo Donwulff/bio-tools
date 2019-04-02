@@ -18,7 +18,7 @@ set -x
 # GRCh38 based with chr* chromosomes
 #REF=${DATA}/GRCh38/hg38-p13-all.fa
 REF=${DATA}/GRCh38/hg38.fa
-DBSNP=${DATA}/All_20180418_GRCh38p7_GATK.vcf.gz
+DBSNP=${DATA}/GCF_000001405.38.GATK.bgz
 INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
 INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
 YBROWSE=${DATA}/snps_hg38.vcf.gz
@@ -38,6 +38,24 @@ fi
 if [ ! -e ${SAMPLE}.bai ];
 then
   samtools index -@${CORES} ${SAMPLE}
+fi
+
+# dbSNP dump is 14 gigabytes, I need to devise a convention for handling files in this script.
+# Right now the download goes to working directory and GATK prepared version into defined path!
+if [ ! -e ${DBSNP}.tbi ];
+then
+  # GRCh37, now getting obsolete.
+  #wget ftp://ftp.ncbi.nih.gov/snp/latest_release/VCF/GCF_000001405.25.bgz
+
+  wget -nc ftp://ftp.ncbi.nih.gov/snp/latest_release/VCF/GCF_000001405.38.bgz
+  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.38_GRCh38.p12/GCF_000001405.38_GRCh38.p12_assembly_report.txt
+  # File for next build; these will be hard to find by hand.
+  #wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_assembly_report.txt
+
+  gawk 'BEGIN { FS="\t" } !/^#/ { print $7,$10  }' GCF_000001405.38_GRCh38.p12_assembly_report.txt > NCBI-to-UCSC-GRCh38.p12.map
+  time bcftools annotate --rename-chrs NCBI-to-UCSC-GRCh38.p12.map GCF_000001405.38.bgz | gawk '/^#/ && !/^##contig=/ { print } !/^#/ { if( $1!="na" ) print }' \
+    | bgzip -@${CORES} -l9 -c > ${DBSNP}
+  tabix -f ${DBSNP}
 fi
 
 # YBrowse Y-chromosome SNP list; this updates frequently, delete and redownload if needed.
