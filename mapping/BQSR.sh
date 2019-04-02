@@ -5,6 +5,8 @@ DATA=/mnt/GenomicData
 CORES=`nproc`
 GATK=4.1.1.0
 
+# Requires wget gawk tabix samtools bcftools python java
+
 if [ ! -e gatk-${GATK} ];
 then
   wget -nc https://github.com/broadinstitute/gatk/releases/download/${GATK}/gatk-${GATK}.zip
@@ -37,7 +39,7 @@ fi
 wget -nc http://ybrowse.org/gbrowse2/gff/snps_hg38.vcf.gz
 if [ ! -e ${YBROWSE}.tbi ];
 then
-  zgrep -v "contig" snps_hg38.vcf.gz | gawk -v OFS="\t" '{ if($1=="chrY"&&$4==$5) $5="."; print }' | bgzip -c > ${YBROWSE}
+  zgrep -v "contig" snps_hg38.vcf.gz | bcftools norm -cs -f ${REF} | bgzip -c > ${YBROWSE}
   tabix -f ${YBROWSE}
 fi
 
