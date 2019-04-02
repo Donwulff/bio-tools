@@ -100,7 +100,7 @@ then
   gatk-${GATK}/gatk ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${SAMPLE%%.srt.bam}.bqsr.bam
 fi
 
-CHR=`tabix -l ${DBSNP} | grep 20`
+CHR=`tabix -l ${DBSNP} | grep -m1 '20$'`
 gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
   --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} --known-sites ${YBROWSE} -I ${SAMPLE%%.srt.bam}.bqsr.bam -O ${SAMPLE}.${CHR}.after -L ${CHR}
 gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.${CHR}.recal --after ${SAMPLE}.${CHR}.after --plots ${SAMPLE}.pdf
