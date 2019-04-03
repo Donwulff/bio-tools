@@ -20,13 +20,14 @@ REF=${DATA}/GRCh38/hg38.fa
 DBSNP=${DATA}/GCF_000001405.38.GATK.bgz
 INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
 INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
-YBROWSE=${DATA}/snps_hg38.vcf.gz
+YBROWSE=${DATA}/snps_hg38_GATK.vcf.gz
 
-# hg37 based with numerical chromosomes
+# hg37 based with numerical chromosomes - GRCh37 is becoming obsolete, this may need some tweaking.
 #REF=${DATA}/hs37d5/hs37d5.fa
 #DBSNP=${DATA}/All_20180423_GRCh37p13.vcf.gz
 #INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.b37.vcf.gz
 #INDEL2=${DATA}/1000G_phase1.indels.b37.vcf.gz
+#YBROWSE=${DATA}/snps_hg19_GATK.vcf.gz
 
 # If bio-tools.cfg exists where the script is run from, over-ride settings from it.
 if [ -e ./bio-tools.cfg ];
@@ -39,11 +40,11 @@ then
   samtools index -@${CORES} ${SAMPLE}
 fi
 
-# dbSNP database snapshot, version 151, GATK contig names already provided by dbSNP at National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
+# GRCh37 dbSNP database snapshot, version 151, GATK contig names already provided by dbSNP at National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/All_20180423.vcf.gz -O ${DATA}/All_20180423_GRCh37p13.vcf.gz
 tabix ${DATA}/All_20180423_GRCh37p13.vcf.gz
 
-# dbSNP database snapshot 152, National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
+# GRCh38 dbSNP database snapshot 152, National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
 # dbSNP 152 dump is 14 gigabytes, I need to devise a convention for handling files in this script.
 # Right now the download goes to working directory and GATK prepared version into defined path!
 if [ ! -e ${DBSNP}.tbi ];
@@ -59,17 +60,21 @@ then
 
   gawk 'BEGIN { FS="\t" } !/^#/ { print $7,$10  }' GCF_000001405.38_GRCh38.p12_assembly_report.txt > NCBI-to-UCSC-GRCh38.p12.map
   time bcftools annotate --rename-chrs NCBI-to-UCSC-GRCh38.p12.map GCF_000001405.38.bgz | gawk '/^#/ && !/^##contig=/ { print } !/^#/ { if( $1!="na" ) print }' \
-    | bgzip -@${CORES} -l9 -c > ${DBSNP}
-  tabix -f ${DBSNP}
+    | bgzip -@${CORES} -l9 -c > ${DATA}/GCF_000001405.38.GATK.bgz
+  tabix ${DATA}/GCF_000001405.38.GATK.bgz
 fi
 
 # YBrowse Y-chromosome SNP list; this updates frequently, delete and redownload if needed.
 # We need to filter out incorrect contig-line and variants that match reference.
+# Only GRCh38 is updated, we'll need to liftover if we ever want to use new SNP's on GRCh37
 wget -nc http://ybrowse.org/gbrowse2/gff/snps_hg38.vcf.gz
+wget -nc http://ybrowse.org/gbrowse2/gff/snps_hg19.vcf.gz
 if [ ! -e ${YBROWSE}.tbi ];
 then
-  zgrep -v "contig" snps_hg38.vcf.gz | bcftools norm -cs -f ${REF} | bgzip -c > ${YBROWSE}
-  tabix -f ${YBROWSE}
+  zgrep -v "contig" snps_hg38.vcf.gz | bcftools norm -cs -f ${REF} | bgzip -c > ${DATA}/snps_hg38_GATK.vcf.gz
+  tabix -f ${DATA}/snps_hg38_GATK.vcf.gz
+  zgrep -v "contig" snps_hg19.vcf.gz | bcftools norm -cs -f ${REF} | bgzip -c > ${DATA}/snps_hg19_GATK.vcf.gz
+  tabix -f ${DATA}/snps_hg19_GATK.vcf.gz
 fi
 
 # Genome Analysis ToolKit at Broad Institute maintains a resource bundle including validated indels in human genome https://software.broadinstitute.org/gatk/download/bundle
@@ -85,7 +90,7 @@ fi
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/Mills_and_1000G_gold_standard.indels.b37.vcf.gz -O ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 tabix ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 
-# Equivalent doesn't exist for GRCh38, however the new GATK 4.0 Best Practices scripts are using known_indels file.
+# Equivalent to this doesn't exist for GRCh38, however the new GATK 4.0 Best Practices scripts are using known_indels file.
 #wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/1000G_phase1.snps.high_confidence.hg38.vcf.gz -O ${DATA}/1000G_phase1.snps.high_confidence.hg38.vcf.gz
 #tabix ${DATA}/1000G_phase1.snps.high_confidence.hg38.vcf.gz
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/beta/Homo_sapiens_assembly38.known_indels.vcf.gz -O ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz
@@ -111,11 +116,13 @@ then
       -I ${SAMPLE} -O ${SAMPLE}.Z.recal -L Z
 
   # Tests show that the male X and Y chromosome covariates differ from the rest of the genome, perhaps due to being phased. (Test this hypothesis on female X later)
-  # Because we have no reason to expect the sequencing error profile to differ by chromosome, process autosomal chromosomes only.
+  # Now with YBrowse SNP's added, just use whole primary assembly covariates by default.
   ls ${SAMPLE}.*[0-9].recal > chr.list
   ls ${SAMPLE}.chrX.recal ${SAMPLE}.chrY.recal >> chr.list
   gatk-${GATK}/gatk GatherBQSRReports -I chr.list -O ${SAMPLE}.recal
-  gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.*X.recal --after ${SAMPLE}.*Y.recal --plots ${SAMPLE}.XY.pdf
+
+  # Generate a report showing difference between X and Y chromosome BQSR covariates for checking.
+  gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.*X.recal --after ${SAMPLE}.*Y.recal --plots ${SAMPLE}.YvsX.pdf
 fi
 
 if [ ! -e ${SAMPLE%%.srt.bam}.bqsr.bam ];
