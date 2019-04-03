@@ -16,7 +16,6 @@ fi
 set -x
 
 # GRCh38 based with chr* chromosomes
-#REF=${DATA}/GRCh38/hg38-p13-all.fa
 REF=${DATA}/GRCh38/hg38.fa
 DBSNP=${DATA}/GCF_000001405.38.GATK.bgz
 INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
@@ -40,7 +39,8 @@ then
   samtools index -@${CORES} ${SAMPLE}
 fi
 
-# dbSNP dump is 14 gigabytes, I need to devise a convention for handling files in this script.
+# dbSNP database snapshot 152, National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
+# dbSNP 152 dump is 14 gigabytes, I need to devise a convention for handling files in this script.
 # Right now the download goes to working directory and GATK prepared version into defined path!
 if [ ! -e ${DBSNP}.tbi ];
 then
@@ -49,6 +49,7 @@ then
 
   wget -nc ftp://ftp.ncbi.nih.gov/snp/latest_release/VCF/GCF_000001405.38.bgz
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.38_GRCh38.p12/GCF_000001405.38_GRCh38.p12_assembly_report.txt
+
   # File for next build; these will be hard to find by hand.
   #wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_assembly_report.txt
 
