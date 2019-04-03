@@ -5,7 +5,24 @@ DATA=/mnt/GenomicData
 CORES=`nproc`
 GATK=4.1.1.0
 
+# Script fetches and prepares necessary resources for BQSR and then drives a simple, single-machine BQSR workflow.
+# Both GRCh37 and GRCh38 resources are fetched, although it might be better idea to liftover final results to GRCh37 if needed.
+
 # Requires wget gawk tabix samtools bcftools python java
+
+# BQSR is part of Broad Institute's Genome Analysis Toolkit Best Practices.
+# It's a statistical method to empirically determine sequencing system error profile by masking out known variant sites.
+# Because real novel variants are expected to distribute randomly on the reads, this gives a good idea of any systematic errors in sequencing.
+
+# Explained: https://software.broadinstitute.org/gatk/documentation/article?id=11081
+# Study: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5048557/
+# Known sites to use: https://software.broadinstitute.org/gatk/documentation/article.php?id=1247
+
+# GATK Best Practices says to use "The most recent dbSNP release (build ID > 132)" for BaseRecalibrator.
+# Some people prefer to stay with older snapshot, but I believe newer versions have much better coverage of rare populations.
+
+# Standard resources don't cover Y chromosome well, so YBrowse SNP list is used for this.
+# Best Practices excludes X and Y chromosomes, but you may wish to experiment what works best for your purposes.
 
 if [ ! -e gatk-${GATK} ];
 then
@@ -90,9 +107,8 @@ fi
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/Mills_and_1000G_gold_standard.indels.b37.vcf.gz -O ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 tabix ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 
-# Equivalent to this doesn't exist for GRCh38, however the new GATK 4.0 Best Practices scripts are using known_indels file.
-#wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/1000G_phase1.snps.high_confidence.hg38.vcf.gz -O ${DATA}/1000G_phase1.snps.high_confidence.hg38.vcf.gz
-#tabix ${DATA}/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+# https://gatkforums.broadinstitute.org/gatk/discussion/1213/whats-in-the-resource-bundle-and-how-can-i-get-it
+# "You can use the Mills_and_1000G_gold_standard.indels.hg38.vcf.gz and Homo_sapiens_assembly38.known_indels.vcf.gz as a replacement for the three original indel files."
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/beta/Homo_sapiens_assembly38.known_indels.vcf.gz -O ${DATA}/Homo_sapiens_assembly38.known_indels.vcf.gz
 if [ ! -e ${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz ];
 then
@@ -105,8 +121,10 @@ fi
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/1000G_phase1.indels.b37.vcf.gz -O ${DATA}/1000G_phase1.indels.b37.vcf.gz
 tabix ${DATA}/1000G_phase1.indels.b37.vcf.gz
 
+# TODO: Only run BaseRecalibrator on contigs we're going to use for the final calibration file; for now it can be used to check how they look.
 if [ ! -e ${SAMPLE}.recal ];
 then
+  # Determine error profile: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_BaseRecalibrator.php
   tabix -l ${DBSNP} \
     | xargs -IZ -P${CORES} gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
       --known-sites ${DBSNP} \
@@ -118,18 +136,21 @@ then
   # Tests show that the male X and Y chromosome covariates differ from the rest of the genome, perhaps due to being phased. (Test this hypothesis on female X later)
   # Now with YBrowse SNP's added, just use whole primary assembly covariates by default.
   ls ${SAMPLE}.*[0-9].recal > chr.list
-  ls ${SAMPLE}.chrX.recal ${SAMPLE}.chrY.recal >> chr.list
+  ls ${SAMPLE}.*X.recal ${SAMPLE}.*Y.recal >> chr.list
   gatk-${GATK}/gatk GatherBQSRReports -I chr.list -O ${SAMPLE}.recal
 
-  # Generate a report showing difference between X and Y chromosome BQSR covariates for checking.
+  # Generate a report showing difference between X and Y chromosome BQSR error covariates for checking.
   gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.*X.recal --after ${SAMPLE}.*Y.recal --plots ${SAMPLE}.YvsX.pdf
 fi
 
+# Apply error profile: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_ApplyBQSR.php
+# TODO: We can do this in paraller, although copying piecewise BAM's back together will require extra IO.
 if [ ! -e ${SAMPLE%%.srt.bam}.bqsr.bam ];
 then
   gatk-${GATK}/gatk ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${SAMPLE%%.srt.bam}.bqsr.bam
 fi
 
+# Check for residual error: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_AnalyzeCovariates.php
 CHR=`tabix -l ${DBSNP} | grep -m1 '20$'`
 gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
   --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} --known-sites ${YBROWSE} -I ${SAMPLE%%.srt.bam}.bqsr.bam -O ${SAMPLE}.${CHR}.after -L ${CHR}
