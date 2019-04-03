@@ -39,6 +39,10 @@ then
   samtools index -@${CORES} ${SAMPLE}
 fi
 
+# dbSNP database snapshot, version 151, GATK contig names already provided by dbSNP at National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
+wget -nc ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/All_20180423.vcf.gz -O ${DATA}/All_20180423_GRCh37p13.vcf.gz
+tabix ${DATA}/All_20180423_GRCh37p13.vcf.gz
+
 # dbSNP database snapshot 152, National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
 # dbSNP 152 dump is 14 gigabytes, I need to devise a convention for handling files in this script.
 # Right now the download goes to working directory and GATK prepared version into defined path!
@@ -80,12 +84,6 @@ then
 fi
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/Mills_and_1000G_gold_standard.indels.b37.vcf.gz -O ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 tabix ${DATA}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
-
-# dbSNP database snapshot, version 151, GATK contig names already provided by dbSNP at National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
-wget -nc ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/GATK/All_20180418.vcf.gz -O ${DATA}/All_20180418_GRCh38p7_GATK.vcf.gz
-tabix ${DATA}/All_20180418_GRCh38p7_GATK.vcf.gz
-wget -nc ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/All_20180423.vcf.gz -O ${DATA}/All_20180423_GRCh37p13.vcf.gz
-tabix ${DATA}/All_20180423_GRCh37p13.vcf.gz
 
 # Equivalent doesn't exist for GRCh38, however the new GATK 4.0 Best Practices scripts are using known_indels file.
 #wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/1000G_phase1.snps.high_confidence.hg38.vcf.gz -O ${DATA}/1000G_phase1.snps.high_confidence.hg38.vcf.gz
