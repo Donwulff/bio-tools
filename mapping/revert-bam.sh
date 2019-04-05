@@ -16,6 +16,12 @@ outfile=${bamfile%%.bam}.unmapped.bam
 reference=hs38DH.fa
 compress=5
 
+# If bio-tools.cfg exists where the script is run from, over-ride settings from it.
+if [ -e ./bio-tools.cfg ];
+then
+  . ./bio-tools.cfg
+fi
+
 ## Combining BigY hs37 and GRCh38, I removed reference and SANITIZE=true and ran:
 # TMP=/mnt/SSD/ ./revert-bam.sh sample1BigY.bam
 # TMP=/mnt/SSD/ ./revert-bam.sh sample1BigY2.bam
