@@ -34,7 +34,7 @@ set -x
 
 # GRCh38 based with chr* chromosomes
 REF=${DATA}/GRCh38/hg38.fa
-DBSNP=${DATA}/GCF_000001405.38.GATK.bgz
+DBSNP=${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12.GATK.noINFO.vcf.gz
 INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
 INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
 YBROWSE=${DATA}/snps_hg38_GATK.vcf.gz
@@ -60,6 +60,11 @@ fi
 # GRCh37 dbSNP database snapshot, version 151, GATK contig names already provided by dbSNP at National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/All_20180423.vcf.gz -O ${DATA}/All_20180423_GRCh37p13.vcf.gz
 tabix ${DATA}/All_20180423_GRCh37p13.vcf.gz
+
+# Pre-prepared version of the dbSBP 152 GRCh38p12 file with all contigs that have them renamed to UCSC identifiers and INFO column blanked to minimize download and decompression
+# This file is served off Sequencing.com
+wget -nc https://api.sequencing.com/download.ashx?id=1c28f644-7c9d-43a1-aa68-2c2ee89a01da -O ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12.GATK.noINFO.vcf.gz
+tabix ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12.GATK.noINFO.vcf.gz
 
 # GRCh38 dbSNP database snapshot 152, National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
 # dbSNP 152 dump is 14 gigabytes, I need to devise a convention for handling files in this script.
