@@ -137,6 +137,8 @@ then
   # Now with YBrowse SNP's added, just use whole primary assembly covariates by default.
   ls ${SAMPLE}.*[0-9].recal > chr.list
   ls ${SAMPLE}.*X.recal ${SAMPLE}.*Y.recal >> chr.list
+# Use all contigs with this instead
+#  ls ${SAMPLE}.*.recal > chr.list
   gatk-${GATK}/gatk GatherBQSRReports -I chr.list -O ${SAMPLE}.recal
 
   # Generate a report showing difference between X and Y chromosome BQSR error covariates for checking.
