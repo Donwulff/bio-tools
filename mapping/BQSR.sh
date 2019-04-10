@@ -126,21 +126,32 @@ fi
 wget -nc ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/1000G_phase1.indels.b37.vcf.gz -O ${DATA}/1000G_phase1.indels.b37.vcf.gz
 tabix ${DATA}/1000G_phase1.indels.b37.vcf.gz
 
+# Assume dbSNP includes all contigs of interest
+tabix -l ${DBSNP} | sort > dbSNP.contigs
+samtools idxstats ${SAMPLE} | cut -f 1 | sort > ${SAMPLE}.contigs
+join dbSNP.contigs ${SAMPLE}.contigs > recal.contigs
+
 # TODO: Only run BaseRecalibrator on contigs we're going to use for the final calibration file; for now it can be used to check how they look.
 if [ ! -e ${SAMPLE}.recal ];
 then
   # Determine error profile: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_BaseRecalibrator.php
-  tabix -l ${DBSNP} \
-    | xargs -IZ -P${CORES} gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
+  cat recal.contigs \
+    | xargs -IZ -P${CORES} sh -c "
+      if [ ! -e ${SAMPLE}.Z.recal ]; then \
+      gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
       --known-sites ${DBSNP} \
       --known-sites ${INDEL1} \
       --known-sites ${INDEL2} \
       --known-sites ${YBROWSE} \
-      -I ${SAMPLE} -O ${SAMPLE}.Z.recal -L Z
+      -I ${SAMPLE} -O ${SAMPLE}.Z.recal -L Z ; \
+      fi "
 
   # Tests show that the male X and Y chromosome covariates differ from the rest of the genome, perhaps due to being phased. (Test this hypothesis on female X later)
   # Now with YBrowse SNP's added, just use whole primary assembly covariates by default.
-  ls ${SAMPLE}.*[0-9].recal > chr.list
+  ls ${SAMPLE}.chr[0-9].recal > chr.list
+  ls ${SAMPLE}.chr[0-9][0-9].recal >> chr.list
+  ls ${SAMPLE}.[0-9].recal >> chr.list
+  ls ${SAMPLE}.[0-9][0-9].recal >> chr.list
   ls ${SAMPLE}.*X.recal ${SAMPLE}.*Y.recal >> chr.list
 # Use all contigs with this instead
 #  ls ${SAMPLE}.*.recal > chr.list
