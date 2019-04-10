@@ -80,10 +80,10 @@ then
   # File for next build; these will be hard to find by hand.
   #wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_assembly_report.txt
 
-  gawk 'BEGIN { FS="\t" } !/^#/ { print $7,$10  }' GCF_000001405.38_GRCh38.p12_assembly_report.txt > NCBI-to-UCSC-GRCh38.p12.map
-  time bcftools annotate --rename-chrs NCBI-to-UCSC-GRCh38.p12.map GCF_000001405.38.bgz | gawk '/^#/ && !/^##contig=/ { print } !/^#/ { if( $1!="na" ) print }' \
-    | bgzip -@${CORES} -l9 -c > ${DATA}/GCF_000001405.38.GATK.bgz
-  tabix ${DATA}/GCF_000001405.38.GATK.bgz
+  gawk -v RS="(\r)?\n" 'BEGIN { FS="\t" } !/^#/ { if ($10 != "na") print $7,$10; else print $7,$5 }' GCF_000001405.38_GRCh38.p12_assembly_report.txt > dbSNP-to-UCSC-GRCh38.p12.map
+  time bcftools annotate --rename-chrs dbSNP-to-UCSC-GRCh38.p12.map GCF_000001405.38.bgz | gawk '/^#/ && !/^##contig=/ { print } !/^#/ { if( $1!="na" ) print }' \
+    | bgzip -@${CORES} -l9 -c > ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12b.GATK.vcf.gz
+  tabix ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12b.GATK.vcf.gz
 fi
 
 # YBrowse Y-chromosome SNP list; this updates frequently, delete and redownload if needed.
