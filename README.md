@@ -22,13 +22,17 @@ Installs prerequisites, gets and runs Thomas Krahn's BigY2 (hg38) annotation scr
 Tested on Windows 10 with Windows Store installed WSL Ubuntu.
 This script assumes you have only one BigY VCF zip in your Windows download folder(s).
 
+### combine_tests.sh
+
+### yoruban_to_rcrs.sh
+
 ## mapping - BAM file mapping and processing
 
 ### revert_bam.sh
 Runs Picard Tools on Java to create Broad Institute uBAM (Unmapped BAM) from input BAM.
 Tested to work on Windows 10 WSL Ubuntu & Ubuntu Xenial.
 Leaves nh and qf tags in BigY BAM; they seem properietary.
-If if bwa index reference exists (f.e. bwakit), simple mapping is performed.
+If bwa index reference exists (f.e. bwakit), simple mapping is performed.
 Mapping requires significantly more storage space, currently not checked.
 
 #### Pros:
@@ -48,3 +52,11 @@ mates and secondary/supplementary reads are not excluded from the duplication te
 When tested, the implementatiton actually required queryname order, crashing on query-grouped input.
 You could sort the FASTQ files into queryname order, but this would take as much effort as RevertSam.
 If marking all the duplicates is sgnificant for your workflow, uBAM seems currently only option, even if it's somewhat forced.
+
+### BQSR.sh
+
+### GRCh38_bwa_index.sh
+
+## util - Random utilities
+
+### dbSNP_changes.pl
