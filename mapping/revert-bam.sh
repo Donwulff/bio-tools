@@ -15,6 +15,15 @@ bamfile=${1:-sample1.bam}
 outfile=${bamfile%%.bam}.unmapped.bam
 reference=hs38DH.fa
 compress=5
+BWAOPT=
+
+# Trim sequencing adapters exactly using paired end read overlap; disableother trimming
+# Reference: https://www.ncbi.nlm.nih.gov/pubmed/30423086
+if which fastp > /dev/null;
+then
+  BASENAME=${bamfile%%.bam}
+  FILTER="| fastp -QLGp --stdin --stdout --interleaved_in -j ${BASENAME}.fastp.json -h ${BASENAME}.fastp.html -R \"fastp report on ${BASENAME}\""
+fi
 
 # If bio-tools.cfg exists where the script is run from, over-ride settings from it.
 if [ -e ./bio-tools.cfg ];
@@ -131,8 +140,9 @@ then
       sed -i "s/^@RG\t.*/&\tPL:ILLUMINA/" ${outfile}.hdr
     fi
 
-    samtools fastq -t $outfile \
-      | bwa mem -p -t $cores -M -C -H ${outfile}.hdr $reference - \
+    eval samtools fastq -t $outfile \
+      $FILTER \
+      | bwa mem $BWAOPT -p -t $cores -M -C -H ${outfile}.hdr $reference - \
       | samtools view -b -o ${bamfile%%.bam}.mem.bam
     rm ${outfile}.hdr
   fi
