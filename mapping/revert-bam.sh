@@ -19,7 +19,15 @@ bamfile=${1:-sample1.bam}
 outfile=${bamfile%%.bam}.unmapped.bam
 reference=hs38DH.fa
 compress=5
+
+# Extra options for BWA, ie. long reads with "-x pacbio" etc.
 BWAOPT=
+
+# Ref: https://gatkforums.broadinstitute.org/gatk/discussion/6484
+# From page: Additionally, we invoke the SANITIZE option to remove reads that cause problems for certain tools, e.g. MarkIlluminaAdapters.
+# Downstream tools will have problems with paired reads with missing mates, duplicated records, and records with mismatches in length of bases and qualities.
+# Any paired reads file subset for a genomic interval requires sanitizing to remove reads with lost mates that align outside of the interval.
+SANITIZE=true
 
 # Trim sequencing adapters exactly using paired end read overlap; disableother trimming
 # Reference: https://www.ncbi.nlm.nih.gov/pubmed/30423086
@@ -92,7 +100,6 @@ cores=`nproc`
 # From Java 6 update 18 max. heap is 1/4th of physical memory, so we can split 3/4th between cores for sorting.
 percoremem=$((javamem*3/4/cores))
 
-# Ref: https://gatkforums.broadinstitute.org/gatk/discussion/6484
 if [ ! -e $outfile ];
 then
   check_space $outfile
@@ -101,6 +108,7 @@ then
   java -Xmx${javamem}G -jar picard.jar RevertSam \
     I=$bamfile \
     O=$outfile \
+    SANITIZE=${SANITIZE} \
     MAX_DISCARD_FRACTION=0.005 \
     ATTRIBUTE_TO_CLEAR=XT \
     ATTRIBUTE_TO_CLEAR=XN \
@@ -116,7 +124,6 @@ then
     MAX_RECORDS_IN_RAM=$bamrecords \
     COMPRESSION_LEVEL=$compress \
     TMP_DIR=$tmp
-#    SANITIZE=true \
 fi
 
 # WARNING: This is NOT according to the Broad Institute GATK 4.0 Best Practices, but leaving it here for reference
