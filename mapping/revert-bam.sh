@@ -144,6 +144,8 @@ then
       sed -i "s/^@RG\t.*/&\tPL:ILLUMINA/" ${outfile}.hdr
     fi
 
+    # Casava 1.8 header, observed s/[12]:[YN]:[0-9]*:[^\/]*\/[12]\t//
+    # According to Wikipedia this can also end in barcode or sample-ID, so removing any.
     samtools fastq -t $outfile \
       | eval sed "s/[12]:[YN]:[0-9]*:[^[:space:]]*[[:space:]]//" \
       $FILTER \
