@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SAMPLE=${1:-sample1.srt.bam}
+SAMPLE=${1:-sample1.sorted.bam}
 DATA=/mnt/GenomicData
 CORES=`nproc`
 GATK=4.1.1.0
