@@ -7,6 +7,10 @@
 
 # DEPENDENCIES: gawk; modern java; samtools (htslib) and bwa + index from bwakit if mapping
 
+# Some BigY bam files have Casava 1.8 data in the bam read column; not sure what to do with this as it's in the original bam.
+# This script preserves it in unmapped bam and filters it out before processing, but the extra space and Casava header can be cleaned up with:
+# (samtools view -H sample1.bam; samtools view sample1.bam | awk '{ OFS="\t"; split($1,q," "); $1=q[1]; print }') | samtools view -b -o sample1.cleaned.bam
+
 # Different fs from data files, prefer SSD
 tmp=${TMP:-"/tmp"}
 
@@ -140,7 +144,8 @@ then
       sed -i "s/^@RG\t.*/&\tPL:ILLUMINA/" ${outfile}.hdr
     fi
 
-    eval samtools fastq -t $outfile \
+    samtools fastq -t $outfile \
+      | eval sed "s/[12]:[YN]:[0-9]*:[^[:space:]]*[[:space:]]//" \
       $FILTER \
       | bwa mem $BWAOPT -p -t $cores -M -C -H ${outfile}.hdr $reference - \
       | samtools view -b -o ${bamfile%%.bam}.mem.bam
