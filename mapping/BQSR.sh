@@ -1,6 +1,7 @@
 #!/bin/sh
 
 SAMPLE=${1:-sample1.sorted.bam}
+BASENAME=${SAMPLE%%.sorted.bam}
 DATA=/mnt/GenomicData
 CORES=`nproc`
 GATK=4.1.1.0
@@ -163,13 +164,13 @@ fi
 
 # Apply error profile: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_ApplyBQSR.php
 # TODO: We can do this in paraller, although copying piecewise BAM's back together will require extra IO.
-if [ ! -e ${SAMPLE%%.srt.bam}.bqsr.bam ];
+if [ ! -e ${BASENAME}.bqsr.bam ];
 then
-  gatk-${GATK}/gatk ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${SAMPLE%%.srt.bam}.bqsr.bam
+  gatk-${GATK}/gatk ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${BASENAME}.bqsr.bam
 fi
 
 # Check for residual error: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_AnalyzeCovariates.php
 CHR=`tabix -l ${DBSNP} | grep -m1 '20$'`
 gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
-  --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} --known-sites ${YBROWSE} -I ${SAMPLE%%.srt.bam}.bqsr.bam -O ${SAMPLE}.${CHR}.after -L ${CHR}
+  --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} --known-sites ${YBROWSE} -I ${BASENAME}.bqsr.bam -O ${SAMPLE}.${CHR}.after -L ${CHR}
 gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.${CHR}.recal --after ${SAMPLE}.${CHR}.after --plots ${SAMPLE}.pdf
