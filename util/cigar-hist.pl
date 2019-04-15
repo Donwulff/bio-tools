@@ -5,6 +5,7 @@ use warnings;
 # Experimental quality control histogram, checking CIGAR and MD tags.
 # May want to run it like:
 # samtools view -F 0xF00 bwa-mapped-duplicate-marked.bam | perl cigar-hist.pm > mapped-duplicate-marked.bam.cigar
+# This is very CPU intensive and should probably not be used other than for experimentation.
 
 my @histogram;
 my @trimming;
@@ -18,12 +19,16 @@ my @varlength;
 
 my @exact;
 my @exactnum;
+my @insert;
 
 while (<STDIN>) {
     my @col = split("\t");
-    my ( $cigar, $md ) = ( $col[5], grep { /^MD:Z:/ } @col );
+    my ( $cigar, $mate, $md ) = ( $col[5], $col[8], grep { /^MD:Z:/ } @col );
     my ( $maxexact, $numexact, $nucu, $nucc, $match, $trimmed, $trimc ) =
       ( 0, 0, 0, 0, 0, 0, 0 );
+    if ( $mate >= 0 ) {
+        $insert[$mate]++;
+    }
     if ( defined($md) ) {
         $md = substr( $md, 4 );
         while ( $md =~ /([0-9]+)/g ) {
@@ -72,6 +77,9 @@ while (<STDIN>) {
     $trimcount[$trimc]++;
 }
 
+# Unmatched pairs both have insert size 0, so we need to halve it.
+$insert[0]=$insert[0]/2;
+
 # Not pass by reference for simplicity
 sub histogram {
     my @histogram = @_;
@@ -102,3 +110,5 @@ print("Maximum exact match per read\n");
 histogram(@exact);
 print("Number of matching segments per read\n");
 histogram(@exactnum);
+print("Insert sizes per read\n");
+histogram(@insert);
