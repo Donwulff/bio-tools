@@ -130,13 +130,23 @@ tabix ${DATA}/1000G_phase1.indels.b37.vcf.gz
 # Assume dbSNP includes all contigs of interest
 tabix -l ${DBSNP} | sort > dbSNP.contigs
 samtools idxstats ${SAMPLE} | cut -f 1 | sort > ${SAMPLE}.contigs
-join dbSNP.contigs ${SAMPLE}.contigs > recal.contigs
+join dbSNP.contigs ${SAMPLE}.contigs > ${SAMPLE}-common.contigs
 
-# TODO: Only run BaseRecalibrator on contigs we're going to use for the final calibration file; for now it can be used to check how they look.
+# Tests show that the male X and Y chromosome covariates differ from the rest of the genome, perhaps due to being phased. (Test this hypothesis on female X later)
+# Now with YBrowse SNP's added, just use whole primary assembly covariates by default because of BigY/YElite we only have Y.
+grep "^[0-9]$" ${SAMPLE}-common.contigs > ${SAMPLE}-recal.contigs
+grep "^chr[0-9]$" ${SAMPLE}-common.contigs >> ${SAMPLE}-recal.contigs
+grep "^.*X$" ${SAMPLE}-common.contigs >> ${SAMPLE}-recal.contigs
+grep "^.*Y$" ${SAMPLE}-common.contigs >> ${SAMPLE}-recal.contigs
+grep "^[0-9][0-9]$" ${SAMPLE}-common.contigs >> ${SAMPLE}-recal.contigs
+grep "^chr[0-9][0-9]$" ${SAMPLE}-common.contigs >> ${SAMPLE}-recal.contigs
+
+# Calculate covariates for statistical error profile over the above assembly contigs.
 if [ ! -e ${SAMPLE}.recal ];
 then
   # Determine error profile: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_BaseRecalibrator.php
-  cat recal.contigs \
+  > ${SAMPLE}-files.list
+  cat ${SAMPLE}-recal.contigs \
     | xargs -IZ -P${CORES} sh -c "
       if [ ! -e ${SAMPLE}.Z.recal ]; then \
       gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
@@ -145,20 +155,12 @@ then
       --known-sites ${INDEL2} \
       --known-sites ${YBROWSE} \
       -I ${SAMPLE} -O ${SAMPLE}.Z.recal -L Z ; \
+      echo ${SAMPLE}.Z.recal >> ${SAMPLE}-files.list; \
       fi "
 
-  # Tests show that the male X and Y chromosome covariates differ from the rest of the genome, perhaps due to being phased. (Test this hypothesis on female X later)
-  # Now with YBrowse SNP's added, just use whole primary assembly covariates by default.
-  ls ${SAMPLE}.chr[0-9].recal > chr.list
-  ls ${SAMPLE}.chr[0-9][0-9].recal >> chr.list
-  ls ${SAMPLE}.[0-9].recal >> chr.list
-  ls ${SAMPLE}.[0-9][0-9].recal >> chr.list
-  ls ${SAMPLE}.*X.recal ${SAMPLE}.*Y.recal >> chr.list
-# Use all contigs with this instead
-#  ls ${SAMPLE}.*.recal > chr.list
-  gatk-${GATK}/gatk GatherBQSRReports -I chr.list -O ${SAMPLE}.recal
+  gatk-${GATK}/gatk GatherBQSRReports -I ${SAMPLE}-files.list -O ${SAMPLE}.recal
 
-  # Generate a report showing difference between X and Y chromosome BQSR error covariates for checking.
+  # Generate a report showing difference between X and Y chromosome BQSR error covariates for checking how we're doing.
   gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${SAMPLE}.*X.recal --after ${SAMPLE}.*Y.recal --plots ${SAMPLE}.YvsX.pdf
 fi
 
