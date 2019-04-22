@@ -173,7 +173,11 @@ fi
 # TODO: We can do this in paraller, although copying piecewise BAM's back together will require extra IO.
 if [ ! -e ${BASENAME}.bqsr.bam ];
 then
-  gatk-${GATK}/gatk ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${BASENAME}.bqsr.bam
+  # According to test, using samtools isn't faster but it increases parallerism 2=>3 threads and saves memory from Java
+  mkfifo ${BASENAME}.fifo.sam
+  gatk-${GATK}/gatk ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${BASENAME}.fifo.sam &
+  samtools view -@${CORES} fifo.sam -bo - | tee ${BASENAME}.bqsr.bam | samtools index -@${CORES} - ${BASENAME}.bqsr.bam.bai
+  rm ${BASENAME}.fifo.sam
 fi
 
 # Check for residual error: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_AnalyzeCovariates.php
