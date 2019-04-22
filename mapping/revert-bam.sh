@@ -169,7 +169,10 @@ then
   java -jar picard.jar MarkDuplicates INPUT=${BMAPFILE} OUTPUT=/dev/stdout METRICS_FILE=${SAMPLE}.dup \
     ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
     OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 ${regex} \
-      | samtools sort -T $tmp/${SAMPLE##*/} -@${cores} -m${percoremem}G -l${COMPRESS} -o ${SORTFILE}
+      | java -jar picard.jar FifoBuffer BUFFER_SIZE=2147483645 DEBUG_FREQUENCY=61 \
+      | samtools sort -T $tmp/${SAMPLE##*/} -@${cores} -m${percoremem}G -l${COMPRESS} \
+      | tee ${SORTFILE} \
+      | samtools index -@${cores} - ${SORTFILE%%.bam}.bai
   # set -e and set -o pipefail require bash, so check the final file is intact instead
   if samtools quickcheck ${SORTFILE};
   then
