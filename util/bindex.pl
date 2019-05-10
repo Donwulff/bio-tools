@@ -237,13 +237,13 @@ END
           )
         {
             print "Checking new file: $filename\n";
-            my $md5sum = $self->md5sum;
-            print "$md5sum  $filename\n";
+            $self->{md5sum} = $self->md5sum;
+            print "$self->{md5sum}  $filename\n";
 
             my $sth2 = $dbh->prepare(
 'SELECT filesize, filetime, filename FROM bamfile WHERE md5sum = ?'
             ) || die "prepare: $dbh->errstr()";
-            $sth2->execute($md5sum) || die "execute: $dbh->errstr()";
+            $sth2->execute($self->{md5sum}) || die "execute: $dbh->errstr()";
             if ( my ( $filesize, $filetime, $filename ) = $sth2->fetchrow() ) {
                 print(
 "Found by md5sum: filename $filename, filesize $filesize, filetime $filetime\n"
@@ -256,7 +256,6 @@ END
                   || die "File $filename stat: $@";
                 $self->{filesize} = $fstat->size;
                 $self->{filetime} = $fstat->mtime;
-                $self->{md5sum}   = $md5sum;
 
                 $self->store();
             }
