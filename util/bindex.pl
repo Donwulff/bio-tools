@@ -52,7 +52,6 @@ foreach my $bamfile (@bamfiles) {
     if ( ( $md5sum, $filesize, $filetime ) = $sth->fetchrow() ) {
         if ( $bam->changed ) {
             if (   ( 0 == $filesize )
-                || ( 4294967295 == $filesize )
                 || ( 0 == $filetime ) )
             {
               # Get file properties for determining if it's still the same size.
@@ -157,11 +156,6 @@ sub md5sum {
 
     while ( -l $filename ) { $filename = abs_path($filename) }
 
-    if ( !defined $md5sum ) {
-
-        #        $self->load();
-    }
-
     if ( ( !defined $md5sum ) && ( defined $filename ) ) {
         $md5sum = file_md5_hex($filename);
     }
@@ -219,7 +213,7 @@ sub load {
 
         my $sth = $dbh->prepare(
             <<END
-SELECT b.md5sum, filesize, unix_timestamp(filetime)
+SELECT b.md5sum, b.filesize, unix_timestamp(b.filetime)
     FROM alias a
         RIGHT OUTER JOIN bamfile b
             ON a.md5sum = b.md5sum
@@ -266,19 +260,39 @@ END
         $sth->finish();
 
   # Update the path alias whether it existed or not, so we can spot stale names.
-        $sth =
-          $dbh->prepare(
-            'REPLACE INTO alias (md5sum, filename, symlink) VALUES ( ?, ?, ? )')
-          || die "prepare: $dbh->errstr()";
-        $filename = undef if ( not -l $self->{filename} );
-        $sth->execute( $self->{md5sum}, $self->{filename}, $filename )
-          || die "execute: $dbh->errstr()";
-        $sth->finish();
+        $self->update_alias();
 
         return -1;
     }
 
     return 0;
+}
+
+=head2 store_alias
+
+Store current object into the file name alias list.
+
+=cut
+
+sub update_alias {
+    my $self = shift;
+
+    my $dbh      = $self->{dbh};
+    my $filename = $self->{filename};
+    my $md5sum   = $self->{md5sum};
+    my $filetime = $self->{filetime};
+
+    while ( -l $filename ) { $filename = abs_path($filename) }
+    $sth =
+      $dbh->prepare(
+'REPLACE INTO alias (md5sum, filename, filetime, symlink) VALUES ( ?, ?, from_unixtime(?), ? )'
+      ) || die "prepare: $dbh->errstr()";
+    $filename = undef if ( not -l $self->{filename} );
+    $sth->execute( $md5sum, $self->{filename}, $filetime, $filename )
+      || die "execute: $dbh->errstr()";
+    $sth->finish();
+
+    return -1;
 }
 
 =head2 store
