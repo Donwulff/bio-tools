@@ -35,12 +35,6 @@ foreach my $bamfile (@bamfiles) {
 
     # What if it no longer exists?
     next if ( -d $bamfile );
-
-    # Process symlinks later.
-    next if ( -l $bamfile );
-
-    #    $bamfile = readlink($bamfile) if (-l $bamfile);
-
     next if ( not -e $bamfile );
 
     #    print "Processing $bamfile\n";
@@ -87,6 +81,7 @@ use DBD::mysql;
 use Digest::MD5::File qw(file_md5_hex);
 use File::stat;
 use Data::Dumper;
+use Cwd qw(abs_path);
 
 =head1 NAME
 
@@ -160,6 +155,8 @@ sub md5sum {
     my $md5sum   = $self->{md5sum};
     my $filename = $self->{filename};
 
+    while ( -l $filename ) { $filename = abs_path($filename) }
+
     if ( !defined $md5sum ) {
 
         #        $self->load();
@@ -217,6 +214,9 @@ sub load {
     if ( defined $filename ) {
 
         # Retrieve file identification data for the file, considering aliases
+
+        while ( -l $filename ) { $filename = abs_path($filename) }
+
         my $sth = $dbh->prepare(
             <<END
 SELECT b.md5sum, filesize, unix_timestamp(filetime)
@@ -228,7 +228,7 @@ END
         ) || die "prepare: $dbh->errstr()";
         $sth->execute($filename) || die "execute: $dbh->errstr()";
 
-      # If file path doesn't exist in database, check if it exists elsewhere by same md5sum.
+# If file path doesn't exist in database, check if it exists elsewhere by same md5sum.
         if (
             !(
                 ( $self->{md5sum}, $self->{filesize}, $self->{filetime} ) =
@@ -236,18 +236,20 @@ END
             )
           )
         {
-            print "Checking new file: $filename\n";
+            print "Checking new file: $self->{filename}\n";
             $self->{md5sum} = $self->md5sum;
-            print "$self->{md5sum}  $filename\n";
+            print "$self->{md5sum}  $self->{filename}\n";
 
             my $sth2 = $dbh->prepare(
-'SELECT filesize, filetime, filename FROM bamfile WHERE md5sum = ?'
+'SELECT filesize, unix_timestamp(filetime), filename FROM bamfile WHERE md5sum = ?'
             ) || die "prepare: $dbh->errstr()";
             $sth2->execute( $self->{md5sum} ) || die "execute: $dbh->errstr()";
             if ( my ( $filesize, $filetime, $filename ) = $sth2->fetchrow() ) {
                 print(
 "Found by md5sum: filename $filename, filesize $filesize, filetime $filetime\n"
                 );
+                $self->{filesize} = $filesize;
+                $self->{filetime} = $filetime;
             }
             else {
 
@@ -263,11 +265,13 @@ END
         }
         $sth->finish();
 
-        # Update the path alias whether it existed or not, so we can spot stale names.
+  # Update the path alias whether it existed or not, so we can spot stale names.
         $sth =
-          $dbh->prepare('REPLACE INTO alias (md5sum, filename) VALUES ( ?, ? )')
+          $dbh->prepare(
+            'REPLACE INTO alias (md5sum, filename, symlink) VALUES ( ?, ?, ? )')
           || die "prepare: $dbh->errstr()";
-        $sth->execute( $self->{md5sum}, $self->{filename} )
+        $filename = undef if ( not -l $self->{filename} );
+        $sth->execute( $self->{md5sum}, $self->{filename}, $filename )
           || die "execute: $dbh->errstr()";
         $sth->finish();
 
