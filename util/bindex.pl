@@ -243,7 +243,7 @@ END
             my $sth2 = $dbh->prepare(
 'SELECT filesize, filetime, filename FROM bamfile WHERE md5sum = ?'
             ) || die "prepare: $dbh->errstr()";
-            $sth2->execute($self->{md5sum}) || die "execute: $dbh->errstr()";
+            $sth2->execute( $self->{md5sum} ) || die "execute: $dbh->errstr()";
             if ( my ( $filesize, $filetime, $filename ) = $sth2->fetchrow() ) {
                 print(
 "Found by md5sum: filename $filename, filesize $filesize, filetime $filetime\n"
@@ -276,6 +276,12 @@ END
     return 0;
 }
 
+=head2 store
+
+Store the bamfile object into database; currently insert only to notice errors.
+
+=cut
+
 sub store {
     my $self = shift;
 
@@ -291,6 +297,8 @@ sub store {
     $sth->execute( $md5sum, $filesize, $filetime, $filename )
       || die "execute: $dbh->errstr()";
     $sth->finish();
+
+    return -1;
 }
 
 1;
