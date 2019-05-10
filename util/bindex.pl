@@ -37,7 +37,7 @@ foreach my $bamfile (@bamfiles) {
     next if ( -d $bamfile );
 
     # Process symlinks later.
-    #next if ( -l $bamfile );
+    next if ( -l $bamfile );
 
     #    $bamfile = readlink($bamfile) if (-l $bamfile);
 
@@ -216,7 +216,7 @@ sub load {
 
     if ( defined $filename ) {
 
-        # Retrieve file identification data for the file.
+        # Retrieve file identification data for the file, considering aliases
         my $sth = $dbh->prepare(
             <<END
 SELECT b.md5sum, filesize, unix_timestamp(filetime)
@@ -228,7 +228,7 @@ END
         ) || die "prepare: $dbh->errstr()";
         $sth->execute($filename) || die "execute: $dbh->errstr()";
 
-      # File path doesn't exist in database, check if it exists by another path.
+      # If file path doesn't exist in database, check if it exists elsewhere by same md5sum.
         if (
             !(
                 ( $self->{md5sum}, $self->{filesize}, $self->{filetime} ) =
@@ -263,6 +263,7 @@ END
         }
         $sth->finish();
 
+        # Update the path alias whether it existed or not, so we can spot stale names.
         $sth =
           $dbh->prepare('REPLACE INTO alias (md5sum, filename) VALUES ( ?, ? )')
           || die "prepare: $dbh->errstr()";
