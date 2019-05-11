@@ -41,6 +41,10 @@ foreach my $bamfile (@bamfiles) {
 
     my $bam = Bamfile->new( dbh => $dbh, filename => $bamfile );
 
+    # It's possible to load in pre-calculated MD5SUM's for example with:
+    # LOAD DATA INFILE '/tmp/md5sum.lst' IGNORE INTO TABLE bamfile COLUMNS TERMINATED BY '  ' (md5sum,filename);
+    # In which case this code will fill in the filesize & time.
+
     # Retrieve file identification data for found file.
     my $sth = $dbh->prepare(
 'SELECT md5sum, filesize, unix_timestamp(filetime) FROM bamfile WHERE filename = ?'
@@ -54,7 +58,7 @@ foreach my $bamfile (@bamfiles) {
             if (   ( 0 == $filesize )
                 || ( 0 == $filetime ) )
             {
-              # Get file properties for determining if it's still the same size.
+              # Get file properties for updating them in the database.
                 my $fstat = stat($bamfile) || die "File $bamfile stat: $@";
 
                 my $sth2 = $dbh->prepare(
@@ -282,13 +286,18 @@ sub update_alias {
     my $md5sum   = $self->{md5sum};
     my $filetime = $self->{filetime};
 
-    while ( -l $filename ) { $filename = abs_path($filename) }
+    my $realfile;
+    if ( -l $self->{filename} ) {
+        $realfile = $filename;
+        while ( -l $realfile ) { $realfile = abs_path($realfile) }
+    }
+
+    # Profiling shows REPLACE and ON DUPLICATE KEY are as fast in this case.
     $sth =
       $dbh->prepare(
-'REPLACE INTO alias (md5sum, filename, filetime, symlink) VALUES ( ?, ?, from_unixtime(?), ? )'
+'INSERT INTO alias (md5sum, filename, filetime, symlink) VALUES ( ?, ?, from_unixtime(?), ? ) ON DUPLICATE KEY UPDATE modified=NOW()'
       ) || die "prepare: $dbh->errstr()";
-    $filename = undef if ( not -l $self->{filename} );
-    $sth->execute( $md5sum, $self->{filename}, $filetime, $filename )
+    $sth->execute( $md5sum, $filename, $filetime, $realfile )
       || die "execute: $dbh->errstr()";
     $sth->finish();
 
