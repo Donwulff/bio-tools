@@ -18,62 +18,70 @@ Yeah.
 
 =cut
 
-my $dbh = DBI->connect( 'DBI:mysql:biofiles', 'biofiles', '' )
-  || die "Error connection to biofiles: $@";
+main();
+
+sub main {
+
+    my $dbh = DBI->connect( 'DBI:mysql:biofiles', 'biofiles', '' )
+      || die "Error connection to biofiles: $@";
 
 # We have no state, so we could easily reconnect, but for now half hour should be enough.
-my $sth = $dbh->prepare('SET wait_timeout = 1800')
-  || die "prepare: $dbh->errstr()";
-$sth->execute() || die "execute: $dbh->errstr()";
-$sth->finish();
+    my $sth = $dbh->prepare('SET wait_timeout = 1800')
+      || die "prepare: $dbh->errstr()";
+    $sth->execute() || die "execute: $dbh->errstr()";
+    $sth->finish();
 
 # Use mlocate to find files of interest; report symlinks as files, check that file still exists and is readable and use regex.
-my @bamfiles = `/usr/bin/locate -Per '\\.bam\$'`;
-
-foreach my $bamfile (@bamfiles) {
-    chomp($bamfile);
-
-    # What if it no longer exists?
-    next if ( -d $bamfile );
-    next if ( not -e $bamfile );
-
-    #    print "Processing $bamfile\n";
-
-    my $bam = Bamfile->new( dbh => $dbh, filename => $bamfile );
-
-    # It's possible to load in pre-calculated MD5SUM's for example with:
-    # LOAD DATA INFILE '/tmp/md5sum.lst' IGNORE INTO TABLE bamfile COLUMNS TERMINATED BY '  ' (md5sum,filename);
-    # In which case this code will fill in the filesize & time.
+    my @bamfiles = `/usr/bin/locate -Per '\\.bam\$'`;
 
     # Retrieve file identification data for found file.
     my $sth = $dbh->prepare(
 'SELECT md5sum, filesize, unix_timestamp(filetime) FROM bamfile WHERE filename = ?'
     ) || die "prepare: $dbh->errstr()";
-    $sth->execute($bamfile) || die "execute: $dbh->errstr()";
 
-    # If file exists in database, make sure it hasn't changed.
-    my ( $md5sum, $filesize, $filetime, $filename );
-    if ( ( $md5sum, $filesize, $filetime ) = $sth->fetchrow() ) {
-        if ( $bam->changed ) {
-            if (   ( 0 == $filesize )
-                || ( 0 == $filetime ) )
-            {
-              # Get file properties for updating them in the database.
-                my $fstat = stat($bamfile) || die "File $bamfile stat: $@";
-
-                my $sth2 = $dbh->prepare(
+    # Update filesize and timestamp of a file in db.
+    my $sth2 = $dbh->prepare(
 'UPDATE bamfile SET filesize = ?, filetime = from_unixtime(?) WHERE md5sum = ?'
-                ) || die "prepare: $dbh->errstr()";
-                $sth2->execute( $fstat->size, $fstat->mtime, $md5sum )
-                  || die "execute: $dbh->errstr()";
-                $sth2->finish();
+    ) || die "prepare: $dbh->errstr()";
+
+    foreach my $bamfile (@bamfiles) {
+        chomp($bamfile);
+
+        # What if it no longer exists?
+        next if ( -d $bamfile );
+        next if ( not -e $bamfile );
+
+        #    print "Processing $bamfile\n";
+        my $bam = Bamfile->new( dbh => $dbh, filename => $bamfile );
+
+# It's possible to load in pre-calculated MD5SUM's for example with:
+# LOAD DATA INFILE '/tmp/md5sum.lst' IGNORE INTO TABLE bamfile COLUMNS TERMINATED BY '  ' (md5sum,filename);
+# In which case this code will fill in the filesize & time.
+
+        # Retrieve file identification data for found file.
+        $sth->execute($bamfile) || die "execute: $dbh->errstr()";
+
+        # If file exists in database, make sure it hasn't changed.
+        my ( $md5sum, $filesize, $filetime, $filename );
+        if ( ( $md5sum, $filesize, $filetime ) = $sth->fetchrow() ) {
+            if ( $bam->changed ) {
+                if (   ( 0 == $filesize )
+                    || ( 0 == $filetime ) )
+                {
+                    # Get file properties for updating them in the database.
+                    my $fstat = stat($bamfile) || die "File $bamfile stat: $@";
+                    $sth2->execute( $fstat->size, $fstat->mtime, $md5sum )
+                      || die "execute: $dbh->errstr()";
+                }
             }
         }
     }
-    $sth->finish();
-}
 
-$dbh->disconnect();
+    $sth2->finish();
+    $sth->finish();
+
+    $dbh->disconnect();
+}
 
 package Bamfile;
 
@@ -293,7 +301,7 @@ sub update_alias {
     }
 
     # Profiling shows REPLACE and ON DUPLICATE KEY are as fast in this case.
-    $sth =
+    my $sth =
       $dbh->prepare(
 'INSERT INTO alias (md5sum, filename, filetime, symlink) VALUES ( ?, ?, from_unixtime(?), ? ) ON DUPLICATE KEY UPDATE modified=NOW()'
       ) || die "prepare: $dbh->errstr()";
