@@ -57,7 +57,7 @@ bwa mem -x intractg -t4 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna addition
   | samtools view - \
   | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.map
 
-zcat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz hg38Patch11.fa.gz GRCh38patch12.fa.gz hla_gen.fasta.gz > hg38-p13-all.fa
-cat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.alt additional_hg38_contigs.map > hg38-p13-all.fa.alt
+zcat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38-p13-ball.fa
+cat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.alt additional_hg38_contigs.map > hg38-p13-ball.fa.alt
 
-bwa index hg38-p13-all.fa
+bwa index hg38-p13-ball.fa
