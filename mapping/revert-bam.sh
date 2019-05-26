@@ -198,7 +198,7 @@ then
       | java -jar picard.jar FifoBuffer BUFFER_SIZE=2147483645 DEBUG_FREQUENCY=61 \
       | samtools sort -T $tmp/${SAMPLE##*/} -@${cores} -m${percoremem}G -l${COMPRESS} \
       | tee ${SORTFILE} \
-      | samtools index -@${cores} - ${SORTFILE%%.bam}.bai
+      | samtools index -@${cores} - ${SORTFILE}.bai
   else
     # This took 8:20 vs. 6:17 on 4 cores, before running out of memory in index generation. Spark temp file space about 2X BAM, lots of IO.
     # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_spark_transforms_markduplicates_MarkDuplicatesSpark.php
