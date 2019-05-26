@@ -1,31 +1,43 @@
 #!/bin/sh
 
 # Tested to work on Windows 10 WSL Ubuntu & Ubuntu Xenial
-# Leaves nh and qf tags in BigY BAM; they seem properietary
 # If if bwa index reference exists (f.e. bwakit), simple mapping is performed
-# Mapping requires significantly more storage space, currently not checked
+# Mapping requires significantly more storage space
 
 # DEPENDENCIES: gawk; modern java; samtools (htslib) and bwa + index from bwakit if mapping
+# Consider using Intel or CloudFlare zlib on Intel machines for performance
+# https://github.com/jtkukunas/zlib             https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2723002/ https://doi.org/10.1093/bioinformatics/btq671
+# https://github.com/samtools/htslib            https://www.biorxiv.org/content/10.1101/397935v1
+# https://github.com/samtools/samtools          https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2723002/
+# https://github.com/lh3/bwa                    http://arxiv.org/abs/1303.3997                        https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5155401/
+# https://github.com/lh3/bwa/tree/master/bwakit https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5522380/ https://twitter.com/lh3lh3/status/1073772500838944768
 
 # Some BigY bam files have Casava 1.8 data in the bam read column; not sure what to do with this as it's in the original bam.
 # This script preserves it in unmapped bam and filters it out before processing, but the extra space and Casava header can be cleaned up with:
 # (samtools view -H sample1.bam; samtools view sample1.bam | awk '{ OFS="\t"; split($1,q," "); $1=q[1]; print }') | samtools view -b -o sample1.cleaned.bam
 
-# File locations
+# File locations; note that these keep the path of the input file
 SAMPLE=${1:-sample1.bam}
 BASENAME=${SAMPLE%%.bam}
 UBAMFILE=${BASENAME}.unmapped.bam
 BMAPFILE=${BASENAME}.bwamem.bam
 SORTFILE=${BASENAME}.sorted.bam
 
+# Which reference genome to use: https://lh3.github.io/2017/11/13/which-human-reference-genome-to-use
+# Heng Li, author of bwa mem and blog entry updated bwakit's hs38DH a year later, so it can be considered recommended
 REF=hs38DH.fa
+
+# Set compression level for output BAM files, higher if you archive them, lower if you have storage
+# http://www.htslib.org/benchmarks/zlib.html https://blog.cloudflare.com/cloudflare-fights-cancer/
 COMPRESS=5
+
 # Currently gets and runs MarkDuplicatesSpark multi-threaded instead of Picard MarkDuplicates flow.
 GATK_SPARK=4.1.2.0
+
 # Don't delete bwa-mem mapped, raw, unsorted BAM file. Useful if you intend to test different processing.
 KEEP_TEMPORARY=True
 
-# Extra options for BWA, ie. long reads with "-x pacbio" etc.
+# Extra options for BWA, ie. long reads with "-x pacbio" etc. http://bio-bwa.sourceforge.net/bwa.shtml
 BWAOPT=
 
 # Ref: https://gatkforums.broadinstitute.org/gatk/discussion/6484
@@ -34,20 +46,21 @@ BWAOPT=
 # Any paired reads file subset for a genomic interval requires sanitizing to remove reads with lost mates that align outside of the interval.
 SANITIZE=true
 
-# Trim sequencing adapters exactly using paired end read overlap; disableother trimming
-# Reference: https://www.ncbi.nlm.nih.gov/pubmed/30423086
+# Trim sequencing adapters exactly using paired end read overlap for all sequencers; disable other trimming
+# Reference: https://www.ncbi.nlm.nih.gov/pubmed/30423086 Get and build it from https://github.com/OpenGene/fastp
 if which fastp > /dev/null;
 then
   FILTER="| fastp -QLGp --stdin --stdout --interleaved_in -j ${BASENAME}.fastp.json -h ${BASENAME}.fastp.html -R \"fastp report on ${BASENAME}\""
 fi
 
-# Cores and memory
+# Replace this with fixed thread count if you have limited memory or need to reserve CPU threads
+cores=`nproc`
+# Find out how much memory we have available; you can override java heap on cmdline if you need disk cache, other processes
 totalmem=`LC_ALL=C free | grep -e "^Mem:" | gawk '{print $7}'`
 # Allow 2 gigabytes for runtime
 javamem=${2:-$((totalmem/1024/1024-2))}
 # https://sourceforge.net/p/picard/wiki/Main_Page/#q-a-picard-program-that-sorts-its-output-sambam-file-is-taking-a-very-long-time-andor-running-out-of-memory-what-can-i-do
 bamrecords=$((javamem*250000))
-cores=`nproc`
 # From Java 6 update 18 max. heap is 1/4th of physical memory, so we can split 3/4th between cores for sorting.
 percoremem=$((javamem*3/4/cores))
 
@@ -118,6 +131,10 @@ check_space ()
   fi
 }
 
+# https://software.broadinstitute.org/gatk/documentation/tooldocs/current/picard_sam_RevertSam.php
+# See https://gatkforums.broadinstitute.org/gatk/discussion/6484/how-to-generate-an-unmapped-bam-from-fastq-or-aligned-bam option B
+# The idea is to remove/revert any tags which would interfere or get recreated by workflow; tags which can't be regenerated can stay
+# Leaves nh and qf tags in BigY BAM; they seem properietary
 if [ ! -e ${UBAMFILE} ];
 then
   check_space ${UBAMFILE}
@@ -139,9 +156,9 @@ then
     RESTORE_ORIGINAL_QUALITIES=true \
     REMOVE_DUPLICATE_INFORMATION=true \
     REMOVE_ALIGNMENT_INFORMATION=true \
-    MAX_RECORDS_IN_RAM=$bamrecords \
+    MAX_RECORDS_IN_RAM=${bamrecords} \
     COMPRESSION_LEVEL=${COMPRESS} \
-    TMP_DIR=$tmp
+    TMP_DIR=${tmp}
 fi
 
 # WARNING: This is NOT according to the Broad Institute GATK 4.0 Best Practices, but leaving it here for reference
@@ -162,7 +179,8 @@ then
     fi
   fi
 
-  # Uses .hdr file also as a flag of whether mapping finished, in case we restart
+  # Uses .hdr file also as a flag of whether mapping finished, in case we restart script
+  # This should probably be "|| [ -e ..." but sometimes I don't want to overwrite partial
   if [ ! -e ${BMAPFILE} ] && [ ! -e ${UBAMFILE}.hdr ];
   then
     check_space ${BMAPFILE}
@@ -184,21 +202,24 @@ then
       | bwa mem ${BWAOPT} -p -t ${cores} -M -C -H ${UBAMFILE}.hdr ${REF} - \
       | samtools view -b -o ${BMAPFILE}
     rm ${UBAMFILE}.hdr
+  else
+    echo "############ ${BMAPFILE} or ${UBAMFILE}.hdr exists, so skipping mapping"
   fi
 
   echo "############ Marking duplicates and chromosome order sorting ${UBAMFILE} into ${SORTFILE}"
   check_space ${SORTFILE}
 
   # Unfortunately, MarkDuplicates seeks back to beginning of the input BAM so mapping can't just be piped in
+  # See https://software.broadinstitute.org/gatk/documentation/article?id=6747 for OPTICAL_DUPLICATE_PIXEL_DISTANCE and regex
   if [ -z "${GATK_SPARK}" ];
   then
-  java -jar picard.jar MarkDuplicates INPUT=${BMAPFILE} OUTPUT=/dev/stdout METRICS_FILE=${SAMPLE}.dup \
-    ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
-    OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 ${regex} \
-      | java -jar picard.jar FifoBuffer BUFFER_SIZE=2147483645 DEBUG_FREQUENCY=61 \
-      | samtools sort -T $tmp/${SAMPLE##*/} -@${cores} -m${percoremem}G -l${COMPRESS} \
-      | tee ${SORTFILE} \
-      | samtools index -@${cores} - ${SORTFILE}.bai
+    java -jar picard.jar MarkDuplicates INPUT=${BMAPFILE} OUTPUT=/dev/stdout METRICS_FILE=${SAMPLE}.dup \
+      ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
+      OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 ${regex} \
+        | java -jar picard.jar FifoBuffer BUFFER_SIZE=2147483645 DEBUG_FREQUENCY=61 \
+        | samtools sort -T $tmp/${SAMPLE##*/} -@${cores} -m${percoremem}G -l${COMPRESS} \
+        | tee ${SORTFILE} \
+        | samtools index -@${cores} - ${SORTFILE}.bai
   else
     # This took 8:20 vs. 6:17 on 4 cores, before running out of memory in index generation. Spark temp file space about 2X BAM, lots of IO.
     # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_spark_transforms_markduplicates_MarkDuplicatesSpark.php
