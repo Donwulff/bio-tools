@@ -228,7 +228,7 @@ then
     rm -rf ${tmp}/MDS
     mkdir -p ${tmp}/MDS
     gatk-${GATK_SPARK}/gatk --java-options "-Xmx${javamem}G -Dsamjdk.compression_level=${COMPRESS}" MarkDuplicatesSpark -I ${BMAPFILE} -O ${SORTFILE} -M ${SAMPLE}.dup \
-      --duplicate-tagging-policy All --tmp-dir ${tmp}/MDS --output-shard-tmp-dir ${tmp}/MDS/${SAMPLE##./}.parts --optical-duplicate-pixel-distance 2500 ${regex} 2>&1 \
+      --duplicate-tagging-policy All --tmp-dir ${tmp}/MDS --output-shard-tmp-dir ${tmp}/MDS/${SAMPLE##*/}.parts --optical-duplicate-pixel-distance 2500 ${regex} 2>&1 \
         | grep -Ev "INFO (Executor|NewHadoopRDD|ShuffleBlockFetcherIterator|SparkHadoopMapRedUtil|FileOutputCommitter):" --line-buffered
     # At least for me, the index file generation fails even with enough memory, so let's just generate it for now.
     samtools index -@${cores} ${SORTFILE}
