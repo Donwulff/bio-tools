@@ -71,15 +71,28 @@ If marking all the duplicates is sgnificant for your workflow, uBAM seems curren
 * Temporary files can be directed to a fast disk
 * MarkDuplicates or MarkDuplicatesSpark depending on needs
 * Configure output compression level according to BAM file intent
+* Stages are piped without unneccessary I/O where possible
+* Uses samtools for fast parallel compression and indexing
 
 ### BQSR.sh - Base Quality Score Recalibration
+Broad Institute BQSR: https://software.broadinstitute.org/gatk/documentation/article?id=11081
+
 Sequencing machines generate accuracy likelihood for each nucleotide base sequenced, called Base Quality Score.
 Each sequencing machine, and flowcell (location on the sequencing machine) has unique profile of errors depending on context.
 BQSR excludes lists of common genetic variation and creates an context-dependent error profile for the sequence.
 It then uses this empirically created error profile to calibrate all the base quality scores of each read.
 Most sequencing comapanies return raw BAM from before the BQSR is ran, so you may not need to run it for third party analysis.
+BQSR may not always be beneficial: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5048557/
 
 Analysis is done split to chromosomes, but writing output is yet done sequentially to avoid I/O of concatenating chromosomes.
+
+#### Known variant sites to filter out
+https://software.broadinstitute.org/gatk/documentation/article.php?id=1247
+
+Due to interested in Y chromosome phylogeny (https://www.yfull.com/ etc.) this script grabs International Society of Genetic 
+Genealogy https://isogg.org/ YBrowse https://ybrowse.org Y variant list by YSEQ https://www.yseq.net/ to augment known sites 
+for Y chromosome. For Y-targeted sequencing like BigY https://www.familytreedna.com/products/y-dna or Y Elite https://www.fullgenomes.com/
+Y chromosome is also our ONLY source of sequencing error profile.
 
 #### Some statistics on WGS run:
 AMD 4x 3.1Ghz: 4:45 h to construct model, 8:50 h to apply it single-threaded (Standard zlib)
@@ -90,9 +103,14 @@ I had to interrupt the alignment run, and only after running BQSR remembered sam
 will create new read group & program groups for collisions. However, this shows the latter 2/3rds of the second read group 
 has empirically much higher error rate than the first third. Flowcell runtime as a covariate? Maybe, but note that the
 EstimatedQReported is somewhat down too so the sequencer already knows it's less reliable.
+
 https://github.com/Donwulff/bio-tools/blob/master/results/BGISEQ-500_PE100.sorted.bam.pdf
+
+Note the blue dots are not quite flat, so significant residual error not explained by the existing covariates still exists.
+
 Insert size is another self-evident covariant, but a recent paper put it down to science:
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6393434/
+
 Unfortunately GATK doesn't currently support these covariates, but I'd like to see how much of error they explain.
 
 ### GRCh38_bwa_index.sh
