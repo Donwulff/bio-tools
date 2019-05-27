@@ -82,6 +82,7 @@ Each sequencing machine, and flowcell (location on the sequencing machine) has u
 BQSR excludes lists of common genetic variation and creates an context-dependent error profile for the sequence.
 It then uses this empirically created error profile to calibrate all the base quality scores of each read.
 Most sequencing comapanies return raw BAM from before the BQSR is ran, so you may not need to run it for third party analysis.
+
 BQSR may not always be beneficial: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5048557/
 
 Analysis is done split to chromosomes, but writing output is yet done sequentially to avoid I/O of concatenating chromosomes.
@@ -89,10 +90,28 @@ Analysis is done split to chromosomes, but writing output is yet done sequential
 #### Known variant sites to filter out
 https://software.broadinstitute.org/gatk/documentation/article.php?id=1247
 
+Note you need different known variant lists for different reference genome builds. I'm working on hg38 only currently.
+
 Due to interested in Y chromosome phylogeny (https://www.yfull.com/ etc.) this script grabs International Society of Genetic 
 Genealogy https://isogg.org/ YBrowse https://ybrowse.org Y variant list by YSEQ https://www.yseq.net/ to augment known sites 
 for Y chromosome. For Y-targeted sequencing like BigY https://www.familytreedna.com/products/y-dna or Y Elite https://www.fullgenomes.com/
 Y chromosome is also our ONLY source of sequencing error profile.
+
+In this BQSR report, black dots indicate the error covariates for the whole genome, or the error profile that is.
+The red dots indicate the same error covariates for X chromosome (Haploid male chromosome). The blue dots, which indicate
+error covariates for Y chromosome are something else entirely.
+
+https://github.com/Donwulff/bio-tools/blob/master/results/DanteLabs_PE100.sorted.bam.YvsX.pdf
+
+The Y chromosome is difficult to sequence due to being largely heterochromatin and repeats. From the technical principles of
+BQSR there is reason to think that the error profile over the rest of the genome is the correct one (The genome sequencer,
+after all, does not know it's sequencing Y chromosome and the technical underpinnings should be the same). This means that 
+BQSR likely over-estimates the error over Y chromosome, and for Y-targeted sequencing like Big Y and Y Elite which don't 
+have other chromosomes the impact may be significant. Since women do not possess Y chromosome, it may also lead to sex-biased
+error profiles. You need to evaluate whether to include Y chromosome in the error profile. By default I've included it, because 
+it may smooth out error due to some covariates in BigY/Y Elite.
+
+Difficulty of sequencing Y chromosome: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC138936/
 
 #### Some statistics on WGS run:
 AMD 4x 3.1Ghz: 4:45 h to construct model, 8:50 h to apply it single-threaded (Standard zlib)
@@ -106,6 +125,7 @@ EstimatedQReported is somewhat down too so the sequencer already knows it's less
 
 https://github.com/Donwulff/bio-tools/blob/master/results/BGISEQ-500_PE100.sorted.bam.pdf
 
+Here red and blue are error covariates of Chromosome 20 only (To save time) before and after applying the whole-genome BQSR.
 Note the blue dots are not quite flat, so significant residual error not explained by the existing covariates still exists.
 
 Insert size is another self-evident covariant, but a recent paper put it down to science:
