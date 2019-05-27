@@ -11,7 +11,7 @@ Has not been tested with current output files.
 
 ### genos_annotate.sh
 Genos Research provided exome VCF's have weird format which cointains NT=Not Targeted Regions and NC=No Call.
-This script is intended to merge thhe Genos Research VCF with the variants in dbSNP to fill in ref-calls.
+This script is intended to merge the Genos Research VCF with the variants in dbSNP to fill in ref-calls.
 Different bcftools have had different behavior for merging SNP's, so this needs to be tested.
 Two different merges are attempted, one for multiallelic and one for separate calls.
 After merging, output is annotated with CADD and MCAP pathogenity values.
@@ -24,7 +24,7 @@ This script assumes you have only one BigY VCF zip in your Windows download fold
 
 ### combine_tests.sh
 
-### yoruban_to_rcrs.sh
+### yoruban_to_rcrs.sh - Yoruban YRI mtDNA reference VCF to rCRS calls converter
 
 ## mapping - BAM file mapping and processing
 
@@ -72,7 +72,12 @@ If marking all the duplicates is sgnificant for your workflow, uBAM seems curren
 * MarkDuplicates or MarkDuplicatesSpark depending on needs
 * Configure output compression level according to BAM file intent
 * Stages are piped without unneccessary I/O where possible
+* Input BAM headers and tags are lifted over directly during alignment
 * Uses samtools for fast parallel compression and indexing
+
+#### Performance comparisons
+
+AMD 4x 3.1 Ghz Alignment phase: 44:00 h MarkDuplicatesSpark: 8:20 h OR MarkDuplicates: 6:17 h (Standard zlib)
 
 ### BQSR.sh - Base Quality Score Recalibration
 Broad Institute BQSR: https://software.broadinstitute.org/gatk/documentation/article?id=11081
@@ -113,7 +118,7 @@ it may smooth out error due to some covariates in BigY/Y Elite.
 
 Difficulty of sequencing Y chromosome: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC138936/
 
-#### Some statistics on WGS run:
+#### Some performance statistics on WGS run:
 AMD 4x 3.1Ghz: 4:45 h to construct model, 8:50 h to apply it single-threaded (Standard zlib)
 Preserve original qualities: 164GiB, otherwise 103GiB
 
@@ -133,8 +138,13 @@ https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6393434/
 
 Unfortunately GATK doesn't currently support these covariates, but I'd like to see how much of error they explain.
 
-### GRCh38_bwa_index.sh
+### GRCh38_bwa_index.sh - EXPERIMENTAL reference genome build script
 
 ## util - Random utilities
 
-### dbSNP_changes.pl
+### bindex.pl - writes BAM file metadata into SQL database, work in progress
+
+### cigar-hist.pl - generates various analysis histograms from BAM file
+
+### dbSNP_changes.pl - list changes between two dbSNP versions in a way that could be parsed to update dbSNP file
+
