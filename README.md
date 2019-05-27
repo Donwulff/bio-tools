@@ -79,6 +79,22 @@ BQSR excludes lists of common genetic variation and creates an context-dependent
 It then uses this empirically created error profile to calibrate all the base quality scores of each read.
 Most sequencing comapanies return raw BAM from before the BQSR is ran, so you may not need to run it for third party analysis.
 
+Analysis is done split to chromosomes, but writing output is yet done sequentially to avoid I/O of concatenating chromosomes.
+
+#### Some statistics on WGS run:
+AMD 4x 3.1Ghz: 4:45 h to construct model, 8:50 h to apply it single-threaded (Standard zlib)
+Preserve original qualities: 164GiB, otherwise 103GiB
+
+#### Accidental covariates?
+I had to interrupt the alignment run, and only after running BQSR remembered samtools merge requires -c -p parameters or it 
+will create new read group & program groups for collisions. However, this shows the latter 2/3rds of the second read group 
+has empirically much higher error rate than the first third. Flowcell runtime as a covariate? Maybe, but note that the
+EstimatedQReported is somewhat down too so the sequencer already knows it's less reliable.
+https://github.com/Donwulff/bio-tools/blob/master/results/BGISEQ-500_PE100.sorted.bam.pdf
+Insert size is another self-evident covariant, but a recent paper put it down to science:
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6393434/
+Unfortunately GATK doesn't currently support these covariates, but I'd like to see how much of error they explain.
+
 ### GRCh38_bwa_index.sh
 
 ## util - Random utilities
