@@ -26,7 +26,7 @@ This script assumes you have only one BigY VCF zip in your Windows download fold
 
 ### yoruban_to_rcrs.sh - Yoruban YRI mtDNA reference VCF to rCRS calls converter
 
-## mapping - BAM file mapping and processing [mapping/README.md]
+## [mapping](mapping) - BAM file mapping and processing
 
 ## util - Random utilities
 
