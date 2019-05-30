@@ -2,6 +2,8 @@
 
 SAMPLE=${1:-sample1.sorted.bam}
 BASENAME=${SAMPLE%%.sorted.bam}
+
+# Genome from BGISEQ-500 paper was 164GiB with this vs. 103GiB without
 BQSR="--emit-original-quals"
 DATA=/mnt/GenomicData
 CORES=`nproc`
@@ -35,6 +37,8 @@ fi
 set -x
 
 # GRCh38 based with chr* chromosomes
+# GATK Best Practices at https://github.com/gatk-workflows/broad-prod-wgs-germline-snps-indels/blob/master/PairedEndSingleSampleWf.hg38.inputs.json
+# dbSNP version is complicated https://gatkforums.broadinstitute.org/gatk/discussion/13138/reference-and-known-input-files-in-gatk-hg38
 REF=${DATA}/GRCh38/hg38.fa
 DBSNP=${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12.GATK.noINFO.vcf.gz
 INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
