@@ -140,7 +140,7 @@ then
   check_space ${UBAMFILE}
 
   echo "############ Reverting ${SAMPLE} into ${UBAMFILE} with Picard Tools"
-  java -Xmx${javamem}G -jar picard.jar RevertSam \
+  time java -Xmx${javamem}G -jar picard.jar RevertSam \
     I=${SAMPLE} \
     O=${UBAMFILE} \
     SANITIZE=${SANITIZE} \
@@ -196,7 +196,7 @@ then
     echo "############ Using BWA MEM to align ${UBAMFILE} against ${REF} into ${BMAPFILE}"
     # Casava 1.8 header, observed s/[12]:[YN]:[0-9]*:[^\/]*\/[12]\t//
     # According to Wikipedia this can also end in barcode or sample-ID, so removing any.
-    samtools fastq -t ${UBAMFILE} \
+    time samtools fastq -t ${UBAMFILE} \
       | eval sed "s/[12]:[YN]:[0-9]*:[^[:space:]]*[[:space:]]//" \
       ${FILTER} \
       | bwa mem ${BWAOPT} -p -t ${cores} -M -C -H ${UBAMFILE}.hdr ${REF} - \
@@ -213,7 +213,7 @@ then
   # See https://software.broadinstitute.org/gatk/documentation/article?id=6747 for OPTICAL_DUPLICATE_PIXEL_DISTANCE and regex
   if [ -z "${GATK_SPARK}" ];
   then
-    java -jar picard.jar MarkDuplicates INPUT=${BMAPFILE} OUTPUT=/dev/stdout METRICS_FILE=${SAMPLE}.dup \
+    time java -jar picard.jar MarkDuplicates INPUT=${BMAPFILE} OUTPUT=/dev/stdout METRICS_FILE=${SAMPLE}.dup \
       ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
       OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 ${regex} \
         | java -jar picard.jar FifoBuffer BUFFER_SIZE=2147483645 DEBUG_FREQUENCY=61 \
@@ -227,11 +227,12 @@ then
     # --bam-partition-size 33554432 is maximum & default
     rm -rf ${tmp}/MDS
     mkdir -p ${tmp}/MDS
-    gatk-${GATK_SPARK}/gatk --java-options "-Xmx${javamem}G -Dsamjdk.compression_level=${COMPRESS}" MarkDuplicatesSpark -I ${BMAPFILE} -O ${SORTFILE} -M ${SAMPLE}.dup \
+    time gatk-${GATK_SPARK}/gatk --java-options "-Xmx${javamem}G -Dsamjdk.compression_level=${COMPRESS}" MarkDuplicatesSpark -I ${BMAPFILE} -O ${SORTFILE} -M ${SAMPLE}.dup \
       --duplicate-tagging-policy All --tmp-dir ${tmp}/MDS --output-shard-tmp-dir ${tmp}/MDS/${SAMPLE##*/}.parts --optical-duplicate-pixel-distance 2500 ${regex} 2>&1 \
         | grep -Ev "INFO (Executor|NewHadoopRDD|ShuffleBlockFetcherIterator|SparkHadoopMapRedUtil|FileOutputCommitter):" --line-buffered
     # At least for me, the index file generation fails even with enough memory, so let's just generate it for now.
-    samtools index -@${cores} ${SORTFILE}
+    mv ${SORTFILE}.bai ${SORTFILE}.bai.bak
+    time samtools index -@${cores} ${SORTFILE}
   fi
   # Contrary to MarkDuplicatesSpark documentation, NM and MD tags look fine, but if you need UQ tags you need to run SetNmMdAndUqTags
   # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/picard_sam_SetNmMdAndUqTags.php
