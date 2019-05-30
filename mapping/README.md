@@ -1,6 +1,6 @@
-## mapping - BAM file mapping and processing
+# Tools for producing analysis-ready BAM files
 
-### revert_bam.sh
+## revert_bam.sh
 Runs Picard Tools on Java to create Broad Institute uBAM (Unmapped BAM) from input BAM.
 Tested to work on Windows 10 WSL Ubuntu & Ubuntu Xenial.
 If bwa index reference exists (f.e. bwakit), simple mapping is performed.
@@ -11,33 +11,34 @@ If you require cluster support, with full GATK Best Practices compliance look in
 https://software.broadinstitute.org/gatk/best-practices/workflow?id=11145
 That said, I believe these scripts to create GATK Best Practices compatible BAM's on single node in very efficient manner.
 
-#### uBAM Pros:
+### uBAM Pros:
 * GATK 4.0 Best Practices examples only support uBAM input
 * Stores read metadata in standard way, in particular read groups
 * RevertSam sanitizes reads and makes sure there are no errors
 * Picard MarkDuplicates new mode requires uBAM sort order
 
-#### uBAM Cons:
+### uBAM Cons:
 * Many quality control and adapter-trimming tools require FASTQ
 * Picard tools isn't multithreaded, so sorting is very slow
 * MarkDuplicates in queryname order can't be split by chromosome order
 * Does not seem to store Illumina Casava 1.8 flags, this should be easy fix
 
-#### Original motivation - new queryname order MarkDuplicates workflow for full duplicate identification
+### Original motivation - new queryname order MarkDuplicates workflow for full duplicate identification
 From Picard MarkDuplicates documentation: "However, when the input is query-sorted (actually query-grouped), then unmapped
 mates and secondary/supplementary reads are not excluded from the duplication test and can be marked as duplicate reads."
 When tested, the implementatiton actually required queryname order, crashing on query-grouped input.
 You could sort the FASTQ files into queryname order, but this would take as much effort as full RevertSam.
-If marking all the duplicates is sgnificant for your workflow, uBAM seems currently best option, even if it's somewhat forced.
+If marking all the duplicates is sgnificant for your workflow, uBAM seems currently best option, even if it's somewhat forced
+by Broad Institute.
 
-#### Automatically handles many situations and issues found in personal genome sequences
+### Automatically handles many situations and issues found in personal genome sequences
 * Automatically detects and removes adapter read-through on any PE sequencing (Dante Labs)
 * Missing platform tag in read group (BigY)
 * CASAVA headers in read names (BigY)
 * Missing read pairs in chromosome-filtered BAM (BigY)
 * Complete Genomics style read-name handling (Dante Labs, Genos Research)
 
-#### Other features
+### Other features
 * Attempts to check and warn about obviously insufficient disk space
 * Automatically uses CPU threads & memory available
 * Temporary files can be directed to a fast disk
@@ -47,11 +48,12 @@ If marking all the duplicates is sgnificant for your workflow, uBAM seems curren
 * Input BAM headers and tags are lifted over directly during alignment
 * Uses samtools for fast parallel compression and indexing
 
-#### Performance comparisons
+### Performance comparisons
 
-AMD 4x 3.1 Ghz Alignment phase: 44:00 h MarkDuplicatesSpark: 8:20 h OR MarkDuplicates: 6:17 h (Standard zlib)
+| System | Zlib | BWA MEM Alignment | MarkDuplicatesSpark | MarkDuplicates |
+| AMD 4x 3.1 Ghz | Standard | 44:00 h | 8:20 h | 6:17 h |
 
-### BQSR.sh - Base Quality Score Recalibration
+## BQSR.sh - Base Quality Score Recalibration
 Broad Institute BQSR: https://software.broadinstitute.org/gatk/documentation/article?id=11081
 
 Sequencing machines generate accuracy likelihood for each nucleotide base sequenced, called Base Quality Score.
@@ -64,7 +66,7 @@ BQSR may not always be beneficial: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC
 
 Analysis is done split to chromosomes, but writing output is yet done sequentially to avoid I/O of concatenating chromosomes.
 
-#### Known variant sites to filter out
+### Known variant sites that are filtered out
 https://software.broadinstitute.org/gatk/documentation/article.php?id=1247
 
 Note you need different known variant lists for different reference genome builds. I'm working on hg38 only currently.
@@ -90,11 +92,11 @@ it may smooth out error due to some covariates in BigY/Y Elite.
 
 Difficulty of sequencing Y chromosome: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC138936/
 
-#### Some performance statistics on WGS run:
+### Some performance statistics on WGS run:
 AMD 4x 3.1Ghz: 4:45 h to construct model, 8:50 h to apply it single-threaded (Standard zlib)
 Preserve original qualities: 164GiB, otherwise 103GiB
 
-#### Accidental covariates?
+### Accidental covariates?
 I had to interrupt the alignment run, and only after running BQSR remembered samtools merge requires -c -p parameters or it 
 will create new read group & program groups for collisions. However, this shows the latter 2/3rds of the second read group 
 has empirically much higher error rate than the first third. Flowcell runtime as a covariate? Maybe, but note that the
@@ -110,4 +112,4 @@ https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6393434/
 
 Unfortunately GATK doesn't currently support these covariates, but I'd like to see how much of error they explain.
 
-### GRCh38_bwa_index.sh - EXPERIMENTAL reference genome build script
+## GRCh38_bwa_index.sh - EXPERIMENTAL reference genome build script
