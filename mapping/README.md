@@ -50,8 +50,9 @@ by Broad Institute.
 
 ### Performance comparisons
 
-| System | Zlib | BWA MEM Alignment | MarkDuplicatesSpark | MarkDuplicates |
-| AMD 4x 3.1 Ghz | Standard | 44:00 h | 8:20 h | 6:17 h |
+| System         | Zlib     | Alignment| MarkDuplicatesSpark | MarkDuplicates |
+|----------------|----------|---------:|--------------------:|---------------:|
+| AMD 4x 3.1 Ghz | Standard |  44:00 h |              8:20 h |         6:17 h |
 
 ## BQSR.sh - Base Quality Score Recalibration
 Broad Institute BQSR: https://software.broadinstitute.org/gatk/documentation/article?id=11081
