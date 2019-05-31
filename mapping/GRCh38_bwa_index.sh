@@ -28,9 +28,13 @@ fi
 
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
+wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.fai
+wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
 
 # University of California Santa Cruz UCSC's contig names used in their Golden Path genome browser have become standard http://genome.ucsc.edu/
 wget -nc http://hgdownload.cse.ucsc.edu/goldenPath/hg38/hg38Patch11/hg38Patch11.fa.gz
+# p12 UCSC names aren't yet in the p12 genome assembly report, so the names in this version are future
+wget -nc ftp://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/p12/hg38.p12.fa.gz
 
 # Genome Reference Consortium https://www.ncbi.nlm.nih.gov/grc/human releases cumulative patches to the latest assembly
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.26_GRCh38.p11/GCA_000001405.26_GRCh38.p11_genomic.fna.gz
@@ -50,6 +54,21 @@ wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 # Convert the HLA FASTA sequence names into the format used by bwa's bwa-kit release and compress it
 sed "s/^>HLA:HLA..... />HLA-/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
 
+## Steps to clean up decoy sequences; generating the bwa index takes quite a while so using it pre-computed
+# cat hg38.p12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
+# bwa index hg38.p12.p13.hla.fa.gz
+# wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
+# bwa mem -k101 hg38.p12.p13.hla.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > GCA_000786075.2_hs38d1_genomic.sam
+# samtools view -f0x4 GCA_000786075.2_hs38d1_genomic.sam | \
+# gawk -v OFS="\t" '{ gsub("\\.","v",$1); $1 = "chrUn_"$1"_decoy"; $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' \
+# GCA_000786075.2_hs38d1_genomic_unmapped.sam
+# cut -f1 GCA_000786075.2_hs38d1_genomic_unmapped.sam > GCA_000786075.2_hs38d1_genomic.list
+## gzip -d GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
+## bgzip GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna
+# samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
+# samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz -r GCA_000786075.2_hs38d1_genomic.list | \
+# bgzip -c > GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz
+
 # There's no documentation for how the bwa alt-file should be constructed. This is just a basic starting point.
 # https://github.com/lh3/bwa/blob/master/README-alt.md
 cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
@@ -57,7 +76,10 @@ bwa mem -x intractg -t4 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna addition
   | samtools view - \
   | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.map
 
-zcat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38-p13-ball.fa
-cat GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.alt additional_hg38_contigs.map > hg38-p13-ball.fa.alt
+zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz \
+     hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38DH-p13.fa
+cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt additional_hg38_contigs.map > hg38DH-p13.fa.alt
 
-bwa index hg38-p13-ball.fa
+bwa index hg38DH-p13.fa
+
+gatk-4.1.2.0/gatk FindBadGenomicKmersSpark -R hg38DH-p13.fa -O hg38DH-p13.fa.txt
