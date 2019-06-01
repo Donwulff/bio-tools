@@ -78,7 +78,7 @@ bwa mem -x intractg -t4 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna addition
 
 zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz \
      hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38DH-p13.fa
-cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt additional_hg38_contigs.map > hg38DH-p13.fa.alt
+cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt GCA_000786075.2_hs38d1_genomic_unmapped.sam additional_hg38_contigs.map > hg38DH-p13.fa.alt
 
 bwa index hg38DH-p13.fa
 
