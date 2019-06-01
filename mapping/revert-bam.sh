@@ -162,8 +162,8 @@ then
       COMPRESSION_LEVEL=${COMPRESS} \
       TMP_DIR=${tmp}
   else
-    rm -rf ${tmp}/RSS
-    mkdir -p ${tmp}/RSS
+    rm -rf ${tmp}/SPARK
+    mkdir -p ${tmp}/SPARK
     echo "############ Reverting ${SAMPLE} into ${UBAMFILE} with GATK Spark"
     time gatk-${GATK_SPARK}/gatk --java-options "-Xmx${javamem}G -Dsamjdk.compression_level=${COMPRESS}" RevertSamSpark \
       -I ${SAMPLE} \
@@ -180,8 +180,8 @@ then
       --dont-restore-original-qualities false \
       --remove-duplicate-information true \
       --keep-alignment-information false \
-      --tmp-dir ${tmp}/RSS \
-      --output-shard-tmp-dir ${tmp}/RSS/${SAMPLE##*/}.parts \
+      --tmp-dir ${tmp}/SPARK \
+      --output-shard-tmp-dir ${tmp}/SPARK/${SAMPLE##*/}.parts \
         | grep -Ev "INFO (Executor|NewHadoopRDD|ShuffleBlockFetcherIterator|SparkHadoopMapRedUtil|FileOutputCommitter):" --line-buffered
   fi
 fi
@@ -250,10 +250,10 @@ then
     # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_spark_transforms_markduplicates_MarkDuplicatesSpark.php
     # Results are indentical, but duplication metrics are less detailed, PG header isn't added.
     # --bam-partition-size 33554432 is maximum & default
-    rm -rf ${tmp}/MDS
-    mkdir -p ${tmp}/MDS
+    rm -rf ${tmp}/SPARK
+    mkdir -p ${tmp}/SPARK
     time gatk-${GATK_SPARK}/gatk --java-options "-Xmx${javamem}G -Dsamjdk.compression_level=${COMPRESS}" MarkDuplicatesSpark -I ${BMAPFILE} -O ${SORTFILE} -M ${SAMPLE}.dup \
-      --duplicate-tagging-policy All --tmp-dir ${tmp}/MDS --output-shard-tmp-dir ${tmp}/MDS/${SAMPLE##*/}.parts --optical-duplicate-pixel-distance 2500 ${regex} 2>&1 \
+      --duplicate-tagging-policy All --tmp-dir ${tmp}/SPARK --output-shard-tmp-dir ${tmp}/SPARK/${SAMPLE##*/}.parts --optical-duplicate-pixel-distance 2500 ${regex} 2>&1 \
         | grep -Ev "INFO (Executor|NewHadoopRDD|ShuffleBlockFetcherIterator|SparkHadoopMapRedUtil|FileOutputCommitter):" --line-buffered
     # At least for me, the index file generation fails even with enough memory, so let's just generate it for now.
     mv ${SORTFILE}.bai ${SORTFILE}.bai.bak
