@@ -139,26 +139,51 @@ if [ ! -e ${UBAMFILE} ];
 then
   check_space ${UBAMFILE}
 
-  echo "############ Reverting ${SAMPLE} into ${UBAMFILE} with Picard Tools"
-  time java -Xmx${javamem}G -jar picard.jar RevertSam \
-    I=${SAMPLE} \
-    O=${UBAMFILE} \
-    SANITIZE=${SANITIZE} \
-    MAX_DISCARD_FRACTION=0.005 \
-    ATTRIBUTE_TO_CLEAR=XT \
-    ATTRIBUTE_TO_CLEAR=XN \
-    ATTRIBUTE_TO_CLEAR=AS \
-    ATTRIBUTE_TO_CLEAR=OC \
-    ATTRIBUTE_TO_CLEAR=OP \
-    ATTRIBUTE_TO_CLEAR=XS \
-    ATTRIBUTE_TO_CLEAR=XA \
-    SORT_ORDER=queryname \
-    RESTORE_ORIGINAL_QUALITIES=true \
-    REMOVE_DUPLICATE_INFORMATION=true \
-    REMOVE_ALIGNMENT_INFORMATION=true \
-    MAX_RECORDS_IN_RAM=${bamrecords} \
-    COMPRESSION_LEVEL=${COMPRESS} \
-    TMP_DIR=${tmp}
+  if [ -z "${GATK_SPARK}" ];
+  then
+    echo "############ Reverting ${SAMPLE} into ${UBAMFILE} with Picard Tools"
+    time java -Xmx${javamem}G -jar picard.jar RevertSam \
+      I=${SAMPLE} \
+      O=${UBAMFILE} \
+      SANITIZE=${SANITIZE} \
+      MAX_DISCARD_FRACTION=0.005 \
+      ATTRIBUTE_TO_CLEAR=XT \
+      ATTRIBUTE_TO_CLEAR=XN \
+      ATTRIBUTE_TO_CLEAR=AS \
+      ATTRIBUTE_TO_CLEAR=OC \
+      ATTRIBUTE_TO_CLEAR=OP \
+      ATTRIBUTE_TO_CLEAR=XS \
+      ATTRIBUTE_TO_CLEAR=XA \
+      SORT_ORDER=queryname \
+      RESTORE_ORIGINAL_QUALITIES=true \
+      REMOVE_DUPLICATE_INFORMATION=true \
+      REMOVE_ALIGNMENT_INFORMATION=true \
+      MAX_RECORDS_IN_RAM=${bamrecords} \
+      COMPRESSION_LEVEL=${COMPRESS} \
+      TMP_DIR=${tmp}
+  else
+    rm -rf ${tmp}/RSS
+    mkdir -p ${tmp}/RSS
+    echo "############ Reverting ${SAMPLE} into ${UBAMFILE} with GATK Spark"
+    time gatk-${GATK_SPARK}/gatk --java-options "-Xmx${javamem}G -Dsamjdk.compression_level=${COMPRESS}" RevertSamSpark \
+      -I ${SAMPLE} \
+      -O ${UBAMFILE} \
+      --sanitize ${SANITIZE} \
+      --attributes-to-clear XT \
+      --attributes-to-clear XN \
+      --attributes-to-clear AS \
+      --attributes-to-clear OC \
+      --attributes-to-clear OP \
+      --attributes-to-clear XS \
+      --attributes-to-clear XA \
+      --sort-order queryname \
+      --dont-restore-original-qualities false \
+      --remove-duplicate-information true \
+      --keep-alignment-information false \
+      --tmp-dir ${tmp}/RSS \
+      --output-shard-tmp-dir ${tmp}/RSS/${SAMPLE##*/}.parts \
+        | grep -Ev "INFO (Executor|NewHadoopRDD|ShuffleBlockFetcherIterator|SparkHadoopMapRedUtil|FileOutputCommitter):" --line-buffered
+  fi
 fi
 
 # WARNING: This is NOT according to the Broad Institute GATK 4.0 Best Practices, but leaving it here for reference
@@ -223,7 +248,7 @@ then
   else
     # This took 8:20 vs. 6:17 on 4 cores, before running out of memory in index generation. Spark temp file space about 2X BAM, lots of IO.
     # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_spark_transforms_markduplicates_MarkDuplicatesSpark.php
-    # Results are indentical, but duplication metrics are less detailed, PG isn't added, and output compression level can't be separately set.
+    # Results are indentical, but duplication metrics are less detailed, PG header isn't added.
     # --bam-partition-size 33554432 is maximum & default
     rm -rf ${tmp}/MDS
     mkdir -p ${tmp}/MDS
