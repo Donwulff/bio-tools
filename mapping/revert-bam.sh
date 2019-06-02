@@ -109,7 +109,7 @@ tmp=${TMP:-"/tmp"}
 
 if [ ! -e ${SAMPLE} ];
 then
-  echo "Runs Picard Tools on Java to create Broad Institute uBAM from input BAM"
+  echo "Runs Picard Tools or GATK Spark on Java to create Broad Institute uBAM from input BAM"
   echo "$0 [input.bam] [gigabytes of memory to use, if not all available memory]"
   exit
 fi
