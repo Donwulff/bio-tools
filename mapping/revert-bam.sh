@@ -4,13 +4,25 @@
 # If if bwa index reference exists (f.e. bwakit), simple mapping is performed
 # Mapping requires significantly more storage space
 
-# DEPENDENCIES: gawk; modern java; samtools (htslib) and bwa + index from bwakit if mapping
-# Consider using Intel or CloudFlare zlib on Intel machines for performance
-# https://github.com/jtkukunas/zlib             https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2723002/ https://doi.org/10.1093/bioinformatics/btq671
+# DEPENDENCIES: java 1.8; downloads needed Java programs
+# Standard utils: sh, gawk, sed, grep, wget, time
+
+# DEPENDENCIES FOR ALIGNMENT: samtools (htslib); bwa + index
 # https://github.com/samtools/htslib            https://www.biorxiv.org/content/10.1101/397935v1
 # https://github.com/samtools/samtools          https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2723002/
 # https://github.com/lh3/bwa                    http://arxiv.org/abs/1303.3997                        https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5155401/
-# https://github.com/lh3/bwa/tree/master/bwakit https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5522380/ https://twitter.com/lh3lh3/status/1073772500838944768
+
+# INDEX: recommendation hs38DH see https://github.com/lh3/bwa/blob/master/README-alt.md, https://twitter.com/lh3lh3/status/1073772500838944768 for example
+# https://sourceforge.net/projects/bio-bwa/files/bwakit/	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5522380/
+
+# OPTIONAL: fastp and/or bwakit's bwa-postalt.js with k8 JavaScript interpreter
+# https://github.com/OpenGene/fastp		https://doi.org/10.1093/bioinformatics/bty560
+# https://github.com/lh3/bwa/tree/master/bwakit https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5522380/
+# https://github.com/attractivechaos/k8		https://link.springer.com/chapter/10.1007/978-3-030-02465-9_27
+
+# Consider using Intel or CloudFlare zlib on compatible machines for compression performance
+# https://github.com/jtkukunas/zlib             https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2723002/ https://doi.org/10.1093/bioinformatics/btq671
+
 
 # Some BigY bam files have Casava 1.8 data in the bam read column; not sure what to do with this as it's in the original bam.
 # This script preserves it in unmapped bam and filters it out before processing, but the extra space and Casava header can be cleaned up with:
@@ -31,7 +43,8 @@ REF=hs38DH.fa
 # http://www.htslib.org/benchmarks/zlib.html https://blog.cloudflare.com/cloudflare-fights-cancer/
 COMPRESS=5
 
-# Currently gets and runs MarkDuplicatesSpark multi-threaded instead of Picard MarkDuplicates flow.
+# Gets & runs RevertSamSpark and MarkDuplicatesSpark multi-threaded instead of Picard workflow.
+# Comment out if you have or want to use only a few CPU cores.
 GATK_SPARK=4.1.2.0
 
 # Don't delete bwa-mem mapped, raw, unsorted BAM file. Useful if you intend to test different processing.
@@ -45,13 +58,6 @@ BWAOPT=
 # Downstream tools will have problems with paired reads with missing mates, duplicated records, and records with mismatches in length of bases and qualities.
 # Any paired reads file subset for a genomic interval requires sanitizing to remove reads with lost mates that align outside of the interval.
 SANITIZE=true
-
-# Trim sequencing adapters exactly using paired end read overlap for all sequencers; disable other trimming
-# Reference: https://www.ncbi.nlm.nih.gov/pubmed/30423086 Get and build it from https://github.com/OpenGene/fastp
-if which fastp > /dev/null;
-then
-  FILTER="| fastp -QLGp --stdin --stdout --interleaved_in -j ${BASENAME}.fastp.json -h ${BASENAME}.fastp.html -R \"fastp report on ${BASENAME}\""
-fi
 
 # Replace this with fixed thread count if you have limited memory or need to reserve CPU threads
 cores=`nproc`
@@ -68,6 +74,24 @@ percoremem=$((javamem*3/4/cores))
 if [ -e ./bio-tools.cfg ];
 then
   . ./bio-tools.cfg
+fi
+
+# These aren't set in bio-tools.cfg because they rely on REF, and BASENAME if that were altered.
+
+# Trim sequencing adapters exactly using paired end read overlap for all sequencers and produce reports; disable other trimming
+# Get and build it from https://github.com/OpenGene/fastp
+if which fastp > /dev/null;
+then
+  FILTER="| fastp -QLGp --stdin --stdout --interleaved_in -j ${BASENAME}.fastp.json -h ${BASENAME}.fastp.html -R \"fastp report on ${BASENAME}\""
+fi
+
+# https://gatkforums.broadinstitute.org/gatk/discussion/8017/how-to-map-reads-to-a-reference-with-alternate-contigs-like-grch38
+# k8 is JavaScript command line interpreter https://github.com/attractivechaos/k8 or https://github.com/attractivechaos/k8/releases
+# and bwa-postalt.js is from bwakit https://github.com/lh3/bwa/tree/master/bwakit or https://github.com/lh3/bwa/raw/master/bwakit/bwa-postalt.js
+# Easiest way to get it working is to get the prebuild Linux or Mac binary from releases link and copy to /usr/local/bin
+if which k8 > /dev/null;
+then
+  POSTALT="| k8 ./bwa-postalt.js -p ${BASENAME}.hla ${REF}.alt"
 fi
 
 # Different fs from data files, prefer SSD
@@ -154,6 +178,7 @@ then
       ATTRIBUTE_TO_CLEAR=OP \
       ATTRIBUTE_TO_CLEAR=XS \
       ATTRIBUTE_TO_CLEAR=XA \
+      ATTRIBUTE_TO_CLEAR=pa \
       SORT_ORDER=queryname \
       RESTORE_ORIGINAL_QUALITIES=true \
       REMOVE_DUPLICATE_INFORMATION=true \
@@ -176,6 +201,7 @@ then
       --attributes-to-clear OP \
       --attributes-to-clear XS \
       --attributes-to-clear XA \
+      --attributes-to-clear pa \
       --sort-order queryname \
       --dont-restore-original-qualities false \
       --remove-duplicate-information true \
@@ -224,7 +250,8 @@ then
     time samtools fastq -t ${UBAMFILE} \
       | eval sed "s/[12]:[YN]:[0-9]*:[^[:space:]]*[[:space:]]//" \
       ${FILTER} \
-      | bwa mem ${BWAOPT} -p -t ${cores} -M -C -H ${UBAMFILE}.hdr ${REF} - \
+      | eval bwa mem ${BWAOPT} -p -t ${cores} -M -C -H ${UBAMFILE}.hdr ${REF} - \
+      ${POSTALT} \
       | samtools view -b -o ${BMAPFILE}
     rm ${UBAMFILE}.hdr
   else
