@@ -11,6 +11,11 @@ If you require cluster support, with full GATK Best Practices compliance look in
 https://software.broadinstitute.org/gatk/best-practices/workflow?id=11145
 That said, I believe these scripts to create GATK Best Practices compatible BAM's on single node in very efficient manner.
 
+NB. MergeBamAlignment has some unheralded filtering by default. MAX_INSERTIONS_OR_DELETIONS in particular is set to 1 and will filter 
+any reads with more than single insertion/deletion. This script does not do that, but I believe this difference to be beneficial.
+UNMAP_CONTAMINANT_READS might be beneficial for salive sample, but it's not set by default, and not done by this script.
+https://broadinstitute.github.io/picard/command-line-overview.html#MergeBamAlignment
+
 ### uBAM Pros:
 * GATK 4.0 Best Practices examples only support uBAM input
 * Stores read metadata in standard way, in particular read groups
