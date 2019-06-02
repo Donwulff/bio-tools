@@ -4,6 +4,7 @@
 # There's probably no good reason one should use this reference - it isn't compatible with anything, and continues to change.
 # Bioinformatics relies on stable, comparable results between runs, and there aren't existing tools that would use the additional contigs.
 # Studies have shown that the inclusion of the decoy sequences improves mapping results, and the alternate sequences might do the same.
+# See explanation & preliminary results: https://github.com/lh3/bwa/blob/master/README-alt.md
 
 # http://lh3.github.io/2017/11/13/which-human-reference-genome-to-use explains the choice of the base reference.
 # Decoy sequence presentation http://lh3lh3.users.sourceforge.net/download/decoyseq.pdf
@@ -90,5 +91,8 @@ zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz GCA_000786075.2_hs38d1_gen
 cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt GCA_000786075.2_hs38d1_genomic_unmapped.sam additional_hg38_contigs.map > hg38DH-p13.fa.alt
 
 bwa index hg38DH-p13.fa
+
+samtools faidx hg38DH-p13.fa
+samtools dict -a "GRCh38" -s "Homo Sapiens" -u "hg38DH-p13.fa" hg38DH-p13.fa -o hg38DH-p13.dict
 
 #gatk-4.1.2.0/gatk FindBadGenomicKmersSpark -R hg38DH-p13.fa -O hg38DH-p13.fa.txt
