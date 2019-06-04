@@ -6,7 +6,6 @@ BASENAME=${SAMPLE%%.sorted.bam}
 # Genome from BGISEQ-500 paper was 164GiB with this vs. 103GiB without
 BQSR="--emit-original-quals"
 DATA=/mnt/GenomicData
-CORES=`nproc`
 GATK=4.1.1.0
 
 # Script fetches and prepares necessary resources for BQSR and then drives a simple, single-machine BQSR workflow.
@@ -27,6 +26,17 @@ GATK=4.1.1.0
 
 # Standard resources don't cover Y chromosome well, so YBrowse SNP list is used for this.
 # Best Practices excludes X and Y chromosomes, but you may wish to experiment what works best for your purposes.
+
+# Replace this with fixed thread count if you have limited memory or need to reserve CPU threads
+cores=`nproc`
+# Find out how much memory we have available; you can override java heap on cmdline if you need disk cache, other processes
+totalmem=`LC_ALL=C free | grep -e "^Mem:" | gawk '{print $7}'`
+# Allow 2 gigabytes for runtime
+javamem=${2:-$((totalmem/1024/1024-2))}
+# https://sourceforge.net/p/picard/wiki/Main_Page/#q-a-picard-program-that-sorts-its-output-sambam-file-is-taking-a-very-long-time-andor-running-out-of-memory-what-can-i-do
+bamrecords=$((javamem*250000))
+# From Java 6 update 18 max. heap is 1/4th of physical memory, so we can split 3/4th between cores for sorting.
+percoremem=$((javamem*3/4/cores))
 
 if [ ! -e gatk-${GATK} ];
 then
@@ -60,7 +70,7 @@ fi
 
 if [ ! -e ${SAMPLE}.bai ];
 then
-  samtools index -@${CORES} ${SAMPLE}
+  samtools index -@${cores} ${SAMPLE}
 fi
 
 # GRCh37 dbSNP database snapshot, version 151, GATK contig names already provided by dbSNP at National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
@@ -82,13 +92,14 @@ then
 
   wget -nc ftp://ftp.ncbi.nih.gov/snp/latest_release/VCF/GCF_000001405.38.bgz
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.38_GRCh38.p12/GCF_000001405.38_GRCh38.p12_assembly_report.txt
+  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_assembly_report.txt
 
   # File for next build; these will be hard to find by hand.
   #wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_assembly_report.txt
 
   gawk -v RS="(\r)?\n" 'BEGIN { FS="\t" } !/^#/ { if ($10 != "na") print $7,$10; else print $7,$5 }' GCF_000001405.38_GRCh38.p12_assembly_report.txt > dbSNP-to-UCSC-GRCh38.p12.map
   time bcftools annotate --rename-chrs dbSNP-to-UCSC-GRCh38.p12.map GCF_000001405.38.bgz | gawk '/^#/ && !/^##contig=/ { print } !/^#/ { if( $1!="na" ) print }' \
-    | bgzip -@${CORES} -l9 -c > ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12b.GATK.vcf.gz
+    | bgzip -@${cores} -l9 -c > ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12b.GATK.vcf.gz
   tabix ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12b.GATK.vcf.gz
 fi
 
@@ -147,7 +158,7 @@ join ${TMPDIR}/dbSNP.contigs ${CALB}.contigs > ${CALB}-common.contigs
 grep "^[0-9]$" ${CALB}-common.contigs > ${CALB}-recal.contigs
 grep "^chr[0-9]$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
 grep "^.*X$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
-grep "^.*Y$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
+#grep "^.*Y$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
 grep "^[0-9][0-9]$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
 grep "^chr[0-9][0-9]$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
 
@@ -157,9 +168,9 @@ then
   # Determine error profile: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_BaseRecalibrator.php
   > ${CALB}-files.list
   cat ${CALB}-recal.contigs \
-    | xargs -IZ -P${CORES} sh -c "
+    | xargs -IZ -P${cores} sh -c "
       if [ ! -e ${CALB}.Z.recal ]; then \
-      gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
+      time gatk-${GATK}/gatk --java-options -Xmx${percoremem}G BaseRecalibrator -R ${REF} \
       --known-sites ${DBSNP} \
       --known-sites ${INDEL1} \
       --known-sites ${INDEL2} \
@@ -180,13 +191,13 @@ if [ ! -e ${BASENAME}.bqsr.bam ];
 then
   # According to test, using samtools isn't faster but it increases parallerism 2=>3 threads and saves memory from Java
   mkfifo ${BASENAME}.fifo.sam
-  gatk-${GATK}/gatk ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${BASENAME}.fifo.sam ${BQSR} &
-  samtools view -@${CORES} ${BASENAME}.fifo.sam -bo - | tee ${BASENAME}.bqsr.bam | samtools index -@${CORES} - ${BASENAME}.bqsr.bam.bai
+  gatk-${GATK}/gatk --java-options -Xmx${javamem}G ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${BASENAME}.fifo.sam ${BQSR} &
+  samtools view -@${cores} ${BASENAME}.fifo.sam -bo - | tee ${BASENAME}.bqsr.bam | samtools index -@${cores} - ${BASENAME}.bqsr.bam.bai
   rm ${BASENAME}.fifo.sam
 fi
 
 # Check for residual error: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_AnalyzeCovariates.php
 CHR=`tabix -l ${DBSNP} | grep -m1 '20$'`
-gatk-${GATK}/gatk --java-options -Xms4G BaseRecalibrator -R ${REF} \
+time gatk-${GATK}/gatk --java-options -Xmx${javamem}G BaseRecalibrator -R ${REF} \
   --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} --known-sites ${YBROWSE} -I ${BASENAME}.bqsr.bam -O ${CALB}.${CHR}.after -L ${CHR}
 gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${CALB}.${CHR}.recal --after ${CALB}.${CHR}.after --plots ${SAMPLE}.pdf
