@@ -158,7 +158,7 @@ join ${TMPDIR}/dbSNP.contigs ${CALB}.contigs > ${CALB}-common.contigs
 grep "^[0-9]$" ${CALB}-common.contigs > ${CALB}-recal.contigs
 grep "^chr[0-9]$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
 grep "^.*X$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
-#grep "^.*Y$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
+grep "^.*Y$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
 grep "^[0-9][0-9]$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
 grep "^chr[0-9][0-9]$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
 
@@ -197,6 +197,7 @@ then
 fi
 
 # Check for residual error: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_AnalyzeCovariates.php
+# Because this requires us to re-run the BQSR error profile generation, we choose a small chromosome to do it on. For BigY etc. this should be Y!
 CHR=`tabix -l ${DBSNP} | grep -m1 '20$'`
 time gatk-${GATK}/gatk --java-options -Xmx${javamem}G BaseRecalibrator -R ${REF} \
   --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} --known-sites ${YBROWSE} -I ${BASENAME}.bqsr.bam -O ${CALB}.${CHR}.after -L ${CHR}
