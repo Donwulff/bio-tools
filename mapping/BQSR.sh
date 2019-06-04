@@ -8,6 +8,9 @@ BQSR="--emit-original-quals"
 DATA=/mnt/GenomicData
 GATK=4.1.1.0
 
+# Extra contig to include in BQSR, separate report will be created for this.
+EXTRA=".*Y"
+
 # Script fetches and prepares necessary resources for BQSR and then drives a simple, single-machine BQSR workflow.
 # Both GRCh37 and GRCh38 resources are fetched, although it might be better idea to liftover final results to GRCh37 if needed.
 
@@ -151,23 +154,23 @@ CALB="${TMPDIR}/${BASENAME}"
 # Assume dbSNP includes all contigs of interest
 tabix -l ${DBSNP} | sort > ${TMPDIR}/dbSNP.contigs
 samtools idxstats ${SAMPLE} | cut -f 1 | sort > ${CALB}.contigs
-join ${TMPDIR}/dbSNP.contigs ${CALB}.contigs > ${CALB}-common.contigs
+join ${TMPDIR}/dbSNP.contigs ${CALB}.contigs > ${CALB}.common.contigs
 
 # Tests show that the male X and Y chromosome covariates differ from the rest of the genome, perhaps due to being phased. (Test this hypothesis on female X later)
 # Now with YBrowse SNP's added, just use whole primary assembly covariates by default because of BigY/YElite we only have Y.
-grep "^[0-9]$" ${CALB}-common.contigs > ${CALB}-recal.contigs
-grep "^chr[0-9]$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
-grep "^.*X$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
-grep "^.*Y$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
-grep "^[0-9][0-9]$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
-grep "^chr[0-9][0-9]$" ${CALB}-common.contigs >> ${CALB}-recal.contigs
+grep "^[0-9]$" ${CALB}.common.contigs > ${CALB}.recal.contigs
+grep "^chr[0-9]$" ${CALB}.common.contigs >> ${CALB}.recal.contigs
+grep "^.*X$" ${CALB}.common.contigs >> ${CALB}.recal.contigs
+grep "^.*${EXTRA}$" ${CALB}.common.contigs >> ${CALB}.recal.contigs
+grep "^[0-9][0-9]$" ${CALB}.common.contigs >> ${CALB}.recal.contigs
+grep "^chr[0-9][0-9]$" ${CALB}.common.contigs >> ${CALB}.recal.contigs
 
 # Calculate covariates for statistical error profile over the above assembly contigs.
 if [ ! -e ${SAMPLE}.recal ];
 then
   # Determine error profile: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_BaseRecalibrator.php
-  > ${CALB}-files.list
-  cat ${CALB}-recal.contigs \
+  > ${CALB}.files.list
+  cat ${CALB}.recal.contigs \
     | xargs -IZ -P${cores} sh -c "
       if [ ! -e ${CALB}.Z.recal ]; then \
       time gatk-${GATK}/gatk --java-options -Xmx${percoremem}G BaseRecalibrator -R ${REF} \
@@ -176,13 +179,16 @@ then
       --known-sites ${INDEL2} \
       --known-sites ${YBROWSE} \
       -I ${SAMPLE} -O ${CALB}.Z.recal -L Z ; \
-      echo ${CALB}.Z.recal >> ${CALB}-files.list; \
+      echo ${CALB}.Z.recal >> ${CALB}.files.list; \
       fi "
 
-  gatk-${GATK}/gatk GatherBQSRReports -I ${CALB}-files.list -O ${SAMPLE}.recal
+  gatk-${GATK}/gatk GatherBQSRReports -I ${CALB}.files.list -O ${SAMPLE}.recal
 
-  # Generate a report showing difference between X and Y chromosome BQSR error covariates for checking how we're doing.
-  gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${CALB}.*X.recal --after ${CALB}.*Y.recal --plots ${SAMPLE}.YvsX.pdf
+  if [ -e ${CALB}.*X.recal ] && [ -e ${CALB}.*Y.recal ];
+  then
+    # Generate a report showing difference between X and Y chromosome BQSR error covariates for checking how we're doing.
+    gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${CALB}.*X.recal --after ${CALB}.*Y.recal --plots ${SAMPLE}.YvsX.pdf
+  fi
 fi
 
 # Apply error profile: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_ApplyBQSR.php
@@ -198,7 +204,19 @@ fi
 
 # Check for residual error: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_AnalyzeCovariates.php
 # Because this requires us to re-run the BQSR error profile generation, we choose a small chromosome to do it on. For BigY etc. this should be Y!
-CHR=`tabix -l ${DBSNP} | grep -m1 '20$'`
-time gatk-${GATK}/gatk --java-options -Xmx${javamem}G BaseRecalibrator -R ${REF} \
-  --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} --known-sites ${YBROWSE} -I ${BASENAME}.bqsr.bam -O ${CALB}.${CHR}.after -L ${CHR}
-gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${CALB}.${CHR}.recal --after ${CALB}.${CHR}.after --plots ${SAMPLE}.pdf
+CHR=`tabix -l ${DBSNP} | grep -m1 '^.*20$'`
+if [ ! -e ${SAMPLE}.pdf ];
+then
+  time gatk-${GATK}/gatk --java-options -Xmx${javamem}G BaseRecalibrator -R ${REF} \
+    --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} --known-sites ${YBROWSE} -I ${BASENAME}.bqsr.bam -O ${CALB}.${CHR}.after -L ${CHR}
+  gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${CALB}.${CHR}.recal --after ${CALB}.${CHR}.after --plots ${SAMPLE}.pdf
+fi
+
+# N.B. Right now this doesn't support multiple contigs in in EXTRA, which exists for chrY.
+CHR=`tabix -l ${DBSNP} | grep -m1 "^.*${EXTRA}$" | head -1`
+if [ ! -e ${SAMPLE}.${CHR}.pdf ] && [ -e ${CALB}.${CHR}.recal ];
+then
+  time gatk-${GATK}/gatk --java-options -Xmx${javamem}G BaseRecalibrator -R ${REF} \
+    --known-sites ${DBSNP} --known-sites ${INDEL1} --known-sites ${INDEL2} --known-sites ${YBROWSE} -I ${BASENAME}.bqsr.bam -O ${CALB}.${CHR}.after -L ${CHR}
+  gatk-${GATK}/gatk AnalyzeCovariates --bqsr ${SAMPLE}.recal --before ${CALB}.${CHR}.recal --after ${CALB}.${CHR}.after --plots ${SAMPLE}.${CHR}.pdf
+fi
