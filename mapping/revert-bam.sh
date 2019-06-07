@@ -28,6 +28,17 @@
 # This script preserves it in unmapped bam and filters it out before processing, but the extra space and Casava header can be cleaned up with:
 # (samtools view -H sample1.bam; samtools view sample1.bam | awk '{ OFS="\t"; split($1,q," "); $1=q[1]; print }') | samtools view -b -o sample1.cleaned.bam
 
+## Combining BigY hs37 and GRCh38, I removed reference and SANITIZE=true and ran:
+# TMP=/mnt/SSD/ ./revert-bam.sh sample1BigY.bam
+# TMP=/mnt/SSD/ ./revert-bam.sh sample1BigY2.bam
+## Merging leaves reads from both files, apparently even with -c
+# samtools merge -@8 -c -f sample1BigYmerge.bam sample1BigY.unmapped.bam sample1BigY2.unmapped.bam
+## RevertSam expects reads in specific order, Picard Tools queryname order works best.
+# java -Xmx30G -jar picard.jar SortSam I=sample1BigYmerge.bam O=sample1BigYmerge.qname.bam SORT_ORDER=queryname
+## Added reference but not SANITIZE that would remove all duplicates, bwa undocumented removed duplicate read-id's:
+# TMP=/mnt/SSD/ ./revert-bam.sh sample1BigYmerge.qname.bam
+## Could also try --KEEP_FIRST_DUPLICATE=True with RevertSam if you don't want to align it
+
 # File locations; note that these keep the path of the input file
 SAMPLE=${1:-sample1.bam}
 BASENAME=${SAMPLE%%.bam}
@@ -96,16 +107,6 @@ fi
 
 # Different fs from data files, prefer SSD
 tmp=${TMP:-"/tmp"}
-
-## Combining BigY hs37 and GRCh38, I removed reference and SANITIZE=true and ran:
-# TMP=/mnt/SSD/ ./revert-bam.sh sample1BigY.bam
-# TMP=/mnt/SSD/ ./revert-bam.sh sample1BigY2.bam
-## Merging leaves reads from both files, apparently even with -c
-# samtools merge -@4 -c -f sample1BigYmerge.bam sample1BigY.unmapped.bam sample1BigY2.unmapped.bam
-## RevertSam expects reads in specific order, Picard Tools queryname order works.
-# java -Xmx30G -jar picard.jar SortSam I=sample1BigYmerge.bam O=sample1BigYmerge.qsort.bam SORT_ORDER=queryname
-## Added reference but not SANITIZE that would remove all duplicates, bwa undocumented removed duplicate read-id's:
-# TMP=/mnt/SSD/ ./revert-bam.sh sample1BigYmerge.qsort.bam
 
 if [ ! -e ${SAMPLE} ];
 then
