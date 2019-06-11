@@ -69,7 +69,7 @@ if [ -e GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz ]; then
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
   bwa mem -k101 hg38.p12.p13.hla.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > GCA_000786075.2_hs38d1_genomic.sam
   samtools view -f0x4 GCA_000786075.2_hs38d1_genomic.sam | \
-    gawk -v OFS="\t" '{ gsub("\\.","v",$1); $1 = "chrUn_"$1"_decoy"; $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' \
+    gawk -v OFS="\t" '{ gsub("\\.","v",$1); $1 = "chrUn_"$1"_decoy"; $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
     GCA_000786075.2_hs38d1_genomic_unmapped.sam
 
   # Use the alt-lines to select matching decoy sequences from the analysis set
