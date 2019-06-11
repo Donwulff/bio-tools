@@ -82,7 +82,7 @@ fi
 # There's no documentation for how the bwa alt-file should be constructed. This is just a basic starting point.
 # https://github.com/lh3/bwa/blob/master/README-alt.md
 cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
-bwa mem -t`nproc`-x intractg -t4 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
+bwa mem -t`nproc` -x intractg -t4 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
   | samtools view - \
   | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.map
 
