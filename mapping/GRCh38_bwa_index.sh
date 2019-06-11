@@ -12,6 +12,8 @@
 
 # Are any of the patches for regions masked in the analysis set? Alt contigs shouldn't break things, but they're spurious.
 
+VERSION="hg38DH-p13"
+
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
 # We currently need hs381d1 with UCSC naming, and the assembly with PAR & centromeric matching. Possible to get these otherwise?
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
@@ -52,31 +54,37 @@ if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ]; then
 fi
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
+# To regenerate, delete hla_gen.fasta the bwa index hg38.p12.p13.hla.fa.gz* below.
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 
 # Convert the HLA FASTA sequence names into the format used by bwa's bwa-kit release and compress it
 sed "s/^>HLA:HLA..... />HLA-/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
 
 ## Steps to clean up decoy sequences
-if [ ! -e GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz ]; then
-  # Construct mapping index for whole assembly + HLA
-  if [ ! -e hg38.p12.p13.hla.fa.gz ]; then
+if [ ! -e GCA_000786075.2_hs38d1_genomic_unmapped.alt ]; then
+  # Construct mapping index for whole assembly + HLA to compare decoys against
+  if [ ! -e hg38.p12.p13.hla.fa.gz.sa ]; then
     cat hg38.p12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
     bwa index hg38.p12.p13.hla.fa.gz
   fi
 
-  # Filter out decoys which map to the current assembly, and re-generate alt lines
+  # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
-  bwa mem -k101 hg38.p12.p13.hla.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > GCA_000786075.2_hs38d1_genomic.sam
-  samtools view -f0x4 GCA_000786075.2_hs38d1_genomic.sam | \
-    gawk -v OFS="\t" '{ gsub("\\.","v",$1); $1 = "chrUn_"$1"_decoy"; $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
-    GCA_000786075.2_hs38d1_genomic_unmapped.sam
+  bwa mem -k101 hg38.p12.p13.hla.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz | samtools view -f0x4 | \
+    gawk -v OFS="\t" '{ gsub("\\.","v",$1); $1 = "chrUn_"$1"_decoy"; print }' > \
+      GCA_000786075.2_hs38d1_genomic_unmapped.sam
 
-  # Use the alt-lines to select matching decoy sequences from the analysis set
+  # Use the unmapped contigs to select matching decoy sequences from the analysis set
   cut -f1 GCA_000786075.2_hs38d1_genomic_unmapped.sam > GCA_000786075.2_hs38d1_genomic.list
   samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
   samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz -r GCA_000786075.2_hs38d1_genomic.list | \
     bgzip -c > GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz
+
+  # Re-generate alt lines from alignment of remaining, unmapped decoys against the primary assy
+  # This is pretty redundant, we've just checked there's no 101bp matches, but hence the bwa mem run is fast as well
+  bwa mem -k101 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz | samtools view -f0x4 | \
+    gawk -v OFS="\t" '{ $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
+      GCA_000786075.2_hs38d1_genomic_unmapped.alt
 fi
 
 # There's no documentation for how the bwa alt-file should be constructed. This is just a basic starting point.
@@ -87,12 +95,12 @@ bwa mem -t`nproc` -x intractg GCA_000001405.15_GRCh38_no_alt_analysis_set.fna ad
   | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.map
 
 zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz \
-     hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38DH-p13.fa
-cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt GCA_000786075.2_hs38d1_genomic_unmapped.sam additional_hg38_contigs.map > hg38DH-p13.fa.alt
+     hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > ${VERSION}.fa
+cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt GCA_000786075.2_hs38d1_genomic_unmapped.alt additional_hg38_contigs.map > ${VERSION}.fa.alt
 
-bwa index hg38DH-p13.fa
+bwa index ${VERSION}.fa
 
-samtools faidx hg38DH-p13.fa
-samtools dict -a "GRCh38" -s "Homo Sapiens" -u "hg38DH-p13.fa" hg38DH-p13.fa -o hg38DH-p13.dict
+samtools faidx ${VERSION}.fa
+samtools dict -a "GRCh38" -s "Homo Sapiens" -u "${VERSION}.fa" ${VERSION}.fa -o ${VERSION}.dict
 
-#gatk-4.1.2.0/gatk FindBadGenomicKmersSpark -R hg38DH-p13.fa -O hg38DH-p13.fa.txt
+#gatk-4.1.2.0/gatk FindBadGenomicKmersSpark -R ${VERSION}.fa -O ${VERSION}.fa.txt
