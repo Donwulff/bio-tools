@@ -58,9 +58,9 @@ wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 sed "s/^>HLA:HLA..... />HLA-/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
 
 ## Steps to clean up decoy sequences
-if [ -e GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz ]; then
+if [ ! -e GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz ]; then
   # Construct mapping index for whole assembly + HLA
-  if [ -e hg38.p12.p13.hla.fa.gz ]; then
+  if [ ! -e hg38.p12.p13.hla.fa.gz ]; then
     cat hg38.p12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
     bwa index hg38.p12.p13.hla.fa.gz
   fi
