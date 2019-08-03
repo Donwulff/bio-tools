@@ -12,7 +12,10 @@
 
 # Are any of the patches for regions masked in the analysis set? Alt contigs shouldn't break things, but they're spurious.
 
-VERSION="hg38DH-p13"
+# To make results reproducible, I'm currently using IPD-IMGT/HLA Release 3.36.0:
+# wget https://github.com/ANHIG/IMGTHLA/raw/af8f6da4c921a2a5d5d392f550edba5003bcd65a/hla_gen.fasta
+
+VERSION="hg38DHO-p13"
 
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
 # We currently need hs381d1 with UCSC naming, and the assembly with PAR & centromeric matching. Possible to get these otherwise?
@@ -87,6 +90,33 @@ if [ ! -e GCA_000786075.2_hs38d1_genomic_unmapped.alt ]; then
       GCA_000786075.2_hs38d1_genomic_unmapped.alt
 fi
 
+## The Forsyth "expanded Human Oral Microbiome Database" http://www.homd.org
+if [ ! -e oral_microbiome_unmapped.alt ]; then
+  # Construct mapping index for whole assembly + HLA to compare decoys against
+  if [ ! -e hg38.p12.p13.hla.fa.gz.sa ]; then
+    cat hg38.p12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
+    bwa index hg38.p12.p13.hla.fa.gz
+  fi
+
+  # Filter out decoys which map to the current assembly for 101bp or more
+  wget -nc http://www.homd.org/ftp/all_oral_genomes/current/oral_microbiome.tar.gz
+  bwa mem -t`nproc` -k101 hg38.p12.p13.hla.fa.gz oral_microbiome.tar.gz | samtools view -f0x4 > \
+      oral_microbiome_unmapped.sam
+
+  # Use the unmapped contigs to select matching decoy sequences from the analysis set
+  cut -f1 oral_microbiome_unmapped.sam > oral_microbiome_unmapped.list
+  tar -zxf oral_microbiome.tar.gz
+  samtools faidx oral_microbiome
+  samtools faidx oral_microbiome -r oral_microbiome_unmapped.list | \
+    bgzip -c > oral_microbiome_unmapped.fna.gz
+
+  # Re-generate alt lines from alignment of remaining, unmapped decoys against the primary assy
+  # This is pretty redundant, we've just checked there's no 101bp matches, but hence the bwa mem run is fast as well
+  bwa mem -t`nproc` -k101 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna oral_microbiome_unmapped.fna.gz | samtools view -f0x4 | \
+    gawk -v OFS="\t" '{ $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
+      oral_microbiome_unmapped.alt
+fi
+
 # There's no documentation for how the bwa alt-file should be constructed. This is just a basic starting point.
 # https://github.com/lh3/bwa/blob/master/README-alt.md
 cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
@@ -95,8 +125,8 @@ bwa mem -t`nproc` -x intractg GCA_000001405.15_GRCh38_no_alt_analysis_set.fna ad
   | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.map
 
 zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz \
-     hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > ${VERSION}.fa
-cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt GCA_000786075.2_hs38d1_genomic_unmapped.alt additional_hg38_contigs.map > ${VERSION}.fa.alt
+     hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz oral_microbiome_unmapped.fna.gz > ${VERSION}.fa
+cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt GCA_000786075.2_hs38d1_genomic_unmapped.alt additional_hg38_contigs.map oral_microbiome_unmapped.alt > ${VERSION}.fa.alt
 
 bwa index ${VERSION}.fa
 
