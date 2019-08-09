@@ -8,17 +8,22 @@
 
 # http://lh3.github.io/2017/11/13/which-human-reference-genome-to-use explains the choice of the base reference.
 # Decoy sequence presentation http://lh3lh3.users.sourceforge.net/download/decoyseq.pdf
+# Some notes in ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/README_human_reference_20110707
+# Scripts mentioned in https://github.com/lh3/misc/tree/master/seq/novoseq
+
 # hs38d1 is actually detailed in https://www.ncbi.nlm.nih.gov/pubmed/27654912 Supplementary section 5
+# Worked example of alt contigs: https://software.broadinstitute.org/gatk/documentation/article?id=8017
 
 # Are any of the patches for regions masked in the analysis set? Alt contigs shouldn't break things, but they're spurious.
 
 # To make results reproducible, I'm currently using IPD-IMGT/HLA Release 3.36.0:
 # wget https://github.com/ANHIG/IMGTHLA/raw/af8f6da4c921a2a5d5d392f550edba5003bcd65a/hla_gen.fasta
 
+# WARNING! Oral microbiome is experimental and doesn't really work nicely.
 VERSION="hg38DHO-p13"
 
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
-# We currently need hs381d1 with UCSC naming, and the assembly with PAR & centromeric matching. Possible to get these otherwise?
+# We currently need hs381d1 with UCSC naming, and the assembly with PAR & centromeric masking. Possible to get these otherwise?
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.fai
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
@@ -118,7 +123,6 @@ if [ ! -e oral_microbiome_unmapped.alt ]; then
 fi
 
 # There's no documentation for how the bwa alt-file should be constructed. This is just a basic starting point.
-# https://github.com/lh3/bwa/blob/master/README-alt.md
 cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
 bwa mem -t`nproc` -x intractg GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
   | samtools view - \
