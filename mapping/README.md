@@ -55,6 +55,8 @@ by Broad Institute.
 
 ### Performance comparisons
 
+http://gigadb.org/dataset/100274
+
 | System         | Zlib     | Alignment| MarkDuplicatesSpark | MarkDuplicates |
 |----------------|----------|---------:|--------------------:|---------------:|
 | AMD 4x 3.1 Ghz | Standard |  44:00 h |              8:20 h |         6:17 h |
