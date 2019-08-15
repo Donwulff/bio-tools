@@ -6,7 +6,7 @@ BASENAME=${SAMPLE%%.sorted.bam}
 # Genome from BGISEQ-500 paper was 164GiB with this vs. 103GiB without
 BQSR="--emit-original-quals"
 DATA=/mnt/GenomicData
-GATK=4.1.1.0
+GATK=4.1.3.0
 
 # Extra contig to include in BQSR, separate report will be created for this.
 EXTRA=".*Y"
@@ -53,7 +53,7 @@ set -x
 # GATK Best Practices at https://github.com/gatk-workflows/broad-prod-wgs-germline-snps-indels/blob/master/PairedEndSingleSampleWf.hg38.inputs.json
 # dbSNP version is complicated https://gatkforums.broadinstitute.org/gatk/discussion/13138/reference-and-known-input-files-in-gatk-hg38
 REF=${DATA}/GRCh38/hg38.fa
-DBSNP=${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12.GATK.noINFO.vcf.gz
+DBSNP=${DATA}/GCF_000001405.38.dbSNP153.GRCh38p12.GATK.vcf.gz
 INDEL1=${DATA}/Mills_and_1000G_gold_standard.indels.hg38.noHLA.vcf.gz
 INDEL2=${DATA}/Homo_sapiens_assembly38.known_indels.noHLA.vcf.gz
 YBROWSE=${DATA}/snps_hg38_GATK.vcf.gz
@@ -86,24 +86,24 @@ wget -nc https://api.sequencing.com/download.ashx?id=1c28f644-7c9d-43a1-aa68-2c2
 tabix ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12.GATK.noINFO.vcf.gz
 
 # GRCh38 dbSNP database snapshot 152, National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
-# dbSNP 152 dump is 14 gigabytes, I need to devise a convention for handling files in this script.
+# dbSNP 153 dump is 14 gigabytes, I need to devise a convention for handling files in this script.
 # Right now the download goes to working directory and GATK prepared version into defined path!
 if [ ! -e ${DBSNP}.tbi ];
 then
   # GRCh37, now getting obsolete.
   #wget ftp://ftp.ncbi.nih.gov/snp/latest_release/VCF/GCF_000001405.25.bgz
 
-  wget -nc ftp://ftp.ncbi.nih.gov/snp/latest_release/VCF/GCF_000001405.38.bgz
+  wget -nc ftp://ftp.ncbi.nih.gov/snp/archive/b153/VCF/GCF_000001405.38.gz
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.38_GRCh38.p12/GCF_000001405.38_GRCh38.p12_assembly_report.txt
-  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_assembly_report.txt
+  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.39_GRCh38.p13/GCF_000001405.39_GRCh38.p13_assembly_report.txt
 
   # File for next build; these will be hard to find by hand.
   #wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_assembly_report.txt
 
-  gawk -v RS="(\r)?\n" 'BEGIN { FS="\t" } !/^#/ { if ($10 != "na") print $7,$10; else print $7,$5 }' GCF_000001405.38_GRCh38.p12_assembly_report.txt > dbSNP-to-UCSC-GRCh38.p12.map
-  time bcftools annotate --rename-chrs dbSNP-to-UCSC-GRCh38.p12.map GCF_000001405.38.bgz | gawk '/^#/ && !/^##contig=/ { print } !/^#/ { if( $1!="na" ) print }' \
-    | bgzip -@${cores} -l9 -c > ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12b.GATK.vcf.gz
-  tabix ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12b.GATK.vcf.gz
+  gawk -v RS="(\r)?\n" 'BEGIN { FS="\t" } !/^#/ { if ($10 != "na") print $7,$10; else print $7,$5 }' GCF_000001405.39_GRCh38.p13_assembly_report.txt > dbSNP-to-UCSC-GRCh38.p13.map
+  time bcftools annotate --rename-chrs dbSNP-to-UCSC-GRCh38.p13.map GCF_000001405.38.gz | gawk '/^#/ && !/^##contig=/ { print } !/^#/ { if( $1!="na" ) print }' \
+    | bgzip -@${cores} -l9 -c > ${DATA}/GCF_000001405.38.dbSNP153.GRCh38p12.GATK.vcf.gz
+  tabix ${DATA}/GCF_000001405.38.dbSNP153.GRCh38p12.GATK.vcf.gz
 fi
 
 # YBrowse Y-chromosome SNP list; this updates frequently, delete and redownload if needed.
