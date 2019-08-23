@@ -85,7 +85,7 @@ tabix ${DATA}/All_20180423_GRCh37p13.vcf.gz
 wget -nc https://api.sequencing.com/download.ashx?id=1c28f644-7c9d-43a1-aa68-2c2ee89a01da -O ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12.GATK.noINFO.vcf.gz
 tabix ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12.GATK.noINFO.vcf.gz
 
-# GRCh38 dbSNP database snapshot 153, National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
+# GRCh38 dbSNP database snapshot 152, National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
 # dbSNP 153 dump is 14 gigabytes, I need to devise a convention for handling files in this script.
 # Right now the download goes to working directory and GATK prepared version into defined path!
 if [ ! -e ${DBSNP}.tbi ];
@@ -193,11 +193,14 @@ fi
 
 # Apply error profile: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_ApplyBQSR.php
 # TODO: We can do this in paraller, although copying piecewise BAM's back together will require extra IO.
-samtools idxstats ${SAMPLE} | tail -n +16 | cut -f1 | sed 's/^*$/unmapped/' | xargs -IZ -P${cores} sh -c "
-if [ ! -e ${BASENAME}'.Z.bam' ];
+if [ ! -e ${BASENAME}.bqsr.bam ];
 then
-  gatk-${GATK}/gatk --java-options -Xmx${javamem}G ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${BASENAME}'.Z.bam' -L 'Z' ${BQSR}
-fi "
+  # According to test, using samtools isn't faster but it increases parallerism 2=>3 threads and saves memory from Java
+  mkfifo ${BASENAME}.fifo.sam
+  gatk-${GATK}/gatk --java-options -Xmx${javamem}G ApplyBQSR -R ${REF} --bqsr ${SAMPLE}.recal -I ${SAMPLE} -O ${BASENAME}.fifo.sam ${BQSR} &
+  samtools view -@${cores} ${BASENAME}.fifo.sam -bo - | tee ${BASENAME}.bqsr.bam | samtools index -@${cores} - ${BASENAME}.bqsr.bam.bai
+  rm ${BASENAME}.fifo.sam
+fi
 
 # Check for residual error: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_bqsr_AnalyzeCovariates.php
 # Because this requires us to re-run the BQSR error profile generation, we choose a small chromosome to do it on. For BigY etc. this should be Y!
