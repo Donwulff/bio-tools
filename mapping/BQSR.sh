@@ -85,7 +85,7 @@ tabix ${DATA}/All_20180423_GRCh37p13.vcf.gz
 wget -nc https://api.sequencing.com/download.ashx?id=1c28f644-7c9d-43a1-aa68-2c2ee89a01da -O ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12.GATK.noINFO.vcf.gz
 tabix ${DATA}/GCF_000001405.38.dbSNP152.GRCh38p12.GATK.noINFO.vcf.gz
 
-# GRCh38 dbSNP database snapshot 152, National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
+# GRCh38 dbSNP database snapshot 153, National Center for Biotechnology Information NCBI, National Institute of Health https://www.ncbi.nlm.nih.gov/projects/SNP/
 # dbSNP 153 dump is 14 gigabytes, I need to devise a convention for handling files in this script.
 # Right now the download goes to working directory and GATK prepared version into defined path!
 if [ ! -e ${DBSNP}.tbi ];
