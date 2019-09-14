@@ -18,7 +18,7 @@
 
 set -x
 
-# WARNING! Oral microbiome is experimental and doesn't really work nicely.
+# WARNING! Oral microbiome is experimental and doesn't really work nicely. HLA version is updated with same URL.
 VERSION="hg38DO903H3370-p13"
 
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
