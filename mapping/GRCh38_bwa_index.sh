@@ -16,13 +16,10 @@
 
 # Are any of the patches for regions masked in the analysis set? Alt contigs shouldn't break things, but they're spurious.
 
-# To make results reproducible, I'm currently using IPD-IMGT/HLA Release 3.36.0:
-# wget https://github.com/ANHIG/IMGTHLA/raw/af8f6da4c921a2a5d5d392f550edba5003bcd65a/hla_gen.fasta
-
 set -x
 
 # WARNING! Oral microbiome is experimental and doesn't really work nicely.
-VERSION="hg38DHO903-p13"
+VERSION="hg38DO903H3370-p13"
 
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
 # We currently need hs381d1 with UCSC naming, and the assembly with PAR & centromeric masking. Possible to get these otherwise?
@@ -66,8 +63,8 @@ fi
 # To regenerate, delete hla_gen.fasta, GCA_000786075.2_hs38d1_genomic_unmapped.alt, oral_microbiome_unmapped.alt and the bwa index hg38.p12.p13.hla.fa.gz* below.
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 
-# Convert the HLA FASTA sequence names into the format used by bwa's bwa-kit release and compress it
-sed "s/^>HLA:HLA..... />HLA-/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
+# Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation because : and * mess up most tools!
+sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
 if [ ! -e hg38.p12.p13.hla.fa.gz.sa ] || [ hla_gen.fasta -nt hg38.p12.p13.hla.fa.gz ]; then
