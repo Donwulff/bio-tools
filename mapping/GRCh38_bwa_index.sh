@@ -19,6 +19,8 @@
 # To make results reproducible, I'm currently using IPD-IMGT/HLA Release 3.36.0:
 # wget https://github.com/ANHIG/IMGTHLA/raw/af8f6da4c921a2a5d5d392f550edba5003bcd65a/hla_gen.fasta
 
+set -x
+
 # WARNING! Oral microbiome is experimental and doesn't really work nicely.
 VERSION="hg38DHO903-p13"
 
@@ -62,7 +64,7 @@ if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ]; then
 fi
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
-# To regenerate, delete hla_gen.fasta, GCA_000786075.2_hs38d1_genomic_unmapped.alt and the bwa index hg38.p12.p13.hla.fa.gz* below.
+# To regenerate, delete hla_gen.fasta, GCA_000786075.2_hs38d1_genomic_unmapped.alt, oral_microbiome_unmapped.alt and the bwa index hg38.p12.p13.hla.fa.gz* below.
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 
 # Convert the HLA FASTA sequence names into the format used by bwa's bwa-kit release and compress it
@@ -78,19 +80,19 @@ fi
 if [ ! -e GCA_000786075.2_hs38d1_genomic_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
-  bwa mem -k101 hg38.p12.p13.hla.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz | samtools view -f0x4 | \
-    gawk -v OFS="\t" '{ gsub("\\.","v",$1); $1 = "chrUn_"$1"_decoy"; print }' > \
-      GCA_000786075.2_hs38d1_genomic_unmapped.sam
+  bwa mem -k101 hg38.p12.p13.hla.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > GCA_000786075.2_hs38d1_genomic.sam
+
+  samtools view -f0x4 GCA_000786075.2_hs38d1_genomic.sam | \
+    gawk -v OFS="\t" '{ gsub("\\.","v",$1); print "chrUn_"$1"_decoy"; }' > \
+      GCA_000786075.2_hs38d1_genomic.list
 
   # Use the unmapped contigs to select matching decoy sequences from the analysis set
-  cut -f1 GCA_000786075.2_hs38d1_genomic_unmapped.sam > GCA_000786075.2_hs38d1_genomic.list
   samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
   samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz -r GCA_000786075.2_hs38d1_genomic.list | \
     bgzip -c > GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz
 
-  # Re-generate alt lines from alignment of remaining, unmapped decoys against the primary assy
-  # This is pretty redundant, we've just checked there's no 101bp matches, but hence the bwa mem run is fast as well
-  bwa mem -k101 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz | samtools view -f0x4 | \
+  # Generate alt lines from alignment of remaining, unmapped decoys against the primary assy
+  samtools view -f0x4 GCA_000786075.2_hs38d1_genomic.sam | \
     gawk -v OFS="\t" '{ $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
       GCA_000786075.2_hs38d1_genomic_unmapped.alt
 fi
@@ -99,18 +101,17 @@ fi
 if [ ! -e oral_microbiome_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc ftp://ftp.homd.org/genomes/PROKKA/V9.03/fsa/ALL_genomes.fsa
-  bwa mem -t`nproc` -k101 hg38.p12.p13.hla.fa.gz ALL_genomes.fsa | samtools view -f0x4 > \
-      oral_microbiome_unmapped.sam
+  bwa mem -t`nproc` -k101 hg38.p12.p13.hla.fa.gz ALL_genomes.fsa > oral_microbiome.sam
+  samtools view -f0x4 oral_microbiome.sam | cut -f1 > \
+      oral_microbiome_unmapped.list
 
   # Use the unmapped contigs to select matching decoy sequences from the analysis set
-  cut -f1 oral_microbiome_unmapped.sam > oral_microbiome_unmapped.list
   samtools faidx ALL_genomes.fsa
   samtools faidx ALL_genomes.fsa -r oral_microbiome_unmapped.list | \
     bgzip -c > oral_microbiome_unmapped.fna.gz
 
-  # Re-generate alt lines from alignment of remaining, unmapped decoys against the primary assy
-  # This is pretty redundant, we've just checked there's no 101bp matches, but hence the bwa mem run is fast as well
-  bwa mem -t`nproc` -k101 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna oral_microbiome_unmapped.fna.gz | samtools view -f0x4 | \
+  # Generate alt lines from alignment of remaining, unmapped decoys against the primary assy
+  samtools view -f0x4 oral_microbiome.sam | \
     gawk -v OFS="\t" '{ $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
       oral_microbiome_unmapped.alt
 fi
