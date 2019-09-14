@@ -20,7 +20,7 @@
 # wget https://github.com/ANHIG/IMGTHLA/raw/af8f6da4c921a2a5d5d392f550edba5003bcd65a/hla_gen.fasta
 
 # WARNING! Oral microbiome is experimental and doesn't really work nicely.
-VERSION="hg38DHO-p13"
+VERSION="hg38DHO903-p13"
 
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
 # We currently need hs381d1 with UCSC naming, and the assembly with PAR & centromeric masking. Possible to get these otherwise?
@@ -62,7 +62,7 @@ if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ]; then
 fi
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
-# To regenerate, delete hla_gen.fasta the bwa index hg38.p12.p13.hla.fa.gz* below.
+# To regenerate, delete hla_gen.fasta, GCA_000786075.2_hs38d1_genomic_unmapped.alt and the bwa index hg38.p12.p13.hla.fa.gz* below.
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 
 # Convert the HLA FASTA sequence names into the format used by bwa's bwa-kit release and compress it
@@ -104,15 +104,14 @@ if [ ! -e oral_microbiome_unmapped.alt ]; then
   fi
 
   # Filter out decoys which map to the current assembly for 101bp or more
-  wget -nc http://www.homd.org/ftp/all_oral_genomes/current/oral_microbiome.tar.gz
-  bwa mem -t`nproc` -k101 hg38.p12.p13.hla.fa.gz oral_microbiome.tar.gz | samtools view -f0x4 > \
+  wget -nc ftp://ftp.homd.org/genomes/PROKKA/V9.03/fsa/ALL_genomes.fsa
+  bwa mem -t`nproc` -k101 hg38.p12.p13.hla.fa.gz ALL_genomes.fsa | samtools view -f0x4 > \
       oral_microbiome_unmapped.sam
 
   # Use the unmapped contigs to select matching decoy sequences from the analysis set
   cut -f1 oral_microbiome_unmapped.sam > oral_microbiome_unmapped.list
-  tar -zxf oral_microbiome.tar.gz
-  samtools faidx oral_microbiome
-  samtools faidx oral_microbiome -r oral_microbiome_unmapped.list | \
+  samtools faidx ALL_genomes.fsa
+  samtools faidx ALL_genomes.fsa -r oral_microbiome_unmapped.list | \
     bgzip -c > oral_microbiome_unmapped.fna.gz
 
   # Re-generate alt lines from alignment of remaining, unmapped decoys against the primary assy
