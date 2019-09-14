@@ -27,7 +27,6 @@ VERSION="hg38DHO903-p13"
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
 # We currently need hs381d1 with UCSC naming, and the assembly with PAR & centromeric masking. Possible to get these otherwise?
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
-wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.fai
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
 
 # BWA alignment set without alt contigs or decoy sequences is used to determine mapping of alt contigs into the primary assembly for alt file
@@ -87,8 +86,9 @@ if [ ! -e GCA_000786075.2_hs38d1_genomic_unmapped.alt ]; then
       GCA_000786075.2_hs38d1_genomic.list
 
   # Use the unmapped contigs to select matching decoy sequences from the analysis set
-  samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
-  samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz -r GCA_000786075.2_hs38d1_genomic.list | \
+  [ -e GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna ] || gzip -kd GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
+  samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna
+  samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna -r GCA_000786075.2_hs38d1_genomic.list | \
     bgzip -c > GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz
 
   # Generate alt lines from alignment of remaining, unmapped decoys against the primary assy
