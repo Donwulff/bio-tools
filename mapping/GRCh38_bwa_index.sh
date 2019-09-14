@@ -68,14 +68,14 @@ wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 # Convert the HLA FASTA sequence names into the format used by bwa's bwa-kit release and compress it
 sed "s/^>HLA:HLA..... />HLA-/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
 
+# Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
+if [ ! -e hg38.p12.p13.hla.fa.gz.sa ] || [ hla_gen.fasta -nt hg38.p12.p13.hla.fa.gz ]; then
+  cat hg38.p12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
+  bwa index hg38.p12.p13.hla.fa.gz
+fi
+
 ## Steps to clean up decoy sequences
 if [ ! -e GCA_000786075.2_hs38d1_genomic_unmapped.alt ]; then
-  # Construct mapping index for whole assembly + HLA to compare decoys against
-  if [ ! -e hg38.p12.p13.hla.fa.gz.sa ]; then
-    cat hg38.p12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
-    bwa index hg38.p12.p13.hla.fa.gz
-  fi
-
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
   bwa mem -k101 hg38.p12.p13.hla.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz | samtools view -f0x4 | \
@@ -97,12 +97,6 @@ fi
 
 ## The Forsyth "expanded Human Oral Microbiome Database" http://www.homd.org
 if [ ! -e oral_microbiome_unmapped.alt ]; then
-  # Construct mapping index for whole assembly + HLA to compare decoys against
-  if [ ! -e hg38.p12.p13.hla.fa.gz.sa ]; then
-    cat hg38.p12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
-    bwa index hg38.p12.p13.hla.fa.gz
-  fi
-
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc ftp://ftp.homd.org/genomes/PROKKA/V9.03/fsa/ALL_genomes.fsa
   bwa mem -t`nproc` -k101 hg38.p12.p13.hla.fa.gz ALL_genomes.fsa | samtools view -f0x4 > \
