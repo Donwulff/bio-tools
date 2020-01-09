@@ -74,7 +74,7 @@ if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ]; then
 fi
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
-# To regenerate, delete hla_gen.fasta, GCA_000786075.2_hs38d1_genomic_unmapped.alt, oral_microbiome_unmapped.alt and the bwa index hg38.p12.p13.hla.fa.gz* below.
+# To regenerate, delete Allele_status.txt, hla_gen.fasta, GCA_000786075.2_hs38d1_genomic_unmapped.alt, oral_microbiome_unmapped.alt and the bwa index hg38.p12.p13.hla.fa.gz* below.
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 
@@ -99,17 +99,17 @@ if [ "$VERSION_DECOY" != "" ] && [ ! -e GCA_000786075.2_hs38d1_genomic_unmapped.
   # Rename unmapped decoy contigs into the UCSC style used by reference genomes
   samtools view -f0x4 GCA_000786075.2_hs38d1_genomic.sam | \
     gawk -v OFS="\t" '{ gsub("\\.","v",$1); print "chrUn_"$1"_decoy"; }' > \
-      GCA_000786075.2_hs38d1_genomic.list
+      GCA_000786075.2_hs38d1_genomic_unmapped.list
 
   # Use the unmapped contigs to select matching decoy sequences from the analysis set to easily rename them and remove soft-masking
   [ -e GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna ] || gzip -kd GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
   samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna
-  samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna -r GCA_000786075.2_hs38d1_genomic.list | \
+  samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna -r GCA_000786075.2_hs38d1_genomic_unmapped.list | \
     bgzip -c > GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz
 
   # Generate alt lines from alignment of remaining, unmapped decoys against the primary assy
   samtools view -f0x4 GCA_000786075.2_hs38d1_genomic.sam | \
-    gawk -v OFS="\t" '{ $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
+    gawk -v OFS="\t" '{ gsub("\\.","v",$1); $1 = "chrUn_"$1"_decoy"; $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
       GCA_000786075.2_hs38d1_genomic_unmapped.alt
 elif [ "$VERSION_DECOY" == "" ]; then
   rm GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz
