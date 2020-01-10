@@ -32,10 +32,12 @@ VERSION_PATCH="p13"
 VERSION_DECOY="D"
 VERSION_HLA="-"
 VERSION_ORAL="O903"
+VERSION_EXTRA="a"
 # VERSION_HLA will be read from IMGT/HLA Allele_status.txt file upon import of hla_gen.fasta
 
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
 # We currently need hs381d1 with UCSC naming, and the assembly with PAR & centromeric masking. We could get these from full_plus_hs38d1 BWA index, but lets download.
+[ -e GCA_000786075.2_hs38d1_genomic_unmapped.alt ] || \
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
 
@@ -79,7 +81,7 @@ wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/hla_gen.fasta
 
 VERSION_HLA="H$(grep version Allele_status.txt | tr -cd '[0-9]')"
-VERSION="$VERSION_BASE$VERSION_PATCH$VERSION_DECOY$VERSION_HLA$VERSION_ORAL"
+VERSION="$VERSION_BASE$VERSION_PATCH$VERSION_DECOY$VERSION_HLA$VERSION_ORAL$VERSION_EXTRA"
 
 # Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation because : and * mess up most tools!
 sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
