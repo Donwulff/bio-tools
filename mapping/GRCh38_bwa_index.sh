@@ -113,7 +113,7 @@ if [ "$VERSION_DECOY" != "" ] && [ ! -e GCA_000786075.2_hs38d1_genomic_unmapped.
   samtools view -f0x4 GCA_000786075.2_hs38d1_genomic.sam | \
     gawk -v OFS="\t" '{ gsub("\\.","v",$1); $1 = "chrUn_"$1"_decoy"; $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
       GCA_000786075.2_hs38d1_genomic_unmapped.alt
-elif [ "$VERSION_DECOY" == "" ]; then
+elif [ "$VERSION_DECOY" = "" ]; then
   rm GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz
   rm GCA_000786075.2_hs38d1_genomic_unmapped.alt
 fi
@@ -135,7 +135,7 @@ if [ "$VERSION_ORAL" != "" ] && [ ! -e oral_microbiome_unmapped.alt ]; then
   samtools view -f0x4 oral_microbiome.sam | \
     gawk -v OFS="\t" '{ $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
       oral_microbiome_unmapped.alt
-elif [ "$VERSION_ORAL" == "" ]; then
+elif [ "$VERSION_ORAL" = "" ]; then
   rm oral_microbiome_unmapped.fna.gz
   rm oral_microbiome_unmapped.alt
 fi
