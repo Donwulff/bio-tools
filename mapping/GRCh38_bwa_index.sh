@@ -42,7 +42,7 @@ wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
 
 # BWA alignment set without alt contigs or decoy sequences is used to determine mapping of alt contigs into the primary assembly in alt file
-if [ ! -f GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.sa ];
+if [ ! -e additional_hg38_contigs.alt ] && [ ! -f GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.sa ];
 then
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
   tar zkxf GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
@@ -141,10 +141,12 @@ elif [ "$VERSION_ORAL" = "" ]; then
 fi
 
 # There's no documentation for how the bwa alt-file should be constructed. This is just a basic starting point.
-cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
-bwa mem -t`nproc` -x intractg GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
-  | samtools view -q60 - \
-  | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.alt
+if [ ! -e additional_hg38_contigs.alt ]; then
+  cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
+  bwa mem -t`nproc` -x intractg GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
+    | samtools view -q60 - \
+    | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.alt
+fi
 
 zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz \
      hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz oral_microbiome_unmapped.fna.gz > ${VERSION}.fa
