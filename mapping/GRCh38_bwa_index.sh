@@ -142,11 +142,11 @@ fi
 cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
 bwa mem -t`nproc` -x intractg GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
   | samtools view -q60 - \
-  | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.map
+  | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.alt
 
 zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz \
      hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz oral_microbiome_unmapped.fna.gz > ${VERSION}.fa
-cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt GCA_000786075.2_hs38d1_genomic_unmapped.alt additional_hg38_contigs.map oral_microbiome_unmapped.alt > ${VERSION}.fa.alt
+cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt GCA_000786075.2_hs38d1_genomic_unmapped.alt additional_hg38_contigs.alt oral_microbiome_unmapped.alt > ${VERSION}.fa.alt
 
 bwa index ${VERSION}.fa
 
