@@ -88,7 +88,7 @@ sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
 if [ ! -e hg38.p12.p13.hla.fa.gz.sa ] || [ hla_gen.fasta -nt hg38.p12.p13.hla.fa.gz ]; then
-  cat hg38.p12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
+  cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
   bwa index hg38.p12.p13.hla.fa.gz
 fi
 
