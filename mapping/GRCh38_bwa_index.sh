@@ -32,7 +32,7 @@ VERSION_PATCH="p13"
 VERSION_DECOY="D"
 VERSION_HLA="-"
 VERSION_ORAL="O903"
-VERSION_EXTRA="a"
+VERSION_EXTRA="alt"
 # VERSION_HLA will be read from IMGT/HLA Allele_status.txt file upon import of hla_gen.fasta
 
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
@@ -88,7 +88,7 @@ sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
 if [ ! -e hg38.p12.p13.hla.fa.gz.sa ] || [ hla_gen.fasta -nt hg38.p12.p13.hla.fa.gz ]; then
-  cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
+  cat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
   bwa index hg38.p12.p13.hla.fa.gz
 fi
 
@@ -140,10 +140,10 @@ elif [ "$VERSION_ORAL" = "" ]; then
   rm oral_microbiome_unmapped.alt
 fi
 
-# There's no documentation for how the bwa alt-file should be constructed. This is just a basic starting point.
+# Scoring parameters found counting Alignment Score from bwakit hg38DH.fa.alt; this generates more supplementary alignments and missed odd MapQ 30 line
 if [ ! -e additional_hg38_contigs.alt ]; then
   cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
-  bwa mem -t`nproc` -x intractg GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
+  bwa mem -t`nproc` -A2 -B3 -O4 -E1 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
     | samtools view -q60 - \
     | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.alt
 fi
