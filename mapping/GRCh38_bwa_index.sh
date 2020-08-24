@@ -121,7 +121,7 @@ fi
 ## The Forsyth "expanded Human Oral Microbiome Database" http://www.homd.org
 if [ "$VERSION_ORAL" != "" ] && [ ! -e oral_microbiome_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
-  wget -nc ftp://ftp.homd.org/genomes/PROKKA/V9.11/fsa/ALL_genomes.fsa
+  wget -nc http://www.homd.org/ftp/genomes/PROKKA/V9.11/fsa/ALL_genomes.fsa
   bwa mem -t`nproc` -k101 hg38.p12.p13.hla.fa.gz ALL_genomes.fsa > oral_microbiome.sam
   samtools view -f0x4 oral_microbiome.sam | cut -f1 > \
       oral_microbiome_unmapped.list
