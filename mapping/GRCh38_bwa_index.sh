@@ -76,7 +76,7 @@ if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ]; then
 fi
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
-# To regenerate, delete Allele_status.txt, hla_gen.fasta, GCA_000786075.2_hs38d1_genomic_unmapped.alt, oral_microbiome_unmapped.alt and the bwa index hg38.p12.p13.hla.fa.gz* below.
+# To regenerate, delete Allele_status.txt hla_gen.fasta
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt
 wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/fasta/hla_gen.fasta
 
@@ -84,73 +84,79 @@ VERSION_HLA="H$(grep version Allele_status.txt | tr -cd '[0-9]')"
 VERSION="$VERSION_BASE$VERSION_PATCH$VERSION_DECOY$VERSION_HLA$VERSION_ORAL$VERSION_EXTRA"
 
 # Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation because : and * mess up most tools!
-sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.fasta.gz
+[ -e hla_gen.$VERSION_HLA.fasta.gz ] || sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.$VERSION_HLA.fasta.gz
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
-if [ ! -e hg38.p12.p13.hla.fa.gz.sa ] || [ hla_gen.fasta -nt hg38.p12.p13.hla.fa.gz ]; then
-  cat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > hg38.p12.p13.hla.fa.gz
-  bwa index hg38.p12.p13.hla.fa.gz
+if [ ! -e hg38.p12.p13.$VERSION_HLA.fa.gz.sa ]; then
+  cat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz \
+      hg38Patch11.fa.gz \
+      GRCh38Patch12.fa.gz \
+      GRCh38Patch13.fa.gz \
+      hla_gen.$VERSION_HLA.fasta.gz \
+    > hg38.p12.p13.$VERSION_HLA.fa.gz
+  bwa index hg38.p12.p13.$VERSION_HLA.fa.gz
 fi
 
 ## Steps to clean up decoy sequences
-if [ "$VERSION_DECOY" != "" ] && [ ! -e GCA_000786075.2_hs38d1_genomic_unmapped.alt ]; then
+DECOY_BASE=GCA_000786075.2_hs38d1_p13_${VERSION_HLA}_genomic
+if [ "$VERSION_DECOY" != "" ] && [ ! -e ${DECOY_BASE}_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
-  bwa mem -k101 hg38.p12.p13.hla.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > GCA_000786075.2_hs38d1_genomic.sam
+  bwa mem -t`nproc` -k101 hg38.p12.p13.$VERSION_HLA.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > $DECOY_BASE.sam
 
   # Rename unmapped decoy contigs into the UCSC style used by reference genomes
-  samtools view -f0x4 GCA_000786075.2_hs38d1_genomic.sam | \
+  samtools view -f0x4 $DECOY_BASE.sam | \
     gawk -v OFS="\t" '{ gsub("\\.","v",$1); print "chrUn_"$1"_decoy"; }' > \
-      GCA_000786075.2_hs38d1_genomic_unmapped.list
+      ${DECOY_BASE}_unmapped.list
 
   # Use the unmapped contigs to select matching decoy sequences from the analysis set to easily rename them and remove soft-masking
-  [ -e GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna ] || gzip -kd GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
+  [ -e GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna ] || gzip -cd GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz > \
+    GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna
   samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna
-  samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna -r GCA_000786075.2_hs38d1_genomic_unmapped.list | \
-    bgzip -c > GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz
+  samtools faidx GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna -r ${DECOY_BASE}_unmapped.list | \
+    bgzip -c > ${DECOY_BASE}_unmapped.fna.gz
 
   # Generate alt lines from alignment of remaining, unmapped decoys against the primary assy
-  samtools view -f0x4 GCA_000786075.2_hs38d1_genomic.sam | \
+  samtools view -f0x4 $DECOY_BASE.sam | \
     gawk -v OFS="\t" '{ gsub("\\.","v",$1); $1 = "chrUn_"$1"_decoy"; $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
-      GCA_000786075.2_hs38d1_genomic_unmapped.alt
-elif [ "$VERSION_DECOY" = "" ]; then
-  rm GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz
-  rm GCA_000786075.2_hs38d1_genomic_unmapped.alt
+      ${DECOY_BASE}_unmapped.alt
 fi
 
 ## The Forsyth "expanded Human Oral Microbiome Database" http://www.homd.org
-if [ "$VERSION_ORAL" != "" ] && [ ! -e oral_microbiome_unmapped.alt ]; then
+ORAL_BASE=oral_microbiome_p13_${VERSION_HLA}_${VERSION_ORAL}
+if [ "$VERSION_ORAL" != "" ] && [ ! -e ${ORAL_BASE}_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc http://www.homd.org/ftp/genomes/PROKKA/V9.11/fsa/ALL_genomes.fsa
-  bwa mem -t`nproc` -k101 hg38.p12.p13.hla.fa.gz ALL_genomes.fsa > oral_microbiome.sam
-  samtools view -f0x4 oral_microbiome.sam | cut -f1 > \
-      oral_microbiome_unmapped.list
+  bwa mem -t`nproc` -k101 hg38.p12.p13.$VERSION_HLA.fa.gz ALL_genomes.fsa > $ORAL_BASE.sam
+  samtools view -f0x4 $ORAL_BASE.sam | cut -f1 > \
+    ${ORAL_BASE}_unmapped.list
 
   # Use the unmapped contigs to select matching decoy sequences from the analysis set
   samtools faidx ALL_genomes.fsa
-  samtools faidx ALL_genomes.fsa -r oral_microbiome_unmapped.list | \
-    bgzip -c > oral_microbiome_unmapped.fna.gz
+  samtools faidx ALL_genomes.fsa -r ${ORAL_BASE}_unmapped.list | \
+    bgzip -c > ${ORAL_BASE}_unmapped.fna.gz
 
   # Generate alt lines from alignment of remaining, unmapped decoys against the primary assy
-  samtools view -f0x4 oral_microbiome.sam | \
+  samtools view -f0x4 $ORAL_BASE.sam | \
     gawk -v OFS="\t" '{ $6 = length($10)"M"; $10 = "*"; $11 = "*"; NF=11; print }' > \
-      oral_microbiome_unmapped.alt
-elif [ "$VERSION_ORAL" = "" ]; then
-  rm oral_microbiome_unmapped.fna.gz
-  rm oral_microbiome_unmapped.alt
+      ${ORAL_BASE}_unmapped.alt
 fi
 
 # Scoring parameters found counting Alignment Score from bwakit hg38DH.fa.alt; this generates more supplementary alignments and missed odd MapQ 30 line
 if [ ! -e additional_hg38_contigs.alt ]; then
-  cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz > additional_hg38_contigs.fa.gz
-  bwa mem -t`nproc` -A2 -B3 -O4 -E1 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_contigs.fa.gz \
+  cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.$VERSION_HLA.fasta.gz > additional_hg38_p13_${VERSION_HLA}_contigs.fa.gz
+  bwa mem -t`nproc` -A2 -B3 -O4 -E1 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_p13_${VERSION_HLA}_contigs.fa.gz \
     | samtools view -q60 - \
-    | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_contigs.alt
+    | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_p13_${VERSION_HLA}_contigs.alt
 fi
 
-zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz GCA_000786075.2_hs38d1_genomic_unmapped.fna.gz \
-     hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.fasta.gz oral_microbiome_unmapped.fna.gz > ${VERSION}.fa
-cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt GCA_000786075.2_hs38d1_genomic_unmapped.alt additional_hg38_contigs.alt oral_microbiome_unmapped.alt > ${VERSION}.fa.alt
+zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz ${DECOY_BASE}_unmapped.fna.gz \
+     hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.$VERSION_HLA.fasta.gz ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
+cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt \
+    ${DECOY_BASE}_unmapped.alt \
+    additional_hg38_p13_${VERSION_HLA}_contigs.alt \
+    ${ORAL_BASE}_unmapped.alt \
+  > ${VERSION}.fa.alt
 
 bwa index ${VERSION}.fa
 
