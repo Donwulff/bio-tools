@@ -28,10 +28,10 @@ set -x
 
 # WARNING! Oral microbiome is experimental.
 VERSION_BASE="hg38"
-VERSION_PATCH="p13"
+VERSION_PATCH="p14"
 VERSION_DECOY="D"
 VERSION_HLA="-"
-VERSION_ORAL="O911"
+VERSION_ORAL="O915"
 VERSION_EXTRA="alt"
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
@@ -49,7 +49,7 @@ wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15
 wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
 
 # BWA alignment set without alt contigs or decoy sequences is used to determine mapping of alt contigs into the primary assembly in alt file
-if [ ! -e additional_hg38_p13_${VERSION_HLA}_contigs.alt ] && [ ! -f GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.sa ];
+if [ ! -e additional_hg38_p14_${VERSION_HLA}_contigs.alt ] && [ ! -f GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.sa ];
 then
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
   tar zkxf GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
@@ -68,40 +68,57 @@ wget -nc http://hgdownload.cse.ucsc.edu/goldenPath/hg38/hg38Patch11/hg38Patch11.
 #wget -nc ftp://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/p12/hg38.p12.fa.gz
 
 # Get the NCBI reference genomes so we can construct incremental patches between them to add to the UCSC reference genome
-if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ]; then
+if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ] || [ ! -e GRCh38Patch14.fa.gz ]; then
   # Genome Reference Consortium https://www.ncbi.nlm.nih.gov/grc/human releases cumulative patches to the latest assembly
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.26_GRCh38.p11/GCA_000001405.26_GRCh38.p11_genomic.fna.gz
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.27_GRCh38.p12/GCA_000001405.27_GRCh38.p12_genomic.fna.gz
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
+  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.29_GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna.gz
 
   # I couldn't find a source for incremental patches to the human assembly, so we need to diff and clean it up.
   # These could be converted to the UCSC naming, but because they're not yet officially in UCSC, that could be misleading.
   # This is done stepwise to keep the new patches at the end of the file in case one needs to compare mappings etc.
-  # Patch 13 includes some changes that do not effect reference, ignore case and contig state change.
-  zdiff --ignore-case GCA_000001405.26_GRCh38.p11_genomic.fna.gz GCA_000001405.27_GRCh38.p12_genomic.fna.gz | grep "^> " | grep -v "UNVERIFIED_ORG" | cut -c3- | gzip -c > GRCh38Patch12.fa.gz
-  zdiff --ignore-case GCA_000001405.27_GRCh38.p12_genomic.fna.gz GCA_000001405.28_GRCh38.p13_genomic.fna.gz | grep "^> " | grep -v "UNVERIFIED_ORG" | cut -c3- | gzip -c > GRCh38Patch13.fa.gz
+  # Patch 13 includes some changes that do not affect sequence, ignore case and contig state change.
+  samtools dict -a GRCh38 -s "Homo Sapiens" -u "" GCA_000001405.26_GRCh38.p11_genomic.fna.gz -o GCA_000001405.26_GRCh38.p11_genomic.fna.dict
+  samtools dict -a GRCh38 -s "Homo Sapiens" -u "" GCA_000001405.27_GRCh38.p12_genomic.fna.gz -o GCA_000001405.27_GRCh38.p12_genomic.fna.dict
+  samtools dict -a GRCh38 -s "Homo Sapiens" -u "" GCA_000001405.28_GRCh38.p13_genomic.fna.gz -o GCA_000001405.28_GRCh38.p13_genomic.fna.dict
+  samtools dict -a GRCh38 -s "Homo Sapiens" -u "" GCA_000001405.29_GRCh38.p14_genomic.fna.gz -o GCA_000001405.29_GRCh38.p14_genomic.fna.dict
+
+  gzip -cd GCA_000001405.29_GRCh38.p14_genomic.fna.gz | bgzip > GCA_000001405.29_GRCh38.p14_genomic.bgzip.fna.gz
+  samtools faidx GCA_000001405.29_GRCh38.p14_genomic.bgzip.fna.gz
+
+  # GRCh38Patch14 is different, KQ983257.1 and KQ983258.1 are in different order from previous patches, whhich makes KQ983257.1 look like a new sequence; keeping original ordering.
+  # KQ759759.1 and KQ759762.1 from Patch12 are replaced with new, revision 2 sequences. They could be left out, but for downstream analysis I'm keeping them.
+  diff -u0 GCA_000001405.26_GRCh38.p11_genomic.fna.dict GCA_000001405.27_GRCh38.p12_genomic.fna.dict | grep "^+@SQ" | cut -f2 | cut -d':' -f2 > GRCh38Patch12.list
+  diff -u0 GCA_000001405.27_GRCh38.p12_genomic.fna.dict GCA_000001405.28_GRCh38.p13_genomic.fna.dict | grep "^+@SQ" | cut -f2 | cut -d':' -f2 > GRCh38Patch13.list
+  diff -u0 GCA_000001405.28_GRCh38.p13_genomic.fna.dict GCA_000001405.29_GRCh38.p14_genomic.fna.dict | grep "^+@SQ" | cut -f2 | cut -d':' -f2 | grep -v "KQ983257.1" > GRCh38Patch14.list
+
+  samtools faidx GCA_000001405.29_GRCh38.p14_genomic.bgzip.fna.gz -r GRCh38Patch12.list | gzip -c > GRCh38Patch12.fa.gz
+  samtools faidx GCA_000001405.29_GRCh38.p14_genomic.bgzip.fna.gz -r GRCh38Patch13.list | gzip -c > GRCh38Patch13.fa.gz
+  samtools faidx GCA_000001405.29_GRCh38.p14_genomic.bgzip.fna.gz -r GRCh38Patch14.list | gzip -c > GRCh38Patch14.fa.gz
 fi
 
 # Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation because : and * mess up most tools!
 [ -e hla_gen.$VERSION_HLA.fasta.gz ] || sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.$VERSION_HLA.fasta.gz
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
-if [ ! -e hg38.p12.p13.$VERSION_HLA.fa.gz.sa ]; then
+if [ ! -e hg38.p12.p13.p14.$VERSION_HLA.fa.gz.sa ]; then
   cat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz \
       hg38Patch11.fa.gz \
       GRCh38Patch12.fa.gz \
       GRCh38Patch13.fa.gz \
+      GRCh38Patch14.fa.gz \
       hla_gen.$VERSION_HLA.fasta.gz \
-    > hg38.p12.p13.$VERSION_HLA.fa.gz
-  bwa index hg38.p12.p13.$VERSION_HLA.fa.gz
+    > hg38.p12.p13.p14.$VERSION_HLA.fa.gz
+  bwa index hg38.p12.p13.p14.$VERSION_HLA.fa.gz
 fi
 
 ## Steps to clean up decoy sequences
-DECOY_BASE=GCA_000786075.2_hs38d1_p13_${VERSION_HLA}_genomic
+DECOY_BASE=GCA_000786075.2_hs38d1_p14_${VERSION_HLA}_genomic
 if [ "$VERSION_DECOY" != "" ] && [ ! -e ${DECOY_BASE}_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
-  bwa mem -t`nproc` -k101 hg38.p12.p13.$VERSION_HLA.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > $DECOY_BASE.sam
+  bwa mem -t`nproc` -k101 hg38.p12.p13.p14.$VERSION_HLA.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > $DECOY_BASE.sam
 
   # Rename unmapped decoy contigs into the UCSC style used by reference genomes
   samtools view -f0x4 $DECOY_BASE.sam | \
@@ -122,11 +139,11 @@ if [ "$VERSION_DECOY" != "" ] && [ ! -e ${DECOY_BASE}_unmapped.alt ]; then
 fi
 
 ## The Forsyth "expanded Human Oral Microbiome Database" http://www.homd.org
-ORAL_BASE=oral_microbiome_p13_${VERSION_HLA}_${VERSION_ORAL}
+ORAL_BASE=oral_microbiome_p14_${VERSION_HLA}_${VERSION_ORAL}
 if [ "$VERSION_ORAL" != "" ] && [ ! -e ${ORAL_BASE}_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
-  wget -nc http://www.homd.org/ftp/genomes/PROKKA/V9.11/fsa/ALL_genomes.fsa
-  bwa mem -t`nproc` -k101 hg38.p12.p13.$VERSION_HLA.fa.gz ALL_genomes.fsa > $ORAL_BASE.sam
+  wget -nc http://www.homd.org/ftp/genomes/PROKKA/V9.15/fsa/ALL_genomes.fsa
+  bwa mem -t`nproc` -k101 hg38.p12.p13.p14.$VERSION_HLA.fa.gz ALL_genomes.fsa > $ORAL_BASE.sam
   samtools view -f0x4 $ORAL_BASE.sam | cut -f1 > \
     ${ORAL_BASE}_unmapped.list
 
@@ -142,18 +159,18 @@ if [ "$VERSION_ORAL" != "" ] && [ ! -e ${ORAL_BASE}_unmapped.alt ]; then
 fi
 
 # Scoring parameters found counting Alignment Score from bwakit hg38DH.fa.alt; this generates more supplementary alignments and missed odd MapQ 30 line
-if [ ! -e additional_hg38_p13_${VERSION_HLA}_contigs.alt ]; then
-  cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.$VERSION_HLA.fasta.gz > additional_hg38_p13_${VERSION_HLA}_contigs.fa.gz
-  bwa mem -t`nproc` -A2 -B3 -O4 -E1 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_p13_${VERSION_HLA}_contigs.fa.gz \
+if [ ! -e additional_hg38_p14_${VERSION_HLA}_contigs.alt ]; then
+  cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz hla_gen.$VERSION_HLA.fasta.gz > additional_hg38_p14_${VERSION_HLA}_contigs.fa.gz
+  bwa mem -t`nproc` -A2 -B3 -O4 -E1 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_p14_${VERSION_HLA}_contigs.fa.gz \
     | samtools view -q60 - \
-    | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_p13_${VERSION_HLA}_contigs.alt
+    | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_p14_${VERSION_HLA}_contigs.alt
 fi
 
 zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz ${DECOY_BASE}_unmapped.fna.gz \
-     hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz hla_gen.$VERSION_HLA.fasta.gz ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
+     hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz hla_gen.$VERSION_HLA.fasta.gz ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
 cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt \
     ${DECOY_BASE}_unmapped.alt \
-    additional_hg38_p13_${VERSION_HLA}_contigs.alt \
+    additional_hg38_p14_${VERSION_HLA}_contigs.alt \
     ${ORAL_BASE}_unmapped.alt \
   > ${VERSION}.fa.alt
 
