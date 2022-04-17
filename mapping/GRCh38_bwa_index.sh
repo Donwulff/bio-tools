@@ -10,9 +10,9 @@
 # See explanation & preliminary results: https://github.com/lh3/bwa/blob/master/README-alt.md
 
 # Some more general references:
-# http://lh3.github.io/2017/11/13/which-human-reference-genome-to-use explains the choice of the base reference.
-# Original hs37d5 decoy sequence presentation http://lh3lh3.users.sourceforge.net/download/decoyseq.pdf
-# Some notes in ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/README_human_reference_20110707
+# https://lh3.github.io/2017/11/13/which-human-reference-genome-to-use explains the choice of the base reference.
+# Original hs37d5 decoy sequence presentation https://lh3lh3.users.sourceforge.net/download/decoyseq.pdf
+# Some notes in https://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/README_human_reference_20110707
 # Scripts mentioned are available in https://github.com/lh3/misc/tree/master/seq/novoseq
 
 # hs38d1 construction is covered in https://www.ncbi.nlm.nih.gov/pubmed/27654912 Supplementary section 5
@@ -36,8 +36,8 @@ VERSION_EXTRA="alt"
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
 # To regenerate, delete Allele_status.txt hla_gen.fasta
-wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt
-wget -nc ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/fasta/hla_gen.fasta
+wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt
+wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/fasta/hla_gen.fasta
 
 VERSION_HLA="H$(grep version Allele_status.txt | tr -cd '[0-9]')"
 VERSION="$VERSION_BASE$VERSION_PATCH$VERSION_DECOY$VERSION_HLA$VERSION_ORAL$VERSION_EXTRA"
@@ -45,35 +45,43 @@ VERSION="$VERSION_BASE$VERSION_PATCH$VERSION_DECOY$VERSION_HLA$VERSION_ORAL$VERS
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
 # We currently need hs381d1 with UCSC naming, and the assembly with PAR & centromeric masking. We could get these from full_plus_hs38d1 BWA index, but lets download.
 [ -e GCA_000786075.2_hs38d1_genomic_unmapped.alt ] || \
-wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
-wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
 
 # BWA alignment set without alt contigs or decoy sequences is used to determine mapping of alt contigs into the primary assembly in alt file
 if [ ! -e additional_hg38_p14_${VERSION_HLA}_contigs.alt ] && [ ! -f GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.sa ];
 then
-  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
   tar zkxf GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
 fi
 
 # We need this only for the base ALT-file, perhaps we could regenerate it ourselves; there's also copy in the git repo to skip expensive calculations
 if [ ! -f GCA_000001405.15_GRCh38_full_analysis_set.fna.alt ];
 then
-  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.bwa_index.tar.gz
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.bwa_index.tar.gz
   tar zkxf GCA_000001405.15_GRCh38_full_analysis_set.fna.bwa_index.tar.gz
 fi
 
-# University of California Santa Cruz UCSC's contig names used in their Golden Path genome browser have become standard http://genome.ucsc.edu/
-wget -nc http://hgdownload.cse.ucsc.edu/goldenPath/hg38/hg38Patch11/hg38Patch11.fa.gz
+# Validate downloaded files; we should do this before extracting, but for simplicity, fix these manually if needed.
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/md5checksums.txt
+md5sum --ignore-missing --check md5checksums.txt
+if [ "$?" != "0" ]; then
+  echo "Problem with downloading base references."
+  exit 1
+fi
+
+# University of California Santa Cruz UCSC's contig names used in their Golden Path genome browser have become standard https://genome.ucsc.edu/
+wget -nc https://hgdownload.cse.ucsc.edu/goldenPath/hg38/hg38Patch11/hg38Patch11.fa.gz
 # p12 UCSC names aren't yet in the p12 genome assembly report, so the names in this version are used in future; ignore currently
-#wget -nc ftp://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/p12/hg38.p12.fa.gz
+#wget -nc https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/p12/hg38.p12.fa.gz
 
 # Get the NCBI reference genomes so we can construct incremental patches between them to add to the UCSC reference genome
 if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ] || [ ! -e GRCh38Patch14.fa.gz ]; then
   # Genome Reference Consortium https://www.ncbi.nlm.nih.gov/grc/human releases cumulative patches to the latest assembly
-  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.26_GRCh38.p11/GCA_000001405.26_GRCh38.p11_genomic.fna.gz
-  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.27_GRCh38.p12/GCA_000001405.27_GRCh38.p12_genomic.fna.gz
-  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
-  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.29_GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna.gz
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.26_GRCh38.p11/GCA_000001405.26_GRCh38.p11_genomic.fna.gz
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.27_GRCh38.p12/GCA_000001405.27_GRCh38.p12_genomic.fna.gz
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.29_GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna.gz
 
   # I couldn't find a source for incremental patches to the human assembly, so we need to diff and clean it up.
   # These could be converted to the UCSC naming, but because they're not yet officially in UCSC, that could be misleading.
@@ -117,7 +125,7 @@ fi
 DECOY_BASE=GCA_000786075.2_hs38d1_p14_${VERSION_HLA}_genomic
 if [ "$VERSION_DECOY" != "" ] && [ ! -e ${DECOY_BASE}_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
-  wget -nc ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
   bwa mem -t`nproc` -k101 hg38.p12.p13.p14.$VERSION_HLA.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > $DECOY_BASE.sam
 
   # Rename unmapped decoy contigs into the UCSC style used by reference genomes
@@ -138,11 +146,11 @@ if [ "$VERSION_DECOY" != "" ] && [ ! -e ${DECOY_BASE}_unmapped.alt ]; then
       ${DECOY_BASE}_unmapped.alt
 fi
 
-## The Forsyth "expanded Human Oral Microbiome Database" http://www.homd.org
+## The Forsyth "expanded Human Oral Microbiome Database" https://www.homd.org
 ORAL_BASE=oral_microbiome_p14_${VERSION_HLA}_${VERSION_ORAL}
 if [ "$VERSION_ORAL" != "" ] && [ ! -e ${ORAL_BASE}_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
-  wget -nc http://www.homd.org/ftp/genomes/PROKKA/V9.15/fsa/ALL_genomes.fsa
+  wget -nc https://www.homd.org/ftp/genomes/PROKKA/V9.15/fsa/ALL_genomes.fsa
   bwa mem -t`nproc` -k101 hg38.p12.p13.p14.$VERSION_HLA.fa.gz ALL_genomes.fsa > $ORAL_BASE.sam
   samtools view -f0x4 $ORAL_BASE.sam | cut -f1 > \
     ${ORAL_BASE}_unmapped.list
