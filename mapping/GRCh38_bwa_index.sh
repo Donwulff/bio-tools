@@ -26,6 +26,10 @@
 
 set -x
 
+# Most of the version strings are currently fixed, changing VERSION_BASE, VERSION_PATCH or VERSION_ORAL doesn't affect built reference in itself.
+# VERSION_HLA will be read from latest IPD-IMGT/HLA data file,
+# VERSION_DECOY '' means not to include decoy sequences,
+# VERSION_EXTRA 'hla' means to use HLA-* allele names which cause issues with some downstream analysis.
 # WARNING! Oral microbiome is experimental.
 VERSION_BASE="hg38"
 VERSION_PATCH="p14"
@@ -35,7 +39,7 @@ VERSION_ORAL="O915"
 VERSION_EXTRA="alt"
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
-# To regenerate, delete Allele_status.txt hla_gen.fasta
+# To regenerate with latest (possibly updated) version, delete Allele_status.txt hla_gen.fasta
 wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt
 wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/fasta/hla_gen.fasta
 
@@ -64,11 +68,15 @@ fi
 
 # Validate downloaded files; we should do this before extracting, but for simplicity, fix these manually if needed.
 wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/md5checksums.txt
+rm GCA_000001405.15_GRCh38_GRC_exclusions.bed
 md5sum --ignore-missing --check md5checksums.txt
 if [ "$?" != "0" ]; then
   echo "Problem with downloading base references."
   exit 1
 fi
+
+# Funny thing, the md5checksums.txt has not been updated after p14 change of the GCA_000001405.15_GRCh38_GRC_exclusions.bed, so we can't check it.
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_GRC_exclusions.bed
 
 # University of California Santa Cruz UCSC's contig names used in their Golden Path genome browser have become standard https://genome.ucsc.edu/
 wget -nc https://hgdownload.cse.ucsc.edu/goldenPath/hg38/hg38Patch11/hg38Patch11.fa.gz
@@ -106,12 +114,18 @@ if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ] || [ ! -e GRCh38
   samtools faidx GCA_000001405.29_GRCh38.p14_genomic.bgzip.fna.gz -r GRCh38Patch14.list | gzip -c > GRCh38Patch14.fa.gz
 fi
 
-# Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation because : and * mess up most tools!
-[ -e hla_gen.$VERSION_HLA.fasta.gz ] || sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.$VERSION_HLA.fasta.gz
+# Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation by default because : and * mess up most tools!
+if [ $VERSION_EXTRA = "hla" ]; then
+  [ -e hla_gen.$VERSION_HLA.fasta.gz ] || sed "s/^>HLA:HLA[0-9]* />HLA-/" hla_gen.fasta | gzip -c > hla_gen.$VERSION_HLA.fasta.gz
+else
+  [ -e hla_gen.$VERSION_HLA.fasta.gz ] || sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.$VERSION_HLA.fasta.gz
+fi
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
 if [ ! -e hg38.p12.p13.p14.$VERSION_HLA.fa.gz.sa ]; then
-  cat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz \
+  gzip -cd GCA_000001405.15_GRCh38_full_analysis_set.fna.gz > GCA_000001405.15_GRCh38_full_analysis_set.fna
+  bedtools maskfasta -fullHeader -fi GCA_000001405.15_GRCh38_full_analysis_set.fna -fo GCA_000001405.15_GRCh38_full_analysis_set_masked.fna -bed GCA_000001405.15_GRCh38_GRC_exclusions.bed
+  cat GCA_000001405.15_GRCh38_full_analysis_set_masked.fna \
       hg38Patch11.fa.gz \
       GRCh38Patch12.fa.gz \
       GRCh38Patch13.fa.gz \
@@ -174,7 +188,7 @@ if [ ! -e additional_hg38_p14_${VERSION_HLA}_contigs.alt ]; then
     | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_p14_${VERSION_HLA}_contigs.alt
 fi
 
-zcat GCA_000001405.15_GRCh38_full_analysis_set.fna.gz ${DECOY_BASE}_unmapped.fna.gz \
+zcat GCA_000001405.15_GRCh38_full_analysis_set_masked.fna ${DECOY_BASE}_unmapped.fna.gz \
      hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz hla_gen.$VERSION_HLA.fasta.gz ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
 cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt \
     ${DECOY_BASE}_unmapped.alt \
