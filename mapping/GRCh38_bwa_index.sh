@@ -36,7 +36,7 @@ VERSION_PATCH="p14"
 VERSION_DECOY="D"
 VERSION_HLA="-"
 VERSION_ORAL="O915"
-VERSION_EXTRA="alt"
+VERSION_EXTRA="hla"
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
 # To regenerate with latest (possibly updated) version, delete Allele_status.txt hla_gen.fasta
@@ -125,7 +125,9 @@ fi
 if [ ! -e hg38.p12.p13.p14.$VERSION_HLA.fa.gz.sa ]; then
   gzip -cd GCA_000001405.15_GRCh38_full_analysis_set.fna.gz > GCA_000001405.15_GRCh38_full_analysis_set.fna
   bedtools maskfasta -fullHeader -fi GCA_000001405.15_GRCh38_full_analysis_set.fna -fo GCA_000001405.15_GRCh38_full_analysis_set_masked.fna -bed GCA_000001405.15_GRCh38_GRC_exclusions.bed
-  cat GCA_000001405.15_GRCh38_full_analysis_set_masked.fna \
+  gzip GCA_000001405.15_GRCh38_full_analysis_set_masked.fna
+  # Use concatenated gzip's for speed because this is temporary index.
+  cat GCA_000001405.15_GRCh38_full_analysis_set_masked.fna.gz \
       hg38Patch11.fa.gz \
       GRCh38Patch12.fa.gz \
       GRCh38Patch13.fa.gz \
@@ -188,7 +190,7 @@ if [ ! -e additional_hg38_p14_${VERSION_HLA}_contigs.alt ]; then
     | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_p14_${VERSION_HLA}_contigs.alt
 fi
 
-zcat GCA_000001405.15_GRCh38_full_analysis_set_masked.fna ${DECOY_BASE}_unmapped.fna.gz \
+zcat GCA_000001405.15_GRCh38_full_analysis_set_masked.fna.gz ${DECOY_BASE}_unmapped.fna.gz \
      hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz hla_gen.$VERSION_HLA.fasta.gz ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
 cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt \
     ${DECOY_BASE}_unmapped.alt \
