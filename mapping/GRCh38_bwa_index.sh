@@ -36,7 +36,7 @@ VERSION_PATCH="p14"
 VERSION_DECOY="D"
 VERSION_HLA="-"
 VERSION_ORAL="O915"
-VERSION_EXTRA="hla"
+VERSION_EXTRA="alt"
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
 # To regenerate with latest (possibly updated) version, delete Allele_status.txt hla_gen.fasta
