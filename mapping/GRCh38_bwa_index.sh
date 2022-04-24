@@ -90,6 +90,16 @@ if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ] || [ ! -e GRCh38
   wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.27_GRCh38.p12/GCA_000001405.27_GRCh38.p12_genomic.fna.gz
   wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
   wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.29_GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna.gz
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.26_GRCh38.p11/md5checksums.txt -O md5checksums.p11.txt
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.27_GRCh38.p12/md5checksums.txt -O md5checksums.p12.txt
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/md5checksums.txt -O md5checksums.p13.txt
+  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.29_GRCh38.p14/md5checksums.txt -O md5checksums.p14.txt
+  cat md5checksums.p11.txt md5checksums.p12.txt md5checksums.p13.txt md5checksums.p14.txt > md5checksums.all.txt
+  md5sum --ignore-missing --check md5checksums.all.txt
+  if [ "$?" != "0" ]; then
+    echo "Problem with downloading patch references for differential."
+    exit 1
+  fi
 
   # I couldn't find a source for incremental patches to the human assembly, so we need to diff and clean it up.
   # These could be converted to the UCSC naming, but because they're not yet officially in UCSC, that could be misleading.
@@ -105,9 +115,10 @@ if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ] || [ ! -e GRCh38
 
   # GRCh38Patch14 is different, KQ983257.1 and KQ983258.1 are in different order from previous patches, whhich makes KQ983257.1 look like a new sequence; keeping original ordering.
   # KQ759759.1 and KQ759762.1 from Patch12 are replaced with new, revision 2 sequences. They could be left out, but for downstream analysis I'm keeping them.
+  # On 20th April 2022, location of the contig KI270825.1 was moved to different place in the .p14 reference, in which it was already declared contamination.
   diff -u0 GCA_000001405.26_GRCh38.p11_genomic.fna.dict GCA_000001405.27_GRCh38.p12_genomic.fna.dict | grep "^+@SQ" | cut -f2 | cut -d':' -f2 > GRCh38Patch12.list
   diff -u0 GCA_000001405.27_GRCh38.p12_genomic.fna.dict GCA_000001405.28_GRCh38.p13_genomic.fna.dict | grep "^+@SQ" | cut -f2 | cut -d':' -f2 > GRCh38Patch13.list
-  diff -u0 GCA_000001405.28_GRCh38.p13_genomic.fna.dict GCA_000001405.29_GRCh38.p14_genomic.fna.dict | grep "^+@SQ" | cut -f2 | cut -d':' -f2 | grep -v "KQ983257.1" > GRCh38Patch14.list
+  diff -u0 GCA_000001405.28_GRCh38.p13_genomic.fna.dict GCA_000001405.29_GRCh38.p14_genomic.fna.dict | grep "^+@SQ" | cut -f2 | cut -d':' -f2 | grep -v "KQ983257\.1" | grep -v "KI270825\.1" > GRCh38Patch14.list
 
   samtools faidx GCA_000001405.29_GRCh38.p14_genomic.bgzip.fna.gz -r GRCh38Patch12.list | gzip -c > GRCh38Patch12.fa.gz
   samtools faidx GCA_000001405.29_GRCh38.p14_genomic.bgzip.fna.gz -r GRCh38Patch13.list | gzip -c > GRCh38Patch13.fa.gz
@@ -123,9 +134,11 @@ fi
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
 if [ ! -e hg38.p12.p13.p14.$VERSION_HLA.fa.gz.sa ]; then
-  gzip -cd GCA_000001405.15_GRCh38_full_analysis_set.fna.gz > GCA_000001405.15_GRCh38_full_analysis_set.fna
-  bedtools maskfasta -fullHeader -fi GCA_000001405.15_GRCh38_full_analysis_set.fna -fo GCA_000001405.15_GRCh38_full_analysis_set_masked.fna -bed GCA_000001405.15_GRCh38_GRC_exclusions.bed
-  gzip GCA_000001405.15_GRCh38_full_analysis_set_masked.fna
+  if [ ! -e GCA_000001405.15_GRCh38_full_analysis_set_masked.fna.gz ]; then
+    gzip -cd GCA_000001405.15_GRCh38_full_analysis_set.fna.gz > GCA_000001405.15_GRCh38_full_analysis_set.fna
+    bedtools maskfasta -fullHeader -fi GCA_000001405.15_GRCh38_full_analysis_set.fna -fo GCA_000001405.15_GRCh38_full_analysis_set_masked.fna -bed GCA_000001405.15_GRCh38_GRC_exclusions.bed
+    gzip GCA_000001405.15_GRCh38_full_analysis_set_masked.fna
+  fi
   # Use concatenated gzip's for speed because this is temporary index.
   cat GCA_000001405.15_GRCh38_full_analysis_set_masked.fna.gz \
       hg38Patch11.fa.gz \
