@@ -36,7 +36,7 @@ VERSION_PATCH="p14"
 VERSION_DECOY="D"
 VERSION_HLA="-"
 VERSION_ORAL="O915"
-VERSION_EXTRA="alt"
+VERSION_EXTRA="hla"
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
 # To regenerate with latest (possibly updated) version, delete Allele_status.txt hla_gen.fasta
@@ -47,17 +47,12 @@ VERSION_HLA="H$(grep version Allele_status.txt | tr -cd '[0-9]')"
 VERSION="$VERSION_BASE$VERSION_PATCH$VERSION_DECOY$VERSION_HLA$VERSION_ORAL$VERSION_EXTRA"
 
 # National Center for Biotechnology Information Analysis Set https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/#seqsforalign
-# We currently need hs381d1 with UCSC naming, and the assembly with PAR & centromeric masking. We could get these from full_plus_hs38d1 BWA index, but lets download.
+# We currently need hs381d1 with UCSC naming, the assembly with PAR & centromeric masking, and no-alt set for masked alt-alignment creation.
+# It's starting to feel like we would be better off creating these from full_plus_hs38d1 BWA index, but lets download.
 [ -e GCA_000786075.2_hs38d1_genomic_unmapped.alt ] || \
 wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz
 wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.gz
-
-# BWA alignment set without alt contigs or decoy sequences is used to determine mapping of alt contigs into the primary assembly in alt file
-if [ ! -e additional_hg38_p14_${VERSION_HLA}_contigs.alt ] && [ ! -f GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.sa ];
-then
-  wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
-  tar zkxf GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.bwa_index.tar.gz
-fi
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
 
 # We need this only for the base ALT-file, perhaps we could regenerate it ourselves; there's also copy in the git repo to skip expensive calculations
 if [ ! -f GCA_000001405.15_GRCh38_full_analysis_set.fna.alt ];
@@ -197,23 +192,30 @@ fi
 
 # Scoring parameters found counting Alignment Score from bwakit hg38DH.fa.alt; this generates more supplementary alignments and missed odd MapQ 30 line
 if [ ! -e additional_hg38_p14_${VERSION_HLA}_contigs.alt ]; then
+  if [ ! -e GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna.sa ]; then
+    gzip -cd GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz > GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+    bedtools maskfasta -fullHeader -fi GCA_000001405.15_GRCh38_no_alt_analysis_set.fna -fo GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna -bed GCA_000001405.15_GRCh38_GRC_exclusions.bed
+    bwa index GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna
+  fi
   cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz hla_gen.$VERSION_HLA.fasta.gz > additional_hg38_p14_${VERSION_HLA}_contigs.fa.gz
-  bwa mem -t`nproc` -A2 -B3 -O4 -E1 GCA_000001405.15_GRCh38_no_alt_analysis_set.fna additional_hg38_p14_${VERSION_HLA}_contigs.fa.gz \
+  bwa mem -t`nproc` -A2 -B3 -O4 -E1 GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna additional_hg38_p14_${VERSION_HLA}_contigs.fa.gz \
     | samtools view -q60 - \
     | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_p14_${VERSION_HLA}_contigs.alt
 fi
 
-zcat GCA_000001405.15_GRCh38_full_analysis_set_masked.fna.gz ${DECOY_BASE}_unmapped.fna.gz \
-     hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz hla_gen.$VERSION_HLA.fasta.gz ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
-cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt \
-    ${DECOY_BASE}_unmapped.alt \
-    additional_hg38_p14_${VERSION_HLA}_contigs.alt \
-    ${ORAL_BASE}_unmapped.alt \
-  > ${VERSION}.fa.alt
+if [ ! -e ${VERSION}.fa.sa ]; then
+  cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt \
+      ${DECOY_BASE}_unmapped.alt \
+      additional_hg38_p14_${VERSION_HLA}_contigs.alt \
+      ${ORAL_BASE}_unmapped.alt \
+    > ${VERSION}.fa.alt
 
-bwa index ${VERSION}.fa
+  zcat GCA_000001405.15_GRCh38_full_analysis_set_masked.fna.gz ${DECOY_BASE}_unmapped.fna.gz \
+       hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz hla_gen.$VERSION_HLA.fasta.gz ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
+  bwa index ${VERSION}.fa
 
-samtools faidx ${VERSION}.fa
-samtools dict -a "GRCh38" -s "Homo Sapiens" -u "${VERSION}.fa" ${VERSION}.fa -o ${VERSION}.dict
+  samtools faidx ${VERSION}.fa
+  samtools dict -a "GRCh38" -s "Homo Sapiens" -u "${VERSION}.fa" ${VERSION}.fa -o ${VERSION}.dict
+fi
 
 #gatk-4.1.2.0/gatk FindBadGenomicKmersSpark -R ${VERSION}.fa -O ${VERSION}.fa.txt
