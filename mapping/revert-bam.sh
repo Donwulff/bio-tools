@@ -123,9 +123,9 @@ fi
 
 if [ ! -z "${GATK_SPARK}" ] && [ ! -e gatk-${GATK_SPARK}/gatk ];
 then
-  if ! echo "${SANITIZE}" | grep -qi '^Strue$';
+  if ! echo "${SANITIZE}" | grep -qi 'true';
   then
-    echo "You can't use GATK_SPARK MarkDuplicatesSpark with single end reads, leave SANITIZE on."
+    echo "You can't use GATK_SPARK MarkDuplicatesSpark with single end reads, leave SANITIZE 'true'."
     exit
   fi
   wget -nc https://github.com/broadinstitute/gatk/releases/download/${GATK_SPARK}/gatk-${GATK_SPARK}.zip
