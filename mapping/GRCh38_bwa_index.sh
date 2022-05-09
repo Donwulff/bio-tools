@@ -38,6 +38,10 @@ VERSION_HLA="-"
 VERSION_ORAL="O915"
 VERSION_EXTRA="hla"
 
+# Extra eXperimental build chm13 reference instead.
+#VERSION_BASE="chm13"
+#VERSION_PATCH="v2.0_maskedY_rCRS"
+
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
 # To regenerate with latest (possibly updated) version, delete Allele_status.txt hla_gen.fasta
 wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt
@@ -55,7 +59,7 @@ wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.
 wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
 
 # We need this only for the base ALT-file, perhaps we could regenerate it ourselves; there's also copy in the git repo to skip expensive calculations
-if [ ! -f GCA_000001405.15_GRCh38_full_analysis_set.fna.alt ];
+if [ $VERSION_BASE = "hg38" ] && [ ! -f GCA_000001405.15_GRCh38_full_analysis_set.fna.alt ];
 then
   wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.fna.bwa_index.tar.gz
   tar zkxf GCA_000001405.15_GRCh38_full_analysis_set.fna.bwa_index.tar.gz
@@ -74,12 +78,12 @@ fi
 wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_GRC_exclusions.bed
 
 # University of California Santa Cruz UCSC's contig names used in their Golden Path genome browser have become standard https://genome.ucsc.edu/
-wget -nc https://hgdownload.cse.ucsc.edu/goldenPath/hg38/hg38Patch11/hg38Patch11.fa.gz
+[ $VERSION_BASE = "hg38" ] && wget -nc https://hgdownload.cse.ucsc.edu/goldenPath/hg38/hg38Patch11/hg38Patch11.fa.gz
 # p12 UCSC names aren't yet in the p12 genome assembly report, so the names in this version are used in future; ignore currently
 #wget -nc https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/p12/hg38.p12.fa.gz
 
 # Get the NCBI reference genomes so we can construct incremental patches between them to add to the UCSC reference genome
-if [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ] || [ ! -e GRCh38Patch14.fa.gz ]; then
+if [ $VERSION_BASE = "hg38" ] && ( [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh38Patch13.fa.gz ] || [ ! -e GRCh38Patch14.fa.gz ] ); then
   # Genome Reference Consortium https://www.ncbi.nlm.nih.gov/grc/human releases cumulative patches to the latest assembly
   wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.26_GRCh38.p11/GCA_000001405.26_GRCh38.p11_genomic.fna.gz
   wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.27_GRCh38.p12/GCA_000001405.27_GRCh38.p12_genomic.fna.gz
@@ -128,7 +132,7 @@ else
 fi
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
-if [ ! -e hg38.p12.p13.p14.$VERSION_HLA.fa.gz.sa ]; then
+if [ "$VERSION_BASE" = "hg38" ] && [ ! -e $VERSION_BASE$VERSION_PATCH.$VERSION_HLA.fa.gz.sa ]; then
   if [ ! -e GCA_000001405.15_GRCh38_full_analysis_set_masked.fna.gz ]; then
     gzip -cd GCA_000001405.15_GRCh38_full_analysis_set.fna.gz > GCA_000001405.15_GRCh38_full_analysis_set.fna
     bedtools maskfasta -fullHeader -fi GCA_000001405.15_GRCh38_full_analysis_set.fna -fo GCA_000001405.15_GRCh38_full_analysis_set_masked.fna -bed GCA_000001405.15_GRCh38_GRC_exclusions.bed
@@ -141,8 +145,17 @@ if [ ! -e hg38.p12.p13.p14.$VERSION_HLA.fa.gz.sa ]; then
       GRCh38Patch13.fa.gz \
       GRCh38Patch14.fa.gz \
       hla_gen.$VERSION_HLA.fasta.gz \
-    > hg38.p12.p13.p14.$VERSION_HLA.fa.gz
-  bwa index hg38.p12.p13.p14.$VERSION_HLA.fa.gz
+    > $VERSION_BASE$VERSION_PATCH.$VERSION_HLA.fa.gz
+  bwa index $VERSION_BASE$VERSION_PATCH.$VERSION_HLA.fa.gz
+fi
+
+if [ "$VERSION_BASE" = "chm13" ] && [ ! -e $VERSION_BASE$VERSION_PATCH.$VERSION_HLA.fa.gz.sa ]; then
+  wget -nc https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/analysis_set/chm13v2.0_maskedY_rCRS.fa.gz
+  # Use concatenated gzip's for speed because this is temporary index.
+  cat chm13v2.0_maskedY_rCRS.fa.gz \
+      hla_gen.$VERSION_HLA.fasta.gz \
+    > $VERSION_BASE$VERSION_PATCH.$VERSION_HLA.fa.gz
+  bwa index $VERSION_BASE$VERSION_PATCH.$VERSION_HLA.fa.gz
 fi
 
 ## Steps to clean up decoy sequences
@@ -150,7 +163,7 @@ DECOY_BASE=GCA_000786075.2_hs38d1_p14_${VERSION_HLA}_genomic
 if [ "$VERSION_DECOY" != "" ] && [ ! -e ${DECOY_BASE}_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
-  bwa mem -t`nproc` -k101 hg38.p12.p13.p14.$VERSION_HLA.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > $DECOY_BASE.sam
+  bwa mem -t`nproc` -k101 $VERSION_BASE$VERSION_PATCH.$VERSION_HLA.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > $DECOY_BASE.sam
 
   # Rename unmapped decoy contigs into the UCSC style used by reference genomes
   samtools view -f0x4 $DECOY_BASE.sam | \
@@ -175,7 +188,7 @@ ORAL_BASE=oral_microbiome_p14_${VERSION_HLA}_${VERSION_ORAL}
 if [ "$VERSION_ORAL" != "" ] && [ ! -e ${ORAL_BASE}_unmapped.alt ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc https://www.homd.org/ftp/genomes/PROKKA/V9.15/fsa/ALL_genomes.fsa
-  bwa mem -t`nproc` -k101 hg38.p12.p13.p14.$VERSION_HLA.fa.gz ALL_genomes.fsa > $ORAL_BASE.sam
+  bwa mem -t`nproc` -k101 $VERSION_BASE$VERSION_PATCH.$VERSION_HLA.fa.gz ALL_genomes.fsa > $ORAL_BASE.sam
   samtools view -f0x4 $ORAL_BASE.sam | cut -f1 > \
     ${ORAL_BASE}_unmapped.list
 
@@ -191,7 +204,7 @@ if [ "$VERSION_ORAL" != "" ] && [ ! -e ${ORAL_BASE}_unmapped.alt ]; then
 fi
 
 # Scoring parameters found counting Alignment Score from bwakit hg38DH.fa.alt; this generates more supplementary alignments and missed odd MapQ 30 line
-if [ ! -e additional_hg38_p14_${VERSION_HLA}_contigs.alt ]; then
+if [ "$VERSION_BASE" = "hg38" ] && [ ! -e additional_hg38_p14_${VERSION_HLA}_contigs.alt ]; then
   if [ ! -e GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna.sa ]; then
     gzip -cd GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz > GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
     bedtools maskfasta -fullHeader -fi GCA_000001405.15_GRCh38_no_alt_analysis_set.fna -fo GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna -bed GCA_000001405.15_GRCh38_GRC_exclusions.bed
@@ -203,7 +216,17 @@ if [ ! -e additional_hg38_p14_${VERSION_HLA}_contigs.alt ]; then
     | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_p14_${VERSION_HLA}_contigs.alt
 fi
 
-if [ ! -e ${VERSION}.fa.sa ]; then
+# For the chm3 reference we don't yet have any defined alt sequences besides HLA; although we might consider new T2T references
+if [ "$VERSION_BASE" = "chm13" ] && [ ! -e additional_chm13v2.0_${VERSION_HLA}_contigs.alt ]; then
+  if [ ! -e chm13v2.0_maskedY_rCRS.fa.gz.s ]; then
+    bwa index chm13v2.0_maskedY_rCRS.fa.gz
+  fi
+  bwa mem -t`nproc` -A2 -B3 -O4 -E1 chm13v2.0_maskedY_rCRS.fa.gz hla_gen.$VERSION_HLA.fasta.gz \
+    | samtools view -q60 - \
+    | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_chm13v2.0_${VERSION_HLA}_contigs.alt
+fi
+
+if [ "$VERSION_BASE" = "hg38" ] && [ ! -e ${VERSION}.fa.sa ]; then
   cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt \
       ${DECOY_BASE}_unmapped.alt \
       additional_hg38_p14_${VERSION_HLA}_contigs.alt \
@@ -216,6 +239,20 @@ if [ ! -e ${VERSION}.fa.sa ]; then
 
   samtools faidx ${VERSION}.fa
   samtools dict -a "GRCh38" -s "Homo Sapiens" -u "${VERSION}.fa" ${VERSION}.fa -o ${VERSION}.dict
+fi
+
+if [ "$VERSION_BASE" = "chm13" ] && [ ! -e ${VERSION}.fa.sa ]; then
+  cat ${DECOY_BASE}_unmapped.alt \
+      additional_chm13v2.0_${VERSION_HLA}_contigs.alt \
+      ${ORAL_BASE}_unmapped.alt \
+    > ${VERSION}.fa.alt
+
+  zcat chm13v2.0_maskedY_rCRS.fa.gz ${DECOY_BASE}_unmapped.fna.gz \
+       hla_gen.$VERSION_HLA.fasta.gz ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
+  bwa index ${VERSION}.fa
+
+  samtools faidx ${VERSION}.fa
+  samtools dict -a "chm13v2.0" -s "Homo Sapiens" -u "${VERSION}.fa" ${VERSION}.fa -o ${VERSION}.dict
 fi
 
 #gatk-4.1.2.0/gatk FindBadGenomicKmersSpark -R ${VERSION}.fa -O ${VERSION}.fa.txt
