@@ -56,7 +56,7 @@ COMPRESS=5
 
 # Gets & runs RevertSamSpark and MarkDuplicatesSpark multi-threaded instead of Picard workflow.
 # Comment out if you have or want to use only a few CPU cores.
-GATK_SPARK=4.1.2.0
+GATK_SPARK=4.2.6.1
 
 # Don't delete bwa-mem mapped, raw, unsorted BAM file. Useful if you intend to test different processing.
 KEEP_TEMPORARY=True
