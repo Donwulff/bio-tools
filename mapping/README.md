@@ -2,18 +2,30 @@
 
 ## revert_bam.sh
 Runs Picard Tools on Java to create Broad Institute uBAM (Unmapped BAM) from input BAM.
-Tested to work on Windows 10 WSL Ubuntu & Ubuntu Xenial.
-If bwa index reference exists (f.e. bwakit), simple mapping is performed.
+Tested to work on Windows 10 WSL Ubuntu & Ubuntu Xenial Xerus, Bionic Beaver, Focal Fossa and Jammy Jellyfish at times.
+If bwa index reference exists (f.e. bwakit), (not so) simple mapping is performed, if available with:
+- [fastp](https://github.com/OpenGene/fastp) is used for fast, exact (from overlap) adapter trimming.
+- [bwa mem](https://github.com/lh3/bwa) 0.7.17 (r1188) is standard, but latest dev works fine too.
+- [k8 JavaScript interpreter](https://github.com/attractivechaos/k8/releases) For running the bwa-postalt.js script, pre-compiled easiest.
+- [bwa-postalt.js](https://github.com/lh3/bwa/tree/master/bwakit) On the bwa/bwa-kit repository, for post-processing alt-alignments.
+- Picard or GATK for marking duplicate reads
+- [htslib](https://github.com/samtools/htslib) For compressing and indexing genomic data.
+- [samtools](https://github.com/samtools/samtools) For processing & indexing Sequence Alignment Maps.
 
 This began as an example of how to run RevertSam. It still mostly is an example of how to run RevertSam.
-But that necessitated showing how to map uBAM with BWA MEM, and thann turn required handling duplicates and so forth...
-If you require cluster support, with full GATK Best Practices compliance look instead at
-https://software.broadinstitute.org/gatk/best-practices/workflow?id=11145
-That said, I believe these scripts to create GATK Best Practices compatible BAM's on single node in very efficient manner.
 
-NB. MergeBamAlignment has some unheralded filtering by default. MAX_INSERTIONS_OR_DELETIONS in particular is set to 1 and will filter 
+But that necessitated showing how to map uBAM with BWA MEM, and that in turn required handling duplicates and so forth...
+If you require cluster support, GATK MarkDuplicateSpark is now supported by the script, but for full GATK Best Practices compliance look instead at
+https://software.broadinstitute.org/gatk/best-practices/workflow?id=11145
+That said, I believe these scripts to create GATK Best Practices compatible BAM's in very efficient manner.
+
+NB. GATK Best Practices MergeBamAlignment which this script omits for speed has some unheralded filtering by default.
+MAX_INSERTIONS_OR_DELETIONS in particular is set to 1 and will filter 
 any reads with more than single insertion/deletion. This script does not do that, but I believe this difference to be beneficial.
-UNMAP_CONTAMINANT_READS might be beneficial for salive sample, but it's not set by default, and not done by this script.
+UNMAP_CONTAMINANT_READS might be beneficial for saliva sample, but it's not set by default, and not done by this script.
+MergeBamAlignment will copy the alignments back into the Unmapped BAM in the exact (read-name) order they originally were, regardless 
+of the order the aligner outputs them. This may cause differences in some special cases, in particular when comparing two different
+BAM's, since genomic coordinate sorting will preserve the existing order for reads starting at the same genetic coordinate.
 https://broadinstitute.github.io/picard/command-line-overview.html#MergeBamAlignment
 
 ### uBAM Pros:
@@ -25,7 +37,7 @@ https://broadinstitute.github.io/picard/command-line-overview.html#MergeBamAlign
 ### uBAM Cons:
 * Many quality control and adapter-trimming tools require FASTQ
 * Picard tools isn't multithreaded, so sorting is very slow
-* MarkDuplicates in queryname order can't be split by chromosome order
+* MarkDuplicates in queryname order can't be parallel-split by chromosome order
 * Does not seem to store Illumina Casava 1.8 flags, this should be easy fix
 
 ### Original motivation - new queryname order MarkDuplicates workflow for full duplicate identification
@@ -121,3 +133,5 @@ https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6393434/
 Unfortunately GATK doesn't currently support these covariates, but I'd like to see how much of error they explain.
 
 ## GRCh38_bwa_index.sh - EXPERIMENTAL reference genome build script
+
+Now with both GRCh38 patch 14 and Telomere-to-Telomere CHM13v2 support.
