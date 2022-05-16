@@ -1,5 +1,38 @@
 # Tools for producing analysis-ready BAM files
 
+Updated mapping/alignment reference genome creation script to 
+GRCh38.p14. Release p14 posed some challenges, as it includes two new 
+revisions of previously released contigs. This has been solved by 
+including both versions of the contigs (you need to be using alt-aware 
+aligner anyway), and using samtools faidx to pick and choose desired 
+contigs. As previously, contigs are in the order of the first patch that 
+introduced them; this way new patches are added at the end of existing 
+ones, for those workflows which depend on consistent ordering.
+
+As a reminder, the updated reference genome is intended for 
+experimenting, and should not be used for real without through 
+validation for intended purpose.
+
+The reference genome is based off Heng Li's GRCh38DH reference genome 
+(bwa-kit and 1000 Genomes Project Phase 3) with hs38d1 decoy sequences, 
+updated with latest HLA sequences and reference genome patches up to p14 
+as alt-contigs, and Genome Resource Consortium declared false sequences 
+hard-masked. Optionally, it includes the Human Oral Microbiome Database 
+sequences to use as decoys/analysing saliva sequences. Decoy and HOMD 
+sequences are filtered, leaving out sequences with longer than 100bp 
+exact matches to the patched human genome and HLA.
+
+TODO list:
+ * Oral microbiome classification support for the saliva sequences.
+ * Make revert-bam.sh recognize unmapped bam from content and/or extension and skip unmapping.
+ * See about workflow creating unmapped bam on the fly without needing to store it.
+ * Add levioSAM2 lift-over into workflows.
+ * Test and integrate DRAGENMAP into the example scripts.
+ * Try to reproduce decoy sequence creation from BAC/fosmid clones to include new ones.
+ * Do same for de novo assembled Personal Genomes Project sequences.
+ * Validate and compare results with GIAB and others.
+ * Publish my variant calling example scripts.
+
 ## revert_bam.sh
 Runs Picard Tools on Java to create Broad Institute uBAM (Unmapped BAM) from input BAM.
 Tested to work on Windows 10 WSL Ubuntu & Ubuntu Xenial Xerus, Bionic Beaver, Focal Fossa and Jammy Jellyfish at times.
@@ -8,7 +41,7 @@ If bwa index reference exists (f.e. bwakit), (not so) simple mapping is performe
 - [bwa mem](https://github.com/lh3/bwa) 0.7.17 (r1188) is standard, but latest dev works fine too.
 - [k8 JavaScript interpreter](https://github.com/attractivechaos/k8/releases) For running the bwa-postalt.js script, pre-compiled easiest.
 - [bwa-postalt.js](https://github.com/lh3/bwa/tree/master/bwakit) On the bwa/bwa-kit repository, for post-processing alt-alignments.
-- Picard or GATK for marking duplicate reads
+- [Picard](https://broadinstitute.github.io/picard/) or [GATK](https://github.com/broadinstitute/gatk/releases) For marking duplicate reads
 - [htslib](https://github.com/samtools/htslib) For compressing and indexing genomic data.
 - [samtools](https://github.com/samtools/samtools) For processing & indexing Sequence Alignment Maps.
 
