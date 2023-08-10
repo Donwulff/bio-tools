@@ -133,13 +133,13 @@ if [ ! -e "hla_gen.${VERSION_HLA}.fasta.gz" ]; then
   wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/fasta/hla_gen.fasta -O hla_gen.${VERSION_HLA}.fasta
   # Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation by default because : and * mess up most tools!
   if [ "$VERSION_HLA" = "A" ]; then
-    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:HLA[0-9]* />HLA-/" hla_gen.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
+    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:HLA[0-9]* />HLA-/" hla_gen.${VERSION_HLA}.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
   else
-    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
+    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:/>/" hla_gen.${VERSION_HLA}.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
   fi
 fi
 
-VERSION_ORAL_CODE=${VERSION_ORAL_URL//./}
+VERSION_ORAL_CODE=$(echo "$VERSION_ORAL" | tr -d '.')
 VERSION=${VERSION_BASE}${VERSION_PATCH}${VERSION_DECOY}${VERSION_HLA}${VERSION_ORAL_CODE}${VERSION_EXTRA}
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
