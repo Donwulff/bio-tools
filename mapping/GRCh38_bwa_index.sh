@@ -27,11 +27,11 @@
 set -x
 
 # Changing VERSION_PATCH doesn't affect built reference in itself, it's just for reference.
-# VERSION_HLA chooses between HLA 'H' and accession number 'N' nomenclature.
-# HLA alleles contain asterisks and other special letters which may impede downstream processing.
-# VERSION_HLA will be read from latest IPD-IMGT/HLA data file,
+# VERSION_HLA chooses between HLA 'H' and accession number 'N' nomenclature
+# HLA alleles contain asterisks and other special letters which may impede downstream processing,
+# VERSION_HLA will be read from latest IPD-IMGT/HLA data file or specified version if it already exists,
 # VERSION_DECOY '' means not to include decoy sequences,
-# VERSION_EXTRA 'hla' means to use HLA-* allele names which cause issues with some downstream analysis.
+# VERSION_EXTRA is free-form used for local modifications
 # WARNING! Oral microbiome is experimental. Version 10.01 is huge, and requites 64GB memory; 9.15 will fit in 32GB memory.
 VERSION_BASE="hg38"
 VERSION_PATCH="p14"
@@ -120,17 +120,23 @@ if [ "$VERSION_BASE" = "hg38" ] && ( [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh
 fi
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
-# To regenerate with latest (possibly updated) version, delete Allele_status.txt hla_gen.fasta
-wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt
-wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/fasta/hla_gen.fasta
+if [ ! -e "hla_gen.${VERSION_HLA}.fasta.gz" ]; then
+  wget https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt -O Allele_status.txt
+  if [ "$VERSION_HLA" = "A" ]; then
+      VERSION_HLA="${VERSION_HLA}$(grep version Allele_status.txt | tr -cd '[0-9]')"
+  else
+      VERSION_HLA="$VERSION_HLA$(grep version Allele_status.txt | tr -cd '[0-9]')"
+  fi
+fi
 
-# Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation by default because : and * mess up most tools!
-if [ "$VERSION_HLA" = "A" ]; then
-  VERSION_HLA="${VERSION_HLA}$(grep version Allele_status.txt | tr -cd '[0-9]')"
-  [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:HLA[0-9]* />HLA-/" hla_gen.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
-else
-  VERSION_HLA="$VERSION_HLA$(grep version Allele_status.txt | tr -cd '[0-9]')"
-  [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
+if [ ! -e "hla_gen.${VERSION_HLA}.fasta.gz" ]; then
+  wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/fasta/hla_gen.fasta -O hla_gen.${VERSION_HLA}.fasta
+  # Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation by default because : and * mess up most tools!
+  if [ "$VERSION_HLA" = "A" ]; then
+    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:HLA[0-9]* />HLA-/" hla_gen.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
+  else
+    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
+  fi
 fi
 
 VERSION_ORAL_CODE=${VERSION_ORAL_URL//./}
