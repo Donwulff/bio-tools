@@ -213,8 +213,8 @@ fi
 ORAL_BASE=oral_microbiome_${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}_${VERSION_ORAL_CODE}_genomic
 if [ "${VERSION_ORAL}" != "" ] && [ ! -e "${ORAL_BASE}_unmapped.alt" ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
-  wget -nc https://www.homd.org/ftp/genomes/PROKKA/V${VERSION_ORAL}/fsa/ALL_genomes.fsa -O ${ORAL_BASE}.fsa
-  bwa mem -t`nproc` -k101 ${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz ${ORAL_BASE}.fsa > ${ORAL_BASE}.sam
+  wget -nc https://www.homd.org/ftp/genomes/PROKKA/V${VERSION_ORAL}/fsa/ALL_genomes.fsa -O oral_microbiome_${VERSION_ORAL_CODE}.fsa
+  bwa mem -t`nproc` -k101 ${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz oral_microbiome_${VERSION_ORAL_CODE}.fsa > ${ORAL_BASE}.sam
   samtools view -f0x4 ${ORAL_BASE}.sam | cut -f1 > \
     ${ORAL_BASE}_unmapped.list
 
