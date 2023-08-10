@@ -26,18 +26,18 @@
 
 set -x
 
-# Most of the version strings are currently fixed, changing VERSION_BASE, VERSION_PATCH or VERSION_ORAL doesn't affect built reference in itself.
-# VERSION_HLAN chooses between HLA 'H' and accession number 'N' nomenclature.
+# Changing VERSION_PATCH doesn't affect built reference in itself, it's just for reference.
+# VERSION_HLA chooses between HLA 'H' and accession number 'N' nomenclature.
 # HLA alleles contain asterisks and other special letters which may impede downstream processing.
 # VERSION_HLA will be read from latest IPD-IMGT/HLA data file,
 # VERSION_DECOY '' means not to include decoy sequences,
 # VERSION_EXTRA 'hla' means to use HLA-* allele names which cause issues with some downstream analysis.
-# WARNING! Oral microbiome is experimental.
+# WARNING! Oral microbiome is experimental. Version 10.01 is huge, and requites 64GB memory; 9.15 will fit in 32GB memory.
 VERSION_BASE="hg38"
 VERSION_PATCH="p14"
 VERSION_DECOY="D"
 VERSION_HLA="A"
-VERSION_ORAL="O915"
+VERSION_ORAL="10.1"
 VERSION_EXTRA=""
 
 # Extra eXperimental build chm13 reference instead.
@@ -133,7 +133,8 @@ else
   [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:/>/" hla_gen.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
 fi
 
-VERSION=${VERSION_BASE}${VERSION_PATCH}${VERSION_DECOY}${VERSION_HLA}${VERSION_ORAL}${VERSION_EXTRA}
+VERSION_ORAL_CODE=${VERSION_ORAL_URL//./}
+VERSION=${VERSION_BASE}${VERSION_PATCH}${VERSION_DECOY}${VERSION_HLA}${VERSION_ORAL_CODE}${VERSION_EXTRA}
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
 if [ "${VERSION_BASE}" = "hg38" ] && [ ! -e "${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz.sa" ]; then
@@ -203,17 +204,17 @@ if [ "${VERSION_DECOY}" != "" ] && [ ! -e "${DECOY_BASE}_unmapped.alt" ]; then
 fi
 
 ## The Forsyth "expanded Human Oral Microbiome Database" https://www.homd.org
-ORAL_BASE=oral_microbiome_${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}_${VERSION_ORAL}_genomic
+ORAL_BASE=oral_microbiome_${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}_${VERSION_ORAL_CODE}_genomic
 if [ "${VERSION_ORAL}" != "" ] && [ ! -e "${ORAL_BASE}_unmapped.alt" ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
-  wget -nc https://www.homd.org/ftp/genomes/PROKKA/V9.15/fsa/ALL_genomes.fsa
-  bwa mem -t`nproc` -k101 ${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz ALL_genomes.fsa > ${ORAL_BASE}.sam
+  wget -nc https://www.homd.org/ftp/genomes/PROKKA/V${VERSION_ORAL}/fsa/ALL_genomes.fsa -O ${ORAL_BASE}.fsa
+  bwa mem -t`nproc` -k101 ${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz ${ORAL_BASE}.fsa > ${ORAL_BASE}.sam
   samtools view -f0x4 ${ORAL_BASE}.sam | cut -f1 > \
     ${ORAL_BASE}_unmapped.list
 
   # Use the unmapped contigs to select matching decoy sequences from the analysis set
-  samtools faidx ALL_genomes.fsa
-  samtools faidx ALL_genomes.fsa -r ${ORAL_BASE}_unmapped.list | \
+  samtools faidx ${ORAL_BASE}.fsa
+  samtools faidx ${ORAL_BASE}.fsa -r ${ORAL_BASE}_unmapped.list | \
     bgzip -c > ${ORAL_BASE}_unmapped.fna.gz
 
   # Generate alt lines from alignment of remaining, unmapped decoys against the primary assy
