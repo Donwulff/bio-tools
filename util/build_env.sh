@@ -78,6 +78,18 @@ make -j8
 sudo make install
 cd ..
 
+# Build bedtools
+git_clone_or_pull https://github.com/arq5x/bedtools2.git bedtools2
+cd bedtools2
+sed -i 's/ -lz / /g' Makefile
+sed -i 's/^BT_CXXFLAGS = /BT_CXXFLAGS := /' Makefile
+sed -i 's/^BT_LIBS    = /BT_LIBS := /' Makefile
+sed -i "/^BT_CXXFLAGS :=/ s/$/ \${CPPFLAGS}/" Makefile
+sed -i "/^BT_LIBS :=/ s/$/ \${LIBS}/" Makefile
+make -j8
+sudo make install
+cd ..
+
 # Build bwa
 git_clone_or_pull https://github.com/lh3/bwa.git bwa
 cd bwa
