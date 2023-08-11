@@ -37,7 +37,7 @@ VERSION_BASE="hg38"
 VERSION_PATCH="p14"
 VERSION_DECOY="D"
 VERSION_HLA="A"
-VERSION_ORAL="10.1"
+VERSION_ORAL="9.15"
 VERSION_EXTRA=""
 
 # Extra eXperimental build chm13 reference instead.
@@ -139,7 +139,7 @@ if [ ! -e "hla_gen.${VERSION_HLA}.fasta.gz" ]; then
   fi
 fi
 
-VERSION_ORAL_CODE=$(echo "$VERSION_ORAL" | tr -d '.')
+VERSION_ORAL_CODE=O$(echo "$VERSION_ORAL" | tr -d '.')
 VERSION=${VERSION_BASE}${VERSION_PATCH}${VERSION_DECOY}${VERSION_HLA}${VERSION_ORAL_CODE}${VERSION_EXTRA}
 
 # Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
