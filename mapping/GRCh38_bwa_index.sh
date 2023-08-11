@@ -219,8 +219,8 @@ if [ "${VERSION_ORAL}" != "" ] && [ ! -e "${ORAL_BASE}_unmapped.alt" ]; then
     ${ORAL_BASE}_unmapped.list
 
   # Use the unmapped contigs to select matching decoy sequences from the analysis set
-  samtools faidx ${ORAL_BASE}.fsa
-  samtools faidx ${ORAL_BASE}.fsa -r ${ORAL_BASE}_unmapped.list | \
+  samtools faidx oral_microbiome_${VERSION_ORAL_CODE}.fsa
+  samtools faidx oral_microbiome_${VERSION_ORAL_CODE}.fsa -r ${ORAL_BASE}_unmapped.list | \
     bgzip -c > ${ORAL_BASE}_unmapped.fna.gz
 
   # Generate alt lines from alignment of remaining, unmapped decoys against the primary assy
