@@ -27,6 +27,7 @@ export RANLIB="gcc-ranlib"
 
 # Update package list
 sudo apt update
+sudo apt upgrade -y
 
 # Install necessary packages
 sudo apt install -y build-essential autoconf
@@ -101,7 +102,7 @@ sed -i 's/^LIBS= /LIBS := /' Makefile
 sed -i "/^CFLAGS :=/ s/$/ \${CFLAGS}/" Makefile
 sed -i "/^LIBS :=/ s/$/ \${LIBS}/" Makefile
 make -j8
-sudo cp -a bwa /usr/local/bin/
+sudo cp bwa /usr/local/bin/
 cd ..
 
 # Install additional package for libdeflate
@@ -117,6 +118,7 @@ cd ..
 # Install additional package for isa-l
 sudo apt install -y libtool nasm
 
+# Build isa-l
 git_clone_or_pull https://github.com/intel/isa-l.git
 cd isa-l
 ./autogen.sh
@@ -125,8 +127,34 @@ make -j8
 sudo make install
 cd ..
 
-git clone_or_pull https://github.com/OpenGene/fastp
+# Build fastp
+git_clone_or_pull https://github.com/OpenGene/fastp
 cd fastp
 make -j8
 sudo make install
+cd ..
+
+# Build nodejs
+wget -O- https://nodejs.org/dist/v18.17.0/node-v18.17.0.tar.gz | tar -zxf -
+cd node-v18.17.0
+export CFLAGS="-march=native -O3"
+export CPPFLAGS=$CFLAGS
+export CXXFLAGS=$CFLAGS
+export LDFLAGS=$CFLAGS
+./configure
+make -j8
+# Build k8 under nodejs
+git_clone_or_pull https://github.com/attractivechaos/k8
+cd k8
+export CFLAGS="-march=native -flto=8 -O3"
+export CPPFLAGS=$CFLAGS
+export CXXFLAGS=$CFLAGS
+export LDFLAGS=$CFLAGS
+sed -i 's/^CFLAGS= /CFLAGS := /' Makefile
+sed -i 's/^LIBS= /LIBS := /' Makefile
+sed -i "/^CFLAGS :=/ s/$/ \${CFLAGS}/" Makefile
+sed -i "/^LIBS :=/ s/$/ \${LIBS}/" Makefile
+make
+sudo cp k8 /usr/local/bin
+cd ..
 cd ..
