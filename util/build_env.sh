@@ -19,6 +19,7 @@ git_clone_or_pull() {
 # Set environment variables
 export CFLAGS="-march=native -flto=8 -O3"
 export CPPFLAGS=$CFLAGS
+export CXXFLAGS=$CFLAGS
 export LDFLAGS=$CFLAGS
 export LIBS="../zlib/libz.a $CFLAGS"
 export AR="gcc-ar"
@@ -103,3 +104,29 @@ make -j8
 sudo cp -a bwa /usr/local/bin/
 cd ..
 
+# Install additional package for libdeflate
+sudo apt install -y cmake
+
+git_clone_or_pull https://github.com/ebiggers/libdeflate.git libdeflate
+cd libdeflate
+cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_C_FLAGS="$CFLAGS"
+make -j8
+sudo make install
+cd ..
+
+# Install additional package for isa-l
+sudo apt install -y libtool nasm
+
+git_clone_or_pull https://github.com/intel/isa-l.git
+cd isa-l
+./autogen.sh
+./configure
+make -j8
+sudo make install
+cd ..
+
+git clone_or_pull https://github.com/OpenGene/fastp
+cd fastp
+make -j8
+sudo make install
+cd ..
