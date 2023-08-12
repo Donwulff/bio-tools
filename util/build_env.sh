@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Function to clone or pull a git repository
 git_clone_or_pull() {
     REPO_URL=$1
@@ -32,12 +34,24 @@ sudo apt upgrade -y
 # Install necessary packages
 sudo apt install -y build-essential autoconf
 
+# Install additional package for libdeflate
+sudo apt install -y cmake
+
+git_clone_or_pull https://github.com/ebiggers/libdeflate.git libdeflate
+cd libdeflate
+cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_C_FLAGS="$CFLAGS"
+make -j8
+sudo -E make install
+cd ..
+
 # Build zlib
 git_clone_or_pull https://github.com/cloudflare/zlib.git zlib
 cd zlib
 ./configure
 make -j8
-sudo make install
+set +e
+sudo -E make install
+set -e
 cd ..
 
 # Install additional packages for htslib
@@ -51,7 +65,7 @@ autoreconf -i
 ./configure
 sed -i 's/ -lz / /g' Makefile *.mk
 make -j8
-sudo make install
+sudo -E make install
 cd ..
 
 # Install additional package for samtools
@@ -64,7 +78,7 @@ autoreconf -i
 ./configure
 sed -i 's/ -lz / /g' Makefile
 make -j8
-sudo make install
+sudo -E make install
 cd ..
 
 # Install additional package for bcftools
@@ -77,7 +91,7 @@ autoreconf -i
 sed -i 's/ -lz / /g' Makefile
 ./configure --enable-libgsl
 make -j8
-sudo make install
+sudo -E make install
 cd ..
 
 # Build bedtools
@@ -89,7 +103,7 @@ sed -i 's/^BT_LIBS    = /BT_LIBS := /' Makefile
 sed -i "/^BT_CXXFLAGS :=/ s/$/ \${CPPFLAGS}/" Makefile
 sed -i "/^BT_LIBS :=/ s/$/ \${LIBS}/" Makefile
 make -j8
-sudo make install
+sudo -E make install
 cd ..
 
 # Build bwa
@@ -105,33 +119,23 @@ make -j8
 sudo cp bwa /usr/local/bin/
 cd ..
 
-# Install additional package for libdeflate
-sudo apt install -y cmake
-
-git_clone_or_pull https://github.com/ebiggers/libdeflate.git libdeflate
-cd libdeflate
-cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_C_FLAGS="$CFLAGS"
-make -j8
-sudo make install
-cd ..
-
 # Install additional package for isa-l
 sudo apt install -y libtool nasm
 
 # Build isa-l
-git_clone_or_pull https://github.com/intel/isa-l.git
+git_clone_or_pull https://github.com/intel/isa-l.git isa-l
 cd isa-l
 ./autogen.sh
 ./configure
 make -j8
-sudo make install
+sudo -E make install
 cd ..
 
 # Build fastp
-git_clone_or_pull https://github.com/OpenGene/fastp
+git_clone_or_pull https://github.com/OpenGene/fastp fastp
 cd fastp
 make -j8
-sudo make install
+sudo -E make install
 cd ..
 
 # Build nodejs
@@ -144,7 +148,7 @@ export LDFLAGS=$CFLAGS
 ./configure
 make -j8
 # Build k8 under nodejs
-git_clone_or_pull https://github.com/attractivechaos/k8
+git_clone_or_pull https://github.com/attractivechaos/k8 k8
 cd k8
 export CFLAGS="-march=native -flto=8 -O3"
 export CPPFLAGS=$CFLAGS
