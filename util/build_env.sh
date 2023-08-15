@@ -131,12 +131,19 @@ make -j8
 sudo -E make install
 cd ..
 
-# Build fastp
-git_clone_or_pull https://github.com/OpenGene/fastp fastp
+# Build fastp - use v0.22.0 or this until the memleak is fixed
+git_clone_or_pull https://github.com/Donwulff/fastp fastp
 cd fastp
 make -j8
 sudo -E make install
 cd ..
+
+# Get and install precompiled k8-0.2.5
+wget https://github.com/attractivechaos/k8/releases/download/0.2.5/k8-0.2.5.tar.bz2
+tar jxf k8-0.2.5.tar.bz2
+sudo cp k8-0.2.5/k8-Linux /usr/local/bin
+
+exit # bwa-postalts.js doesn't look compatible with 1.0, huge memory leak.
 
 # Build nodejs
 wget -O- https://nodejs.org/dist/v18.17.0/node-v18.17.0.tar.gz | tar -zxf -
