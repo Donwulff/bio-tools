@@ -16,6 +16,8 @@ my ( $oldrow, $newrow, $oldchr );
 while ( defined( $oldrow = <$old> ) && ( substr( $oldrow, 0, 1 ) eq '#' ) ) { }
 while ( defined( $newrow = <$new> ) && ( substr( $newrow, 0, 1 ) eq '#' ) ) { }
 MAIN: while ( defined $oldrow || defined $newrow ) {
+    chomp $oldrow if defined $oldrow;
+    chomp $newrow if defined $newrow;
     if ( !defined $oldrow ) {
         my @newcols1 = split( "\t", $newrow );
         if ( !defined($oldchr) || !( $oldchr eq $newcols1[0] ) ) {
