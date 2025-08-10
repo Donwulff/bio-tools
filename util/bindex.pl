@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use DBI;
 use DBD::mysql;
 use Digest::MD5::File qw(file_md5_hex);
 use File::stat;
