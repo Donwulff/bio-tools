@@ -78,7 +78,8 @@ while (<STDIN>) {
 }
 
 # Unmatched pairs both have insert size 0, so we need to halve it.
-$insert[0]=$insert[0]/2;
+# Guard against undefined value when no insert size 0 entries exist.
+$insert[0] = $insert[0] ? $insert[0] / 2 : 0;
 
 # Not pass by reference for simplicity
 sub histogram {
