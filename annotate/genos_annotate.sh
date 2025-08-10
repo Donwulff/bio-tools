@@ -92,8 +92,8 @@ s/INFO$/INFO\tFORMAT\tsample-id/
 ' | bgzip -c > data/All_GRCh37_reference_multi.vcf.gz
 fi;
 
-# Perhaps check timestamp? Check broken on purpose now.
-if [ ! -e data/All_GRCh37_${SAMPLE}_multi.vcf.gz.tbi.not ];
+# Perhaps check timestamp? Re-run only if the index is missing.
+if [ ! -e data/All_GRCh37_${SAMPLE}_multi.vcf.gz.tbi ];
 then
   echo "## Renaming sample in reference file..."
   echo "$SAMPLENAME" > ${SAMPLE}_samplename
