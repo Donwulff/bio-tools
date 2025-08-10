@@ -44,7 +44,7 @@ convert_AncestryDNA()
   cat ${ANC}.pld | gawk '!/^#/{if(0!=$4){if(23==$2||25==$2)$2="X";if(24==$2)$2="Y";if(26==$2)$2="MT";print $1,$2,$3,$4$5}}' > ${ANC}.chr
   # unfortunately AncestryDNA has PAR1 after Y, so we need to do some magic.
   cat ${ANC}.chr | gawk '{if($2!="X"&&$2!="Y"&&$2!="MT")print}' > ${ANC}.new
-  cat ${ANC}.chr | gawk '{if($2=="X")print}' sort -k1,1V -k2,2n >> ${ANC}.new
+  cat ${ANC}.chr | gawk '{if($2=="X")print}' | sort -k1,1V -k2,2n >> ${ANC}.new
   cat ${ANC}.chr | gawk '{if($2=="Y"||$2=="MT")print}' >> ${ANC}.new
   # bcftools norm: NON_ACGTN appears to be deleted with - alt or ref. -cws's s doesn't fix them. Leave for now, if they're indels
   bcftools convert -f ${HS37D5} --tsv2vcf ${ANC}.new -c ID,CHROM,POS,AA --samples PARTICIPANT 2> ${ANC}.log \
