@@ -55,14 +55,15 @@ set -e
 cd ..
 
 # Install additional packages for htslib
-sudo apt install -y libbz2-dev liblzma-dev
+sudo apt install -y libbz2-dev liblzma-dev libcurl4-openssl-dev
 
 # Build htslib
 git_clone_or_pull https://github.com/samtools/htslib.git htslib
 cd htslib
 git submodule update --init --recursive
 autoreconf -i
-./configure
+# --enable-libcurl required by ref-cache default feature on 2025-06-25
+./configure --enable-libcurl
 sed -i 's/ -lz / /g' Makefile *.mk
 make -j8
 sudo -E make install
