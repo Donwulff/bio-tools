@@ -38,11 +38,11 @@ set -x
 # Delete Allele_status.txt to force re-fetch of latest version when using "A" or "H".
 # VERSION_DECOY '' means not to include decoy sequences,
 # VERSION_EXTRA is free-form used for local modifications
-# WARNING! Oral microbiome is experimental. Version 10.01 is huge, and requites 64GB memory; 9.15 will fit in 32GB memory.
+# WARNING! Oral microbiome is experimental. Version from 10.01 are huge, and require up to 64GB memory; 9.15 will fit in 32GB memory.
 VERSION_BASE="hg38"
 VERSION_PATCH="p14"
 VERSION_DECOY="D"
-VERSION_HLA="A"
+VERSION_HLA="H"
 VERSION_ORAL="9.15"
 VERSION_EXTRA=""
 
