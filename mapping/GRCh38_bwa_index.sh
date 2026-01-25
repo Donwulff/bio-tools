@@ -122,20 +122,17 @@ fi
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
 if [ ! -e "hla_gen.${VERSION_HLA}.fasta.gz" ]; then
   wget https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt -O Allele_status.txt
-  if [ "$VERSION_HLA" = "A" ]; then
-      VERSION_HLA="${VERSION_HLA}$(grep version Allele_status.txt | tr -cd '[0-9]')"
-  else
-      VERSION_HLA="$VERSION_HLA$(grep version Allele_status.txt | tr -cd '[0-9]')"
-  fi
+  VERSION_HLA_NUM="$(grep version Allele_status.txt | tr -cd '[0-9]')"
+  VERSION_HLA="${VERSION_HLA}${VERSION_HLA_NUM}"
 fi
 
 if [ ! -e "hla_gen.${VERSION_HLA}.fasta.gz" ]; then
-  wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/fasta/hla_gen.fasta -O hla_gen.${VERSION_HLA}.fasta
+  wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/fasta/hla_gen.fasta -O hla_gen.${VERSION_HLA_NUM}.fasta
   # Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation by default because : and * mess up most tools!
   if [ "$VERSION_HLA" = "A" ]; then
-    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:HLA[0-9]* />HLA-/" hla_gen.${VERSION_HLA}.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
+    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:HLA[0-9]* />HLA-/" hla_gen.${VERSION_HLA_NUM}.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
   else
-    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:/>/" hla_gen.${VERSION_HLA}.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
+    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:/>/" hla_gen.${VERSION_HLA_NUM}.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
   fi
 fi
 
