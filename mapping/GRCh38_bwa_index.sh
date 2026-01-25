@@ -27,9 +27,15 @@
 set -x
 
 # Changing VERSION_PATCH doesn't affect built reference in itself, it's just for reference.
-# VERSION_HLA chooses between HLA 'H' and accession number 'N' nomenclature
-# HLA alleles contain asterisks and other special letters which may impede downstream processing,
-# VERSION_HLA will be read from latest IPD-IMGT/HLA data file or specified version if it already exists,
+# VERSION_HLA controls HLA sequence inclusion:
+#   ""       = No HLA sequences
+#   "H"      = Latest IPD-IMGT/HLA version with HLA ID naming (HLA00001) - safe for all pipelines
+#   "A"      = Latest IPD-IMGT/HLA version with allele naming (HLA-A*01:01:01:01) - has : and * chars
+#   "H3580"  = Specific version 3580 with HLA ID naming
+#   "A3580"  = Specific version 3580 with allele naming
+# HLA IDs (H) are persistent accession numbers; allele names (A) can change when phylogeny updates.
+# Most pipelines (GATK etc.) choke on colons and asterisks, so HLA ID naming (H) is recommended.
+# Delete Allele_status.txt to force re-fetch of latest version when using "A" or "H".
 # VERSION_DECOY '' means not to include decoy sequences,
 # VERSION_EXTRA is free-form used for local modifications
 # WARNING! Oral microbiome is experimental. Version 10.01 is huge, and requites 64GB memory; 9.15 will fit in 32GB memory.
@@ -120,27 +126,75 @@ if [ "$VERSION_BASE" = "hg38" ] && ( [ ! -e GRCh38Patch12.fa.gz ] || [ ! -e GRCh
 fi
 
 # European Molecular Biology Laboratory publishes the IPD-IMGT/HLA database with World Health Organization's naming https://www.ebi.ac.uk/ipd/imgt/hla/ nb. this DOES change a lot
-if [ ! -e "hla_gen.${VERSION_HLA}.fasta.gz" ]; then
-  wget https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt -O Allele_status.txt
-  VERSION_HLA_NUM="$(grep version Allele_status.txt | tr -cd '[0-9]')"
-  VERSION_HLA="${VERSION_HLA}${VERSION_HLA_NUM}"
+# VERSION_HLA modes:
+#   ""           = No HLA sequences
+#   "A" or "H"   = Latest version (A=accession naming, H=HLA allele naming)
+#   "A1234"      = Specific version with accession naming
+#   "H1234"      = Specific version with HLA allele naming
+case "$VERSION_HLA" in
+  "")
+    # No HLA - will be handled by conditional includes below
+    VERSION_HLA_CHR=""
+    VERSION_HLA_NUM=""
+    ;;
+  A|H)
+    # Latest version - fetch version number from IPD-IMGT/HLA
+    # Uses -nc to preserve existing Allele_status.txt; delete it to force update
+    VERSION_HLA_CHR="$VERSION_HLA"
+    wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/Allele_status.txt
+    VERSION_HLA_NUM="$(grep version Allele_status.txt | tr -cd '[0-9]')"
+    VERSION_HLA="${VERSION_HLA_CHR}${VERSION_HLA_NUM}"
+    ;;
+  A*|H*)
+    # Specific version - parse the naming style and version number
+    VERSION_HLA_CHR=$(printf "%.1s" "$VERSION_HLA")
+    VERSION_HLA_NUM="${VERSION_HLA#?}"
+    ;;
+  *)
+    echo "Invalid VERSION_HLA '$VERSION_HLA': must be empty, 'A', 'H', or specific version like 'A3580'"
+    exit 1
+    ;;
+esac
+
+# Helper variables for filename construction
+# These use just the version number (e.g., "3590") so intermediate files can be shared between
+# A and H naming conventions - the collision detection doesn't depend on how sequences are named.
+if [ -n "$VERSION_HLA_NUM" ]; then
+  HLA_VER_DOT_PREFIX=".${VERSION_HLA_NUM}"    # e.g., ".3590" for filenames like hg38p14.3590.fa.gz
+  HLA_VER_USCORE_PREFIX="_${VERSION_HLA_NUM}" # e.g., "_3590" for filenames like ..._hg38p14_3590_genomic
+else
+  HLA_VER_DOT_PREFIX=""
+  HLA_VER_USCORE_PREFIX=""
+fi
+# These use full VERSION_HLA (e.g., "A3590") for files where the naming convention matters,
+# such as alt-contig files which contain sequence names with the chosen nomenclature.
+if [ -n "$VERSION_HLA" ]; then
+  HLA_NAMING_USCORE_PREFIX="_${VERSION_HLA}" # e.g., "_A3590" for alt contig filenames
+  HLA_FASTA="hla_gen.${VERSION_HLA}.fasta.gz"
+else
+  HLA_NAMING_USCORE_PREFIX=""
+  HLA_FASTA=""
 fi
 
-if [ ! -e "hla_gen.${VERSION_HLA}.fasta.gz" ]; then
+if [ -n "$VERSION_HLA" ] && [ ! -e "hla_gen.${VERSION_HLA}.fasta.gz" ]; then
   wget -nc https://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/fasta/hla_gen.fasta -O hla_gen.${VERSION_HLA_NUM}.fasta
   # Convert the HLA FASTA sequence names and compress it, no longer using bwa-kit HLA allele notation by default because : and * mess up most tools!
-  if [ "$VERSION_HLA" = "A" ]; then
-    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:HLA[0-9]* />HLA-/" hla_gen.${VERSION_HLA_NUM}.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
+  if [ "$VERSION_HLA_CHR" = "A" ]; then
+    sed "s/^>HLA:HLA[0-9]* />HLA-/" hla_gen.${VERSION_HLA_NUM}.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
   else
-    [ -e "hla_gen.${VERSION_HLA}.fasta.gz" ] || sed "s/^>HLA:/>/" hla_gen.${VERSION_HLA_NUM}.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
+    sed "s/^>HLA:/>/" hla_gen.${VERSION_HLA_NUM}.fasta | gzip -c > hla_gen.${VERSION_HLA}.fasta.gz
   fi
 fi
 
 VERSION_ORAL_CODE=O$(echo "$VERSION_ORAL" | tr -d '.')
 VERSION=${VERSION_BASE}${VERSION_PATCH}${VERSION_DECOY}${VERSION_HLA}${VERSION_ORAL_CODE}${VERSION_EXTRA}
 
-# Construct mapping index for whole assembly + HLA to compare decoys and microbiome against
-if [ "${VERSION_BASE}" = "hg38" ] && [ ! -e "${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz.sa" ]; then
+# Index used to filter decoys/oral sequences by checking for collisions with human genome + HLA.
+# Uses HLA version number only (not naming style) so it can be shared between A/H builds.
+COLLISION_INDEX=${VERSION_BASE}${VERSION_PATCH}${HLA_VER_DOT_PREFIX}.fa.gz
+
+# Construct the collision detection index
+if [ "${VERSION_BASE}" = "hg38" ] && [ ! -e "${COLLISION_INDEX}.sa" ]; then
   if [ ! -e "GCA_000001405.15_GRCh38_full_analysis_set_masked.fna.gz" ]; then
     gzip -cd GCA_000001405.15_GRCh38_full_analysis_set.fna.gz > GCA_000001405.15_GRCh38_full_analysis_set.fna
     bedtools maskfasta -fullHeader -fi GCA_000001405.15_GRCh38_full_analysis_set.fna -fo GCA_000001405.15_GRCh38_full_analysis_set_masked.fna -bed GCA_000001405.15_GRCh38_GRC_exclusions.bed
@@ -152,26 +206,27 @@ if [ "${VERSION_BASE}" = "hg38" ] && [ ! -e "${VERSION_BASE}${VERSION_PATCH}.${V
       GRCh38Patch12.fa.gz \
       GRCh38Patch13.fa.gz \
       GRCh38Patch14.fa.gz \
-      hla_gen.${VERSION_HLA}.fasta.gz \
-    > ${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz
-  bwa index ${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz
+      $HLA_FASTA \
+    > ${COLLISION_INDEX}
+  bwa index ${COLLISION_INDEX}
 fi
 
-if [ "${VERSION_BASE}" = "chm13" ] && [ ! -e "${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz.sa" ]; then
+if [ "${VERSION_BASE}" = "chm13" ] && [ ! -e "${COLLISION_INDEX}.sa" ]; then
   wget -nc https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/analysis_set/${VERSION_BASE}${VERSION_PATCH}.fa.gz
   # Use concatenated gzip's for speed because this is temporary index.
   cat ${VERSION_BASE}${VERSION_PATCH}.fa.gz \
-      hla_gen.${VERSION_HLA}.fasta.gz \
-    > ${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz
-  bwa index ${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz
+      $HLA_FASTA \
+    > ${COLLISION_INDEX}
+  bwa index ${COLLISION_INDEX}
 fi
 
 ## Steps to clean up decoy sequences
-DECOY_BASE=GCA_000786075.2_hs38d1_${VERSION_BASE}${VERSION_PATCH}_${VERSION_HLA}_genomic
+# Uses HLA_VER_USCORE_PREFIX so results can be shared between A/H naming conventions
+DECOY_BASE=GCA_000786075.2_hs38d1_${VERSION_BASE}${VERSION_PATCH}${HLA_VER_USCORE_PREFIX}_genomic
 if [ "${VERSION_DECOY}" != "" ] && [ ! -e "${DECOY_BASE}_unmapped.alt" ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/786/075/GCA_000786075.2_hs38d1/GCA_000786075.2_hs38d1_genomic.fna.gz
-  bwa mem -t`nproc` -k101 ${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz GCA_000786075.2_hs38d1_genomic.fna.gz > ${DECOY_BASE}.sam
+  bwa mem -t`nproc` -k101 ${COLLISION_INDEX} GCA_000786075.2_hs38d1_genomic.fna.gz > ${DECOY_BASE}.sam
 
   if [ "$VERSION_BASE" = "hg38" ]; then
     # Rename unmapped decoy contigs into the UCSC style used by reference genomes
@@ -207,11 +262,12 @@ if [ "${VERSION_DECOY}" != "" ] && [ ! -e "${DECOY_BASE}_unmapped.alt" ]; then
 fi
 
 ## The Forsyth "expanded Human Oral Microbiome Database" https://www.homd.org
-ORAL_BASE=oral_microbiome_${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}_${VERSION_ORAL_CODE}_genomic
+# Uses HLA_VER_DOT_PREFIX so results can be shared between A/H naming conventions
+ORAL_BASE=oral_microbiome_${VERSION_BASE}${VERSION_PATCH}${HLA_VER_DOT_PREFIX}_${VERSION_ORAL_CODE}_genomic
 if [ "${VERSION_ORAL}" != "" ] && [ ! -e "${ORAL_BASE}_unmapped.alt" ]; then
   # Filter out decoys which map to the current assembly for 101bp or more
   wget -nc https://www.homd.org/ftp/genomes/PROKKA/V${VERSION_ORAL}/fsa/ALL_genomes.fsa -O oral_microbiome_${VERSION_ORAL_CODE}.fsa
-  bwa mem -t`nproc` -k101 ${VERSION_BASE}${VERSION_PATCH}.${VERSION_HLA}.fa.gz oral_microbiome_${VERSION_ORAL_CODE}.fsa > ${ORAL_BASE}.sam
+  bwa mem -t`nproc` -k101 ${COLLISION_INDEX} oral_microbiome_${VERSION_ORAL_CODE}.fsa > ${ORAL_BASE}.sam
   samtools view -f0x4 ${ORAL_BASE}.sam | cut -f1 > \
     ${ORAL_BASE}_unmapped.list
 
@@ -227,37 +283,41 @@ if [ "${VERSION_ORAL}" != "" ] && [ ! -e "${ORAL_BASE}_unmapped.alt" ]; then
 fi
 
 # Scoring parameters found counting Alignment Score from bwakit hg38DH.fa.alt; this generates more supplementary alignments and missed odd MapQ 30 line
-if [ "${VERSION_BASE}" = "hg38" ] && [ ! -e "additional_hg38_p14_${VERSION_HLA}_contigs.alt" ]; then
+# Alt file contains sequence names with naming convention, so uses full HLA_NAMING_USCORE_PREFIX
+PATCH_HLA_ALT_BASE=additional_hg38_p14${HLA_NAMING_USCORE_PREFIX}_contigs
+if [ "${VERSION_BASE}" = "hg38" ] && [ ! -e "${PATCH_HLA_ALT_BASE}.alt" ]; then
   if [ ! -e GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna.sa ]; then
     gzip -cd GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz > GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
     bedtools maskfasta -fullHeader -fi GCA_000001405.15_GRCh38_no_alt_analysis_set.fna -fo GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna -bed GCA_000001405.15_GRCh38_GRC_exclusions.bed
     bwa index GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna
   fi
-  cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz hla_gen.${VERSION_HLA}.fasta.gz > additional_hg38_p14_${VERSION_HLA}_contigs.fa.gz
-  bwa mem -t`nproc` -A2 -B3 -O4 -E1 GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna additional_hg38_p14_${VERSION_HLA}_contigs.fa.gz \
+  cat hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz $HLA_FASTA > ${PATCH_HLA_ALT_BASE}.fa.gz
+  bwa mem -t`nproc` -A2 -B3 -O4 -E1 GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna ${PATCH_HLA_ALT_BASE}.fa.gz \
     | samtools view -q60 - \
-    | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_hg38_p14_${VERSION_HLA}_contigs.alt
+    | gawk '{ OFS="\t"; $10 = "*"; print }' > ${PATCH_HLA_ALT_BASE}.alt
 fi
 
-# For the chm3 reference we don't yet have any defined alt sequences besides HLA; although we might consider new T2T references
-if [ "${VERSION_BASE}" = "chm13" ] && [ ! -e "additional_chm13v2.0_${VERSION_HLA}_contigs.alt" ]; then
+# For the chm13 reference we don't yet have any defined alt sequences besides HLA; although we might consider new T2T references
+# Skip entirely if no HLA since chm13 has no patch contigs
+CHM13_HLA_ALT_BASE=additional_chm13v2.0${HLA_NAMING_USCORE_PREFIX}_contigs
+if [ "${VERSION_BASE}" = "chm13" ] && [ -n "$VERSION_HLA" ] && [ ! -e "${CHM13_HLA_ALT_BASE}.alt" ]; then
   if [ ! -e ${VERSION_BASE}${VERSION_PATCH}.fa.gz.sa ]; then
     bwa index chm13v2.0_maskedY_rCRS.fa.gz
   fi
-  bwa mem -t`nproc` -A2 -B3 -O4 -E1 chm13v2.0_maskedY_rCRS.fa.gz hla_gen.${VERSION_HLA}.fasta.gz \
+  bwa mem -t`nproc` -A2 -B3 -O4 -E1 chm13v2.0_maskedY_rCRS.fa.gz $HLA_FASTA \
     | samtools view -q60 - \
-    | gawk '{ OFS="\t"; $10 = "*"; print }' > additional_chm13v2.0_${VERSION_HLA}_contigs.alt
+    | gawk '{ OFS="\t"; $10 = "*"; print }' > ${CHM13_HLA_ALT_BASE}.alt
 fi
 
 if [ "${VERSION_BASE}" = "hg38" ] && [ ! -e "${VERSION}.fa.sa" ]; then
   cat GCA_000001405.15_GRCh38_full_analysis_set.fna.alt \
       ${DECOY_BASE}_unmapped.alt \
-      additional_hg38_p14_${VERSION_HLA}_contigs.alt \
+      ${PATCH_HLA_ALT_BASE}.alt \
       ${ORAL_BASE}_unmapped.alt \
     > ${VERSION}.fa.alt
 
   zcat GCA_000001405.15_GRCh38_full_analysis_set_masked.fna.gz ${DECOY_BASE}_unmapped.fna.gz \
-       hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz hla_gen.$VERSION_HLA.fasta.gz ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
+       hg38Patch11.fa.gz GRCh38Patch12.fa.gz GRCh38Patch13.fa.gz GRCh38Patch14.fa.gz $HLA_FASTA ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
   bwa index ${VERSION}.fa
 
   samtools faidx ${VERSION}.fa
@@ -266,12 +326,12 @@ fi
 
 if [ "${VERSION_BASE}" = "chm13" ] && [ ! -e "${VERSION}.fa.sa" ]; then
   cat ${DECOY_BASE}_unmapped.alt \
-      additional_chm13v2.0_${VERSION_HLA}_contigs.alt \
+      ${VERSION_HLA:+${CHM13_HLA_ALT_BASE}.alt} \
       ${ORAL_BASE}_unmapped.alt \
     > ${VERSION}.fa.alt
 
   zcat chm13v2.0_maskedY_rCRS.fa.gz ${DECOY_BASE}_unmapped.fna.gz \
-       hla_gen.$VERSION_HLA.fasta.gz ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
+       $HLA_FASTA ${ORAL_BASE}_unmapped.fna.gz > ${VERSION}.fa
   bwa index ${VERSION}.fa
 
   samtools faidx ${VERSION}.fa
