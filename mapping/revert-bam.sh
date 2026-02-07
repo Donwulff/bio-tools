@@ -248,7 +248,7 @@ then
   then
     check_space ${BMAPFILE}
 
-    samtools view -H ${UBAMFILE} > ${UBAMFILE}.hdr
+    samtools view -H ${UBAMFILE} | grep -v "^@HD" > ${UBAMFILE}.hdr
     # FTDNA BigY doesn't have PL tag, so add it for downstream processing.
     if ! grep -q "^@RG.*PL:" ${UBAMFILE}.hdr;
     then
