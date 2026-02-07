@@ -208,6 +208,17 @@ then
       --sanitize ${SANITIZE} \
       --attributes-to-clear XT \
       --attributes-to-clear XN \
+      --attributes-to-clear X0 \
+      --attributes-to-clear X1 \
+      --attributes-to-clear XM \
+      --attributes-to-clear XO \
+      --attributes-to-clear XG \
+      --attributes-to-clear MD \
+      --attributes-to-clear NM \
+      --attributes-to-clear MQ \
+      --attributes-to-clear MC \
+      --attributes-to-clear SA \
+      --attributes-to-clear ms \
       --attributes-to-clear AS \
       --attributes-to-clear OC \
       --attributes-to-clear OP \
