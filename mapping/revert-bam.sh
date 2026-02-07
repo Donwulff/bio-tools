@@ -74,8 +74,8 @@ SANITIZE=true
 cores=`nproc`
 # Find out how much memory we have available; you can override java heap on cmdline if you need disk cache, other processes
 totalmem=`LC_ALL=C free | grep -e "^Mem:" | gawk '{print $7}'`
-# Allow 2 gigabytes for runtime
-javamem=${2:-$((totalmem/1024/1024-2))}
+# Set Java heap to 80% of all available memory, as metaspace usage has grown in new Java versions.
+javamem=${2:-$((totalmem/1024/1024/10*8))}
 # https://sourceforge.net/p/picard/wiki/Main_Page/#q-a-picard-program-that-sorts-its-output-sambam-file-is-taking-a-very-long-time-andor-running-out-of-memory-what-can-i-do
 bamrecords=$((javamem*250000))
 # From Java 6 update 18 max. heap is 1/4th of physical memory, so we can split 3/4th between cores for sorting.
