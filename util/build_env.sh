@@ -2,6 +2,11 @@
 
 set -e
 
+# Last one to work with old glibc in RHEL7
+#export NODEJS=18.19.1
+# "Known to work" according to k8 repo
+export NODEJS=18.20.3
+
 # Function to clone or pull a git repository
 git_clone_or_pull() {
     REPO_URL=$1
@@ -144,11 +149,11 @@ wget https://github.com/attractivechaos/k8/releases/download/0.2.5/k8-0.2.5.tar.
 tar jxf k8-0.2.5.tar.bz2
 sudo cp k8-0.2.5/k8-Linux /usr/local/bin
 
-exit # bwa-postalts.js doesn't look compatible with 1.0, huge memory leak.
+#exit # bwa-postalts.js doesn't look compatible with 1.0, huge memory leak.
 
 # Build nodejs
-wget -O- https://nodejs.org/dist/v18.17.0/node-v18.17.0.tar.gz | tar -zxf -
-cd node-v18.17.0
+wget -O- https://nodejs.org/dist/v${NODEJS}/node-v${NODEJS}.tar.gz | tar -zxf -
+cd node-v${NODEJS}
 export CFLAGS="-march=native -O3"
 export CPPFLAGS=$CFLAGS
 export CXXFLAGS=$CFLAGS
