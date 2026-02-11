@@ -61,6 +61,11 @@ GATK_SPARK=4.6.2.0
 # Don't delete bwa-mem mapped, raw, unsorted BAM file. Useful if you intend to test different processing.
 KEEP_TEMPORARY=True
 
+# Enable/disable major stages.
+# Set in bio-tools.cfg or environment when only selected stages are needed.
+ENABLE_ALIGN=true
+ENABLE_MARKDUP=true
+
 # Extra options for BWA, ie. long reads with "-x pacbio" etc. http://bio-bwa.sourceforge.net/bwa.shtml
 BWAOPT=
 
@@ -93,7 +98,8 @@ fi
 # Get and build it from https://github.com/OpenGene/fastp
 if which fastp > /dev/null;
 then
-  FILTER="| fastp -QLGp --stdin --stdout --interleaved_in -j ${BASENAME}.fastp.json -h ${BASENAME}.fastp.html -R \"fastp report on ${BASENAME}\""
+  # Keep interleaving intact for bwa mem -p
+  FILTER="| fastp -QLGp --stdin --stdout --interleaved_in --interleaved_out -j ${BASENAME}.fastp.json -h ${BASENAME}.fastp.html -R \"fastp report on ${BASENAME}\""
 fi
 
 # https://gatkforums.broadinstitute.org/gatk/discussion/8017/how-to-map-reads-to-a-reference-with-alternate-contigs-like-grch38
@@ -123,7 +129,7 @@ fi
 
 if [ ! -z "${GATK_SPARK}" ] && [ ! -e gatk-${GATK_SPARK}/gatk ];
 then
-  if ! echo "${SANITIZE}" | grep -qi 'true';
+  if echo "${ENABLE_MARKDUP}" | grep -qi '^true$' && ! echo "${SANITIZE}" | grep -qi 'true';
   then
     echo "You can't use GATK_SPARK MarkDuplicatesSpark with single end reads, leave SANITIZE 'true'."
     exit
@@ -253,61 +259,93 @@ then
     fi
   fi
 
-  # Uses .hdr file also as a flag of whether mapping finished, in case we restart script
-  # This should probably be "|| [ -e ..." but sometimes I don't want to overwrite partial
-  if [ ! -e ${BMAPFILE} ] && [ ! -e ${UBAMFILE}.hdr ];
+  # ${UBAMFILE}.hdr is a mapping-in-progress sentinel.
+  # Mapping starts by creating it and removes it on successful completion.
+  # If mapping was interrupted, remove *.hdr to force remapping.
+  # Keep the explicit checks here to avoid overwriting partial files unexpectedly.
+  if echo "${ENABLE_ALIGN}" | grep -qi '^true$';
   then
-    check_space ${BMAPFILE}
-
-    samtools view -H ${UBAMFILE} | grep -v "^@HD" > ${UBAMFILE}.hdr
-    # FTDNA BigY doesn't have PL tag, so add it for downstream processing.
-    if ! grep -q "^@RG.*PL:" ${UBAMFILE}.hdr;
+    if [ ! -e ${BMAPFILE} ] && [ ! -e ${UBAMFILE}.hdr ];
     then
-      echo "############   Adding missing platform identifiers"
-      sed -i "s/^@RG\t.*/&\tPL:ILLUMINA/" ${UBAMFILE}.hdr
-    fi
+      check_space ${BMAPFILE}
 
-    echo "############ Using BWA MEM to align ${UBAMFILE} against ${REF} into ${BMAPFILE}"
-    # Casava 1.8 header, observed s/[12]:[YN]:[0-9]*:[^\/]*\/[12]\t//
-    # According to Wikipedia this can also end in barcode or sample-ID, so removing any.
-    time samtools fastq -t ${UBAMFILE} \
-      | eval sed "s/[12]:[YN]:[0-9]*:[^[:space:]]*[[:space:]]//" \
-      ${FILTER} \
-      | eval bwa mem ${BWAOPT} -p -t ${cores} -M -C -H ${UBAMFILE}.hdr ${REF} - \
-      ${POSTALT} \
-      | samtools view -b -o ${BMAPFILE}
-    rm ${UBAMFILE}.hdr
+      samtools view -H ${UBAMFILE} | grep -v "^@HD" > ${UBAMFILE}.hdr
+      # FTDNA BigY doesn't have PL tag, so add it for downstream processing.
+      if ! grep -q "^@RG.*PL:" ${UBAMFILE}.hdr;
+      then
+        echo "############   Adding missing platform identifiers"
+        sed -i "s/^@RG\t.*/&\tPL:ILLUMINA/" ${UBAMFILE}.hdr
+      fi
+
+      echo "############ Using BWA MEM to align ${UBAMFILE} against ${REF} into ${BMAPFILE}"
+      align_start_epoch=`date +%s`
+      echo "############   Alignment start: `date -u '+%Y-%m-%dT%H:%M:%SZ'`"
+      # Casava 1.8 header, observed s/[12]:[YN]:[0-9]*:[^\/]*\/[12]\t//
+      # According to Wikipedia this can also end in barcode or sample-ID, so removing any.
+      # Split singleton and paired streams explicitly to avoid mixed-stream pairing gotchas.
+      # This still relies on stream chunk boundaries: the first pair in the second stream can
+      # theoretically straddle a boundary, though in practice this is rare.
+      (
+        samtools fastq -0 error1 -o /dev/null -s - -T '*' ${UBAMFILE}
+        samtools fastq -0 error2 -o - -s /dev/null -T '*' ${UBAMFILE}
+      ) \
+        | eval sed "s/[12]:[YN]:[0-9]*:[^[:space:]]*[[:space:]]//" \
+        ${FILTER} \
+        | eval bwa mem ${BWAOPT} -p -t ${cores} -M -C -H ${UBAMFILE}.hdr ${REF} - \
+        ${POSTALT} \
+        | samtools view -b -o ${BMAPFILE}
+      align_end_epoch=`date +%s`
+      align_elapsed_sec=$((align_end_epoch-align_start_epoch))
+      echo "############   Alignment end: `date -u '+%Y-%m-%dT%H:%M:%SZ'` (elapsed ${align_elapsed_sec}s)"
+      rm ${UBAMFILE}.hdr
+    else
+      echo "############ ${BMAPFILE} or ${UBAMFILE}.hdr exists, so skipping mapping"
+    fi
   else
-    echo "############ ${BMAPFILE} or ${UBAMFILE}.hdr exists, so skipping mapping"
+    echo "############ ENABLE_ALIGN is false, skipping mapping stage"
   fi
 
-  echo "############ Marking duplicates and chromosome order sorting ${UBAMFILE} into ${SORTFILE}"
-  check_space ${SORTFILE}
-
-  # Unfortunately, MarkDuplicates seeks back to beginning of the input BAM so mapping can't just be piped in
-  # See https://software.broadinstitute.org/gatk/documentation/article?id=6747 for OPTICAL_DUPLICATE_PIXEL_DISTANCE and regex
-  if [ -z "${GATK_SPARK}" ];
+  if [ ! -e ${BMAPFILE} ];
   then
-    time java -jar picard.jar MarkDuplicates INPUT=${BMAPFILE} OUTPUT=/dev/stdout METRICS_FILE=${SAMPLE}.dup \
-      ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
-      OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 ${regex} \
-        | java -jar picard.jar FifoBuffer BUFFER_SIZE=2147483645 DEBUG_FREQUENCY=61 \
-        | samtools sort -T $tmp/${SAMPLE##*/} -@${cores} -m${percoremem}G -l${COMPRESS} \
-        | tee ${SORTFILE} \
-        | samtools index -@${cores} - ${SORTFILE}.bai
+    echo "Missing mapped BAM ${BMAPFILE}; cannot continue."
+    echo "Enable alignment (ENABLE_ALIGN=true) or provide existing ${BMAPFILE}."
+    exit
+  fi
+
+  check_space ${SORTFILE}
+  if echo "${ENABLE_MARKDUP}" | grep -qi '^true$';
+  then
+    echo "############ Marking duplicates and chromosome order sorting ${UBAMFILE} into ${SORTFILE}"
+    # Unfortunately, MarkDuplicates seeks back to beginning of the input BAM so mapping can't just be piped in
+    # See https://software.broadinstitute.org/gatk/documentation/article?id=6747 for OPTICAL_DUPLICATE_PIXEL_DISTANCE and regex
+    if [ -z "${GATK_SPARK}" ];
+    then
+      time java -jar picard.jar MarkDuplicates INPUT=${BMAPFILE} OUTPUT=/dev/stdout METRICS_FILE=${SAMPLE}.dup \
+        ASSUME_SORT_ORDER=queryname TAGGING_POLICY=All COMPRESSION_LEVEL=0 TMP_DIR=$tmp \
+        OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 ${regex} \
+          | java -jar picard.jar FifoBuffer BUFFER_SIZE=2147483645 DEBUG_FREQUENCY=61 \
+          | samtools sort -T $tmp/${SAMPLE##*/} -@${cores} -m${percoremem}G -l${COMPRESS} \
+          | tee ${SORTFILE} \
+          | samtools index -@${cores} - ${SORTFILE}.bai
+    else
+      # This took 8:20 vs. 6:17 on 4 cores, before running out of memory in index generation. Spark temp file space about 2X BAM, lots of IO.
+      # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_spark_transforms_markduplicates_MarkDuplicatesSpark.php
+      # Results are indentical, but duplication metrics are less detailed, PG header isn't added.
+      # --bam-partition-size 33554432 is maximum & default
+      rm -rf ${tmp}/SPARK
+      mkdir -p ${tmp}/SPARK
+      time gatk-${GATK_SPARK}/gatk --java-options "-Xmx${javamem}G -Dsamjdk.compression_level=${COMPRESS}" MarkDuplicatesSpark -I ${BMAPFILE} -O ${SORTFILE} -M ${SAMPLE}.dup \
+        --duplicate-tagging-policy All --tmp-dir ${tmp}/SPARK --output-shard-tmp-dir ${tmp}/SPARK/${SAMPLE##*/}.parts --optical-duplicate-pixel-distance 2500 ${regex} 2>&1 \
+          | grep -Ev "INFO (Executor|NewHadoopRDD|ShuffleBlockFetcherIterator|SparkHadoopMapRedUtil|FileOutputCommitter):" --line-buffered
+      # At least for me, the index file generation fails even with enough memory, so let's just generate it for now.
+      mv ${SORTFILE}.bai ${SORTFILE}.bai.bak
+      time samtools index -@${cores} ${SORTFILE}
+    fi
   else
-    # This took 8:20 vs. 6:17 on 4 cores, before running out of memory in index generation. Spark temp file space about 2X BAM, lots of IO.
-    # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_spark_transforms_markduplicates_MarkDuplicatesSpark.php
-    # Results are indentical, but duplication metrics are less detailed, PG header isn't added.
-    # --bam-partition-size 33554432 is maximum & default
-    rm -rf ${tmp}/SPARK
-    mkdir -p ${tmp}/SPARK
-    time gatk-${GATK_SPARK}/gatk --java-options "-Xmx${javamem}G -Dsamjdk.compression_level=${COMPRESS}" MarkDuplicatesSpark -I ${BMAPFILE} -O ${SORTFILE} -M ${SAMPLE}.dup \
-      --duplicate-tagging-policy All --tmp-dir ${tmp}/SPARK --output-shard-tmp-dir ${tmp}/SPARK/${SAMPLE##*/}.parts --optical-duplicate-pixel-distance 2500 ${regex} 2>&1 \
-        | grep -Ev "INFO (Executor|NewHadoopRDD|ShuffleBlockFetcherIterator|SparkHadoopMapRedUtil|FileOutputCommitter):" --line-buffered
-    # At least for me, the index file generation fails even with enough memory, so let's just generate it for now.
-    mv ${SORTFILE}.bai ${SORTFILE}.bai.bak
-    time samtools index -@${cores} ${SORTFILE}
+    echo "############ ENABLE_MARKDUP is false, sorting only ${BMAPFILE} into ${SORTFILE}"
+    time samtools sort -T $tmp/${SAMPLE##*/} -@${cores} -m${percoremem}G -l${COMPRESS} ${BMAPFILE} \
+      | tee ${SORTFILE} \
+      | samtools index -@${cores} - ${SORTFILE}.bai
   fi
   # Contrary to MarkDuplicatesSpark documentation, NM and MD tags look fine, but if you need UQ tags you need to run SetNmMdAndUqTags
   # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/picard_sam_SetNmMdAndUqTags.php
