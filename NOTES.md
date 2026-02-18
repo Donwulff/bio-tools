@@ -139,3 +139,28 @@ samtools view -c -e 'XQ!="D" && (flag&0x400)' file.bam
 - Error `Reference contigs ... IS MISSING` with `chr1..chrY` usually indicates BAM/reference mismatch, not "too many contigs".
 - Confirm by comparing BAM `@SQ` lengths to FASTA `.fai`.
 - Example observed mismatch: CHM13-aligned BAM lengths vs GRCh38 reference lengths.
+
+**Y Haplogroup Re-check (Published vs SOLiD vs Illumina)**
+- Literature baseline used for comparison:
+  - Nature Communications 2012 (`ncomms1701`): Iceman assigned to haplogroup `G`, subgroup `G2a`, including `M201` and `L91` context.
+  - Nature Communications 2025 (`s41467-025-61601-8`): reports lineage `G2a2a1a2a1a1b (G-Z6208*)`.
+- Legacy SOLiD-derived branch (`/mnt/GenomicData/Iceman_haplo/chrY_raw_Iceman_tst_hg38.vcf.gz`) remains noisy and conflict-heavy with current marker panel:
+  - broad cross-clade signal and no consistent deep G-branch support.
+  - key markers often unresolved/no-call under stricter filtering.
+- Illumina reanalysis branch (DeepVariant output `/home/jsantala/iceman.vcf`) shows coherent G-branch signal:
+  - `M201` derived (`GT=1/1`, `GQ=42`, `DP=10`)
+  - `L91` derived (`GT=1/1`, `GQ=23`, `DP=7`)
+  - `L166` derived (`GT=1/1`, `GQ=14`, `DP=3`)
+  - `Z6208` derived (`GT=1/1`, `GQ=39`, `DP=9`)
+- Current interpretation:
+  - Illumina branch is consistent with the published `G2a` direction and supports a downstream `Z6208*` placement.
+  - SOLiD branch is not sufficient alone for robust terminal placement with the current marker set.
+
+**Y Marker Analysis Tooling Added**
+- `annotate/y_haplo_from_vcf.sh`
+  - marker-merge + derived-call extraction workflow (YBrowse hg38 marker VCF).
+  - caller-aware filter modes: `any|pass|pass-or-dot|deepvariant`.
+  - supports DeepVariant outputs with nontrivial FILTER semantics and gzip inputs without `.gz` suffix.
+- `annotate/y_clade_consistency.py`
+  - compares candidate clades across datasets using support/conflict counts.
+  - intended for published/SOLiD/Illumina side-by-side scoring instead of raw "deepest label string" heuristics.

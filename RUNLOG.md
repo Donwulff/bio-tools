@@ -114,6 +114,56 @@ wc -l /home/jsantala/iceman_sm_cmp/0000.vcf \
       /home/jsantala/iceman_sm_cmp/0003.vcf
 ```
 
+## Y Haplogroup Comparison Run
+### Input branches compared
+- Legacy SOLiD-era test VCF:
+  - `/mnt/GenomicData/Iceman_haplo/chrY_raw_Iceman_tst_hg38.vcf.gz`
+- Illumina reanalysis DeepVariant VCF:
+  - `/home/jsantala/iceman.vcf` (gzip-compressed VCF without `.gz` suffix)
+- Marker panel:
+  - `/mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz`
+
+### Commands used
+```bash
+# SOLiD branch (strict-quality pass used in comparison notes)
+annotate/y_haplo_from_vcf.sh \
+  -i /mnt/GenomicData/Iceman_haplo/chrY_raw_Iceman_tst_hg38.vcf.gz \
+  -o /tmp/iceman_solid_strict \
+  --ann-vcf /mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz \
+  --site-filter-mode any \
+  --min-gq 30 --min-dp 10
+
+# Illumina DeepVariant branch
+annotate/y_haplo_from_vcf.sh \
+  -i /home/jsantala/iceman.vcf \
+  -o /tmp/iceman_illum \
+  --ann-vcf /mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz \
+  --site-filter-mode deepvariant \
+  --min-gq 20 --min-dp 3
+
+# Candidate clade scoring across branches
+annotate/y_clade_consistency.py \
+  --input solid=/tmp/iceman_solid_strict.derived.tsv \
+  --input illum=/tmp/iceman_illum.derived.tsv \
+  --candidate G \
+  --candidate G2a \
+  --candidate G2a2a1a2a1a1b \
+  --candidate G-Z6208 \
+  --out /tmp/iceman_clade_compare.tsv
+```
+
+### Key outcomes recorded
+- Illumina branch key marker states:
+  - `M201` derived (`GT=1/1`, `GQ=42`, `DP=10`)
+  - `L91` derived (`GT=1/1`, `GQ=23`, `DP=7`)
+  - `L166` derived (`GT=1/1`, `GQ=14`, `DP=3`)
+  - `Z6208` derived (`GT=1/1`, `GQ=39`, `DP=9`)
+- SOLiD branch:
+  - corresponding markers unresolved/no-call in current branch outputs.
+- `y_clade_consistency.py` (from `/tmp/iceman_clade_compare.tsv`):
+  - `illum` shows positive net support for `G`, `G2a`, `G2a2a1a2a1a1b`, `G-Z6208`.
+  - `solid` shows strongly negative net support for same candidates under current filter regime.
+
 ## Open Questions
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).
 - Decide whether alt/decoy calls are retained only as technical appendix or excluded from variant interpretation entirely.

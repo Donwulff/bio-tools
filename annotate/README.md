@@ -6,6 +6,18 @@ Illustrates liftover from Hg19 to Hg38 for features from gbrowse exported annota
 Finally, creates tabix file from genomic feature file and uses it to annotate sample variants.
 Has not been tested with current output files.
 
+### y_haplo_from_vcf.sh
+Current Y-chromosome marker workflow for VCF input.
+Uses the YBrowse hg38 marker VCF (`snps_hg38.vcf.gz`) directly, merges markers with sample chrY calls,
+filters derived markers via ancestral allele (`INFO/AA`), and reports deepest haplogroup-chain candidates.
+Recommended for current Iceman and modern re-calls.
+Supports caller-specific filtering via `--site-filter-mode` / `--site-filter-expr` (includes `deepvariant` mode).
+
+### y_clade_consistency.py
+Scores candidate clades against derived marker tables (`*.derived.tsv`) and reports
+support/conflict metrics per dataset. Intended for side-by-side comparison across
+published/legacy/new analysis branches.
+
 ### genos_annotate.sh
 Genos Research provided exome VCF's have weird format which cointains NT=Not Targeted Regions and NC=No Call.
 This script is intended to merge the Genos Research VCF with the variants in dbSNP to fill in ref-calls.

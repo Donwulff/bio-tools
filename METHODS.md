@@ -192,3 +192,20 @@ If original run used `--disable_small_model=false`, include:
 ```bash
 --small_model_cvo_records /work/dv_tmp/make_examples_call_variant_outputs.tfrecord@8.gz
 ```
+
+## Y Haplogroup Marker Workflow (Current)
+For GRCh38-based Y haplogroup checks:
+1. Merge sample chrY calls with YBrowse hg38 marker VCF (`snps_hg38.vcf.gz`).
+2. Extract derived calls against marker ancestral allele (`INFO/AA`), with caller-specific site filtering.
+3. Score candidate clades across datasets via support/conflict counts (not only "deepest label string").
+
+Implementation in repo:
+- `annotate/y_haplo_from_vcf.sh`
+- `annotate/y_clade_consistency.py`
+
+DeepVariant-specific setting:
+- use `--site-filter-mode deepvariant` in `y_haplo_from_vcf.sh` (`FILTER=PASS || RefCall`).
+
+Current result snapshot (Iceman):
+- Illumina branch supports `M201`, `L91`, `L166`, and `Z6208` as derived.
+- SOLiD branch remains conflict-heavy/inconclusive for terminal placement with current panel.
