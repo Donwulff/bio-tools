@@ -113,3 +113,82 @@ Observed loss rates by read class:
 Interpretation used for this run:
 - DeDup behavior is driven by `M/F/R + start/end/strand` rules and quality tie-breaking (not insert-size/template-aware duplicate logic).
 - For this filtered aDNA dataset, keep DeDup output as one branch, but treat singleton-heavy unmerged duplicate calls as a workflow caveat.
+
+## Final Merge Snapshot (D2049-D2052)
+Merged primary-assembly BAM before final DeDup (`...sort.bam`):
+- total: `668715804`
+- mapped: `668606112` (99.98%)
+- paired in sequencing: `649228301`
+- read1/read2: `639093736 / 10134565`
+- properly paired: `641169636` (98.76%)
+
+After final merged DeDup (`...sort_rmdup.bam`):
+- total: `656719414`
+- mapped: `656609722` (99.98%)
+- paired in sequencing: `639445514`
+- read1/read2: `630194482 / 9251032`
+- properly paired: `631748233` (98.80%)
+
+Observed final-pass delta:
+- removed reads: `11996390` (`1.79%`)
+- mapping rate remained stable (`99.98%`)
+
+## Removed-Read Characterization (First Library)
+For D2049, an exact removed SAM/BAM was created by join-diff between name-sorted pre/post DeDup BAMs.
+Important implementation details:
+- use tab-delimited join: `join -t$'\\t'`
+- use name order compatible with join (`samtools sort -N` or explicit `LC_ALL=C sort`)
+
+Reference command pattern:
+```bash
+samtools view -H pre.Nsort.bam > removed.sam
+join -t$'\\t' -v1 <(samtools view pre.Nsort.bam) <(samtools view post.Nsort.bam) >> removed.sam
+samtools view -b -o removed.bam removed.sam
+samtools flagstat removed.bam
+```
+
+Observed removed BAM (`...pair.prim_rmdup.Nsort.removed.bam`) summary:
+- total removed records: `6735265`
+- paired in sequencing: `5768582`
+- read1/read2: `5492819 / 275763`
+- properly paired: `5658405` (98.09%)
+
+Interpretation:
+- removals are concentrated in read1-heavy classes, consistent with DeDup rule-based treatment of `M/F/R` in singleton-heavy data.
+
+## DeepVariant Interrupt/Resume
+DeepVariant `run_deepvariant` is not a checkpoint manager by itself. Resume depends on intermediate files surviving on host storage.
+
+Recommended run option:
+```bash
+--intermediate_results_dir=/output/dv_tmp_<run_id>
+```
+
+Resume rules:
+- If `call_variants_output*.tfrecord.gz` is complete: run `postprocess_variants` only.
+- If only `make_examples.tfrecord@N.gz` exists: run `call_variants`, then `postprocess_variants`.
+- If intermediates are missing (container `/tmp` lost): rerun full workflow.
+
+Manual resume pattern:
+```bash
+# 1) call_variants from saved make_examples outputs
+/opt/deepvariant/bin/call_variants \
+  --examples /work/dv_tmp/make_examples.tfrecord@8.gz \
+  --outfile /work/dv_tmp/call_variants_output.tfrecord.gz \
+  --checkpoint /opt/models/wgs
+
+# 2) postprocess_variants
+/opt/deepvariant/bin/postprocess_variants \
+  --ref /work/ref.fa \
+  --infile /work/dv_tmp/call_variants_output.tfrecord.gz \
+  --outfile /work/sample.vcf \
+  --gvcf_outfile /work/sample.gvcf \
+  --nonvariant_site_tfrecord_path /work/dv_tmp/gvcf.tfrecord@8.gz \
+  --checkpoint_json /opt/models/wgs/model.example_info.json \
+  --cpus 8
+```
+
+If original run used `--disable_small_model=false`, include:
+```bash
+--small_model_cvo_records /work/dv_tmp/make_examples_call_variant_outputs.tfrecord@8.gz
+```

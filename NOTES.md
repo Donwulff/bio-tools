@@ -120,3 +120,22 @@ samtools view -c -e 'XQ!="D" && (flag&0x400)' file.bam
 - DeDup did not behave like insert-size/template-aware PE deduplication.
 - Loss was concentrated in unmerged classes (`F/R`), especially `F`.
 - Keep this DeDup result as one analysis branch, and document singleton-driven over-pruning risk in conclusions.
+
+**Final Merged DeDup Pass (D2049-D2052)**
+- Pre-final-DeDup (`...sort.bam`) total: `668715804`
+- Post-final-DeDup (`...sort_rmdup.bam`) total: `656719414`
+- Removed in final pass: `11996390` (`1.79%`)
+- Mapping rate remained stable at `99.98%` before/after.
+
+**DeepVariant Run Notes (Ancient DNA Branch)**
+- DeepVariant WGS run is in progress on primary-assembly final BAM.
+- `call_variants` throughput stabilized around `~2.66-2.70 sec per 100` examples on CPU-only execution.
+- `--disable_small_model=false` is intentional for default performance.
+- One full run completed successfully (`iceman.vcf` / `iceman.gvcf`).
+- A second side run (with `--regions`) was interrupted by power loss; usable resume state depended on whether intermediate files were persisted outside container `/tmp`.
+- Observed long `postprocess_variants` tail was active compute (protobuf `_message.so` hot path), not idle hang.
+
+**DeepVariant Reference Compatibility Gotcha**
+- Error `Reference contigs ... IS MISSING` with `chr1..chrY` usually indicates BAM/reference mismatch, not "too many contigs".
+- Confirm by comparing BAM `@SQ` lengths to FASTA `.fai`.
+- Example observed mismatch: CHM13-aligned BAM lengths vs GRCh38 reference lengths.

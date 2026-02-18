@@ -47,6 +47,73 @@ bcftools stats /home/jsantala/iceman.vcf > /home/jsantala/iceman.vcf.stats
 2. Run comparison branch without final merged DeDup (same DV settings), then diff callsets.
 3. WES/WGS modern runs: enforce `--regions` on primary assembly; keep shard count conservative on laptop.
 
+## DeepVariant A/B Plan (small_model on/off)
+Run both branches on the same BAM/reference and same region list.
+
+Region syntax note:
+- `run_deepvariant` accepts space-separated contig list after `--regions` (confirmed in current runs).
+
+Primary contig list used:
+```bash
+REGIONS="chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM"
+```
+
+Branch A (`small_model` enabled):
+```bash
+/snap/docker/3377/bin/docker run --rm --user "$(id -u):$(id -g)" \
+  -v /mnt/mirrored/iceman-reanalysis/dedup_out50:/input \
+  -v /home/jsantala:/output \
+  google/deepvariant:1.10.0 /opt/deepvariant/bin/run_deepvariant \
+  --model_type=WGS \
+  --ref=/output/src/bio-tools/mapping/index/hg38p14DH3630O.fa \
+  --reads=/input/iceman.oetzi.UDG_merge_combined.mapped_rmdup.pair.prim_rmdup.sort_rmdup.coord.bam \
+  --output_vcf=/output/iceman_sm_on.vcf.gz \
+  --output_gvcf=/output/iceman_sm_on.g.vcf.gz \
+  --num_shards=8 \
+  --vcf_stats_report=true \
+  --disable_small_model=false \
+  --logging_dir=/output/logs_sm_on \
+  --haploid_contigs=chrX,chrY \
+  --par_regions_bed=/input/GRCh38_PAR.bed \
+  --intermediate_results_dir=/output/dv_tmp_sm_on \
+  --regions $REGIONS
+```
+
+Branch B (`small_model` disabled):
+```bash
+/snap/docker/3377/bin/docker run --rm --user "$(id -u):$(id -g)" \
+  -v /mnt/mirrored/iceman-reanalysis/dedup_out50:/input \
+  -v /home/jsantala:/output \
+  google/deepvariant:1.10.0 /opt/deepvariant/bin/run_deepvariant \
+  --model_type=WGS \
+  --ref=/output/src/bio-tools/mapping/index/hg38p14DH3630O.fa \
+  --reads=/input/iceman.oetzi.UDG_merge_combined.mapped_rmdup.pair.prim_rmdup.sort_rmdup.coord.bam \
+  --output_vcf=/output/iceman_sm_off.vcf.gz \
+  --output_gvcf=/output/iceman_sm_off.g.vcf.gz \
+  --num_shards=8 \
+  --vcf_stats_report=true \
+  --disable_small_model=true \
+  --logging_dir=/output/logs_sm_off \
+  --haploid_contigs=chrX,chrY \
+  --par_regions_bed=/input/GRCh38_PAR.bed \
+  --intermediate_results_dir=/output/dv_tmp_sm_off \
+  --regions $REGIONS
+```
+
+Minimal comparison commands:
+```bash
+bcftools stats /home/jsantala/iceman_sm_on.vcf.gz  > /home/jsantala/iceman_sm_on.vcf.stats
+bcftools stats /home/jsantala/iceman_sm_off.vcf.gz > /home/jsantala/iceman_sm_off.vcf.stats
+
+bcftools isec -p /home/jsantala/iceman_sm_cmp \
+  /home/jsantala/iceman_sm_on.vcf.gz /home/jsantala/iceman_sm_off.vcf.gz
+
+wc -l /home/jsantala/iceman_sm_cmp/0000.vcf \
+      /home/jsantala/iceman_sm_cmp/0001.vcf \
+      /home/jsantala/iceman_sm_cmp/0002.vcf \
+      /home/jsantala/iceman_sm_cmp/0003.vcf
+```
+
 ## Open Questions
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).
 - Decide whether alt/decoy calls are retained only as technical appendix or excluded from variant interpretation entirely.
