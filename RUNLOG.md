@@ -164,6 +164,35 @@ annotate/y_clade_consistency.py \
   - `illum` shows positive net support for `G`, `G2a`, `G2a2a1a2a1a1b`, `G-Z6208`.
   - `solid` shows strongly negative net support for same candidates under current filter regime.
 
+### Marker-state/Path scoring extension (VCF+gVCF aware)
+Added Python tools to keep both VCF and gVCF inputs supported while preserving `ancestral` and `nocall` evidence:
+- `annotate/y_haplo_from_markers.py`
+  - outputs `<prefix>.marker_status.tsv` with per-marker status:
+    - `derived|ancestral|nocall|ambiguous`
+  - outputs `<prefix>.derived.tsv` and `<prefix>.summary.txt`
+- `annotate/y_path_rank.py`
+  - root-to-tip style ranking from `marker_status.tsv`
+  - weighted score terms:
+    - derived support (`+1` default)
+    - ancestral conflict (`-1` default)
+    - nocall (`0` default)
+    - derived `C>T` / `G>A` optional down-weight (`0.5` default)
+
+Example commands:
+```bash
+annotate/y_haplo_from_markers.py \
+  -i /home/jsantala/iceman.vcf \
+  --markers /tmp/markers_small.vcf.gz \
+  -o /tmp/iceman_markers_vcf2 \
+  --site-filter-mode deepvariant \
+  --min-gq 20 --min-dp 3
+
+annotate/y_path_rank.py \
+  --input /tmp/iceman_markers_vcf2.marker_status.tsv \
+  --out /tmp/iceman_markers_vcf2.path_rank.tsv \
+  --clade-prefix G
+```
+
 ## Open Questions
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).
 - Decide whether alt/decoy calls are retained only as technical appendix or excluded from variant interpretation entirely.

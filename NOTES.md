@@ -161,6 +161,18 @@ samtools view -c -e 'XQ!="D" && (flag&0x400)' file.bam
   - marker-merge + derived-call extraction workflow (YBrowse hg38 marker VCF).
   - caller-aware filter modes: `any|pass|pass-or-dot|deepvariant`.
   - supports DeepVariant outputs with nontrivial FILTER semantics and gzip inputs without `.gz` suffix.
+- `annotate/y_haplo_from_markers.py`
+  - marker-state extraction for both VCF and gVCF inputs (`derived|ancestral|nocall|ambiguous` per marker).
+  - intended to preserve no-call/ancestral evidence, not only derived rows.
 - `annotate/y_clade_consistency.py`
   - compares candidate clades across datasets using support/conflict counts.
   - intended for published/SOLiD/Illumina side-by-side scoring instead of raw "deepest label string" heuristics.
+- `annotate/y_path_rank.py`
+  - root-to-tip style clade ranking from marker-status rows with tunable scoring.
+  - includes optional down-weighting of potential deamination transitions (`C>T`, `G>A`) in derived evidence.
+
+**Method Attribution**
+- Path-oriented haplogroup scoring and damage-aware marker handling are aligned with practices described in:
+  - https://doi.org/10.1101/2024.03.13.584607
+- Parsimonious path interpretation with ancestral-state evidence is conceptually aligned with:
+  - PathPhynder (as cited by that work).

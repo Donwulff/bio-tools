@@ -13,10 +13,25 @@ filters derived markers via ancestral allele (`INFO/AA`), and reports deepest ha
 Recommended for current Iceman and modern re-calls.
 Supports caller-specific filtering via `--site-filter-mode` / `--site-filter-expr` (includes `deepvariant` mode).
 
+### y_haplo_from_markers.py
+Python marker resolver for both VCF and gVCF inputs.
+Streams marker rows against sample rows, resolves each marker to `derived|ancestral|nocall|ambiguous`,
+and writes:
+- `<prefix>.marker_status.tsv` (all marker statuses)
+- `<prefix>.derived.tsv` (derived-only rows, optional `--min-gq/--min-dp`)
+- `<prefix>.summary.txt`
+
 ### y_clade_consistency.py
 Scores candidate clades against derived marker tables (`*.derived.tsv`) and reports
 support/conflict metrics per dataset. Intended for side-by-side comparison across
 published/legacy/new analysis branches.
+
+### y_path_rank.py
+Ranks clade/path candidates from `*.marker_status.tsv` with tunable scoring:
+- derived support
+- ancestral conflict
+- no-call handling
+- optional down-weighting for possible deamination transitions (`C>T`, `G>A`).
 
 ### genos_annotate.sh
 Genos Research provided exome VCF's have weird format which cointains NT=Not Targeted Regions and NC=No Call.

@@ -201,10 +201,17 @@ For GRCh38-based Y haplogroup checks:
 
 Implementation in repo:
 - `annotate/y_haplo_from_vcf.sh`
+- `annotate/y_haplo_from_markers.py`
 - `annotate/y_clade_consistency.py`
+- `annotate/y_path_rank.py`
 
 DeepVariant-specific setting:
 - use `--site-filter-mode deepvariant` in `y_haplo_from_vcf.sh` (`FILTER=PASS || RefCall`).
+
+Attribution:
+- Root-to-tip style support ranking and damage-aware SNP accounting follow published ancient-DNA practice:
+  - https://doi.org/10.1101/2024.03.13.584607
+- Parsimonious ancestral/derived path interpretation is in the same spirit as PathPhynder usage in that workflow.
 
 Current result snapshot (Iceman):
 - Illumina branch supports `M201`, `L91`, `L166`, and `Z6208` as derived.
