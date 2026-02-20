@@ -3,6 +3,12 @@
 **Dataset**
 Cell Genomics 2023 short article (Sep 13, 2023): "High-coverage genome of the Tyrolean Iceman reveals unusually high Anatolian farmer ancestry." This note set refers to the Otzi 2023 resequencing BAMs.
 
+**Path Conventions**
+- `<raw_data_dir>`: location of original input BAM files.
+- `<analysis_dir>`: location of per-run working/output files.
+- `<legacy_data_dir>`: location of legacy comparison VCF datasets.
+- `<output_dir>`: location of final variant-calling outputs.
+
 **Findings**
 - EAGER/AdapterRemoval BAMs can be merged and mate-stripped. MarkDuplicates will treat singletons as single-end and can over-mark duplicates in repetitive regions.
 - Pseudo-pairing merged reads enables BWA MEM insert-size modeling. BWA MEM typically reports only FR orientation for Illumina/BGI libraries because other orientations are too rare to model.
@@ -144,10 +150,10 @@ samtools view -c -e 'XQ!="D" && (flag&0x400)' file.bam
 - Literature baseline used for comparison:
   - Nature Communications 2012 (`ncomms1701`): Iceman assigned to haplogroup `G`, subgroup `G2a`, including `M201` and `L91` context.
   - Nature Communications 2025 (`s41467-025-61601-8`): reports lineage `G2a2a1a2a1a1b (G-Z6208*)`.
-- Legacy SOLiD-derived branch (`/mnt/GenomicData/Iceman_haplo/chrY_raw_Iceman_tst_hg38.vcf.gz`) remains noisy and conflict-heavy with current marker panel:
+- Legacy SOLiD-derived branch (`<legacy_data_dir>/chrY_raw_Iceman_tst_hg38.vcf.gz`) remains noisy and conflict-heavy with current marker panel:
   - broad cross-clade signal and no consistent deep G-branch support.
   - key markers often unresolved/no-call under stricter filtering.
-- Illumina reanalysis branch (DeepVariant output `/home/jsantala/iceman.vcf`) shows coherent G-branch signal:
+- Illumina reanalysis branch (DeepVariant output `<output_dir>/iceman.vcf`) shows coherent G-branch signal:
   - `M201` derived (`GT=1/1`, `GQ=42`, `DP=10`)
   - `L91` derived (`GT=1/1`, `GQ=23`, `DP=7`)
   - `L166` derived (`GT=1/1`, `GQ=14`, `DP=3`)

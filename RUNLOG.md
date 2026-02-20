@@ -7,8 +7,15 @@ This file is the operator-facing ledger for reproducibility. Keep methods in `ME
 - Goal: reconstruct PE semantics where possible, remap, evaluate duplicate handling, and compare variant-calling branches.
 
 ## Canonical Inputs
-- Baseline BAM: `/mnt/AncientDNA/Iceman-2024/iceman.oetzi.UDG_D2049_combined.mapped_rmdup.bam`
+- Baseline BAM: `<raw_data_dir>/iceman.oetzi.UDG_D2049_combined.mapped_rmdup.bam`
 - Reference (primary run): `mapping/index/hg38p14DH3630O.fa`
+
+## Path Conventions
+- `<raw_data_dir>`: original input BAM location.
+- `<analysis_dir>`: run-specific BAM outputs used as DeepVariant input.
+- `<legacy_data_dir>`: legacy SOLiD-era VCF/marker files.
+- `<output_dir>`: final DeepVariant outputs and comparison reports.
+- `<repo_root>`: checked-out path to this repository.
 
 ## Key Decisions Locked
 - Keep `mapping/revert-bam.sh` stage-gated (`ENABLE_ALIGN`, `ENABLE_MARKDUP`).
@@ -42,7 +49,7 @@ This file is the operator-facing ledger for reproducibility. Keep methods in `ME
 ## Next Commands (shortlist)
 1. Finalize Ancient DNA DV outputs, then snapshot stats:
 ```bash
-bcftools stats /home/jsantala/iceman.vcf > /home/jsantala/iceman.vcf.stats
+bcftools stats <output_dir>/iceman.vcf > <output_dir>/iceman.vcf.stats
 ```
 2. Run comparison branch without final merged DeDup (same DV settings), then diff callsets.
 3. WES/WGS modern runs: enforce `--regions` on primary assembly; keep shard count conservative on laptop.
@@ -61,11 +68,12 @@ REGIONS="chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 ch
 Branch A (`small_model` enabled):
 ```bash
 /snap/docker/3377/bin/docker run --rm --user "$(id -u):$(id -g)" \
-  -v /mnt/mirrored/iceman-reanalysis/dedup_out50:/input \
-  -v /home/jsantala:/output \
+  -v <analysis_dir>:/input \
+  -v <repo_root>:/repo \
+  -v <output_dir>:/output \
   google/deepvariant:1.10.0 /opt/deepvariant/bin/run_deepvariant \
   --model_type=WGS \
-  --ref=/output/src/bio-tools/mapping/index/hg38p14DH3630O.fa \
+  --ref=/repo/mapping/index/hg38p14DH3630O.fa \
   --reads=/input/iceman.oetzi.UDG_merge_combined.mapped_rmdup.pair.prim_rmdup.sort_rmdup.coord.bam \
   --output_vcf=/output/iceman_sm_on.vcf.gz \
   --output_gvcf=/output/iceman_sm_on.g.vcf.gz \
@@ -82,11 +90,12 @@ Branch A (`small_model` enabled):
 Branch B (`small_model` disabled):
 ```bash
 /snap/docker/3377/bin/docker run --rm --user "$(id -u):$(id -g)" \
-  -v /mnt/mirrored/iceman-reanalysis/dedup_out50:/input \
-  -v /home/jsantala:/output \
+  -v <analysis_dir>:/input \
+  -v <repo_root>:/repo \
+  -v <output_dir>:/output \
   google/deepvariant:1.10.0 /opt/deepvariant/bin/run_deepvariant \
   --model_type=WGS \
-  --ref=/output/src/bio-tools/mapping/index/hg38p14DH3630O.fa \
+  --ref=/repo/mapping/index/hg38p14DH3630O.fa \
   --reads=/input/iceman.oetzi.UDG_merge_combined.mapped_rmdup.pair.prim_rmdup.sort_rmdup.coord.bam \
   --output_vcf=/output/iceman_sm_off.vcf.gz \
   --output_gvcf=/output/iceman_sm_off.g.vcf.gz \
@@ -102,42 +111,42 @@ Branch B (`small_model` disabled):
 
 Minimal comparison commands:
 ```bash
-bcftools stats /home/jsantala/iceman_sm_on.vcf.gz  > /home/jsantala/iceman_sm_on.vcf.stats
-bcftools stats /home/jsantala/iceman_sm_off.vcf.gz > /home/jsantala/iceman_sm_off.vcf.stats
+bcftools stats <output_dir>/iceman_sm_on.vcf.gz  > <output_dir>/iceman_sm_on.vcf.stats
+bcftools stats <output_dir>/iceman_sm_off.vcf.gz > <output_dir>/iceman_sm_off.vcf.stats
 
-bcftools isec -p /home/jsantala/iceman_sm_cmp \
-  /home/jsantala/iceman_sm_on.vcf.gz /home/jsantala/iceman_sm_off.vcf.gz
+bcftools isec -p <output_dir>/iceman_sm_cmp \
+  <output_dir>/iceman_sm_on.vcf.gz <output_dir>/iceman_sm_off.vcf.gz
 
-wc -l /home/jsantala/iceman_sm_cmp/0000.vcf \
-      /home/jsantala/iceman_sm_cmp/0001.vcf \
-      /home/jsantala/iceman_sm_cmp/0002.vcf \
-      /home/jsantala/iceman_sm_cmp/0003.vcf
+wc -l <output_dir>/iceman_sm_cmp/0000.vcf \
+      <output_dir>/iceman_sm_cmp/0001.vcf \
+      <output_dir>/iceman_sm_cmp/0002.vcf \
+      <output_dir>/iceman_sm_cmp/0003.vcf
 ```
 
 ## Y Haplogroup Comparison Run
 ### Input branches compared
 - Legacy SOLiD-era test VCF:
-  - `/mnt/GenomicData/Iceman_haplo/chrY_raw_Iceman_tst_hg38.vcf.gz`
+  - `<legacy_data_dir>/chrY_raw_Iceman_tst_hg38.vcf.gz`
 - Illumina reanalysis DeepVariant VCF:
-  - `/home/jsantala/iceman.vcf` (gzip-compressed VCF without `.gz` suffix)
+  - `<output_dir>/iceman.vcf` (gzip-compressed VCF without `.gz` suffix)
 - Marker panel:
-  - `/mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz`
+  - `<legacy_data_dir>/snps_hg38.vcf.gz`
 
 ### Commands used
 ```bash
 # SOLiD branch (strict-quality pass used in comparison notes)
 annotate/y_haplo_from_vcf.sh \
-  -i /mnt/GenomicData/Iceman_haplo/chrY_raw_Iceman_tst_hg38.vcf.gz \
+  -i <legacy_data_dir>/chrY_raw_Iceman_tst_hg38.vcf.gz \
   -o /tmp/iceman_solid_strict \
-  --ann-vcf /mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz \
+  --ann-vcf <legacy_data_dir>/snps_hg38.vcf.gz \
   --site-filter-mode any \
   --min-gq 30 --min-dp 10
 
 # Illumina DeepVariant branch
 annotate/y_haplo_from_vcf.sh \
-  -i /home/jsantala/iceman.vcf \
+  -i <output_dir>/iceman.vcf \
   -o /tmp/iceman_illum \
-  --ann-vcf /mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz \
+  --ann-vcf <legacy_data_dir>/snps_hg38.vcf.gz \
   --site-filter-mode deepvariant \
   --min-gq 20 --min-dp 3
 
@@ -181,7 +190,7 @@ Added Python tools to keep both VCF and gVCF inputs supported while preserving `
 Example commands:
 ```bash
 annotate/y_haplo_from_markers.py \
-  -i /home/jsantala/iceman.vcf \
+  -i <output_dir>/iceman.vcf \
   --markers /tmp/markers_small.vcf.gz \
   -o /tmp/iceman_markers_vcf2 \
   --site-filter-mode deepvariant \

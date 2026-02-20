@@ -7,6 +7,11 @@ This document records practical methods and reasoning for re-mapping ancient DNA
 - Examples reference the Otzi 2023 resequencing data (Cell Genomics 2023).
 - Assumes reference builds produced by `mapping/GRCh38_bwa_index.sh`.
 
+## Path Conventions
+- `<raw_data_dir>`: location of original input BAM files.
+- `<analysis_dir>`: location of per-run working/output files.
+- `<legacy_data_dir>`: location of legacy comparison VCF datasets.
+
 ## Pair Reconstruction
 When read pairs have been stripped, reconstruct pseudo-pairs for PE workflows:
 ```bash
@@ -77,7 +82,7 @@ Because the input is already human-filtered:
 
 ## Current Experiment Snapshot (Otzi D2049 Combined)
 Dataset path used for baseline:
-- `/mnt/AncientDNA/Iceman-2024/iceman.oetzi.UDG_D2049_combined.mapped_rmdup.bam`
+- `<raw_data_dir>/iceman.oetzi.UDG_D2049_combined.mapped_rmdup.bam`
 
 Published BAM prefix composition:
 - `M=138980507`

@@ -33,6 +33,16 @@ Ranks clade/path candidates from `*.marker_status.tsv` with tunable scoring:
 - no-call handling
 - optional down-weighting for possible deamination transitions (`C>T`, `G>A`).
 
+### run_iceman_y_compare.sh
+Single-command driver for reproducible multi-branch Iceman chrY comparison:
+- runs marker-state extraction (`y_haplo_from_markers.py`)
+- runs path ranking (`y_path_rank.py`)
+- writes combined reports (`key_markers.tsv`, `subtree_status.tsv`, `top_paths.tsv`)
+Defaults target:
+- auto-detected local files (`./iceman.vcf`, `./iceman.gvcf`, `./chrY_called_Iceman_tst_hg38.vcf.gz`)
+- marker fallback: `annotate/data/snps_hg38.vcf.gz`
+- optional overrides via env vars: `YCOMPARE_MARKERS`, `YCOMPARE_ICEMAN_VCF`, `YCOMPARE_ICEMAN_GVCF`, `YCOMPARE_SOLID_VCF`
+
 ### genos_annotate.sh
 Genos Research provided exome VCF's have weird format which cointains NT=Not Targeted Regions and NC=No Call.
 This script is intended to merge the Genos Research VCF with the variants in dbSNP to fill in ref-calls.
