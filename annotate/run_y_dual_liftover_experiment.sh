@@ -22,8 +22,8 @@ Purpose:
   2) hs1 sample VCF -> hg38 liftover, then call against hg38 markers
 
 Defaults:
-  out-dir defaults to /tmp/y_dual_liftover_<timestamp>
-  markers default is fetched by annotate/fetch_ybrowse_markers.sh
+  out-dir defaults to ./experiments/y_dual_liftover_<timestamp>
+  markers default is fetched to ./resources/snps_hg38.vcf.gz
 
 Output:
   <out-dir>/summary.tsv

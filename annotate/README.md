@@ -56,7 +56,7 @@ Practical use:
 ### fetch_ybrowse_markers.sh
 Fetches the YBrowse hg38 marker file (`snps_hg38.vcf.gz`) into a chosen path
 (default `./resources/snps_hg38.vcf.gz`), with optional fallback to an
-existing local mirror if network fetch fails.
+existing local mirror if network fetch fails (`--fallback` or env `YMARKERS_FALLBACK`).
 The fetched file is sanitized to remove invalid ALT definitions that can break
 strict VCF readers.
 

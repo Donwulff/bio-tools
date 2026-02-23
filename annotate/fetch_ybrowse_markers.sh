@@ -19,9 +19,9 @@ need_cmd() {
   }
 }
 
-OUT="$(pwd)/resources/snps_hg38.vcf.gz"
+OUT="${YMARKERS_OUT:-$(pwd)/resources/snps_hg38.vcf.gz}"
 REFRESH=0
-FALLBACK="/mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz"
+FALLBACK="${YMARKERS_FALLBACK:-}"
 URL_BASE="http://ybrowse.org/gbrowse2/gff/snps_hg38.vcf.gz"
 
 while [ $# -gt 0 ]; do
@@ -54,7 +54,7 @@ else
   set -e
   if [ "$rc1" -ne 0 ] || [ "$rc2" -ne 0 ]; then
     echo "WARNING: download failed (rc=$rc1/$rc2)." >&2
-    if [ -f "$FALLBACK" ] && [ -f "${FALLBACK}.tbi" ]; then
+    if [ -n "$FALLBACK" ] && [ -f "$FALLBACK" ] && [ -f "${FALLBACK}.tbi" ]; then
       echo "Using fallback marker file: $FALLBACK" >&2
       cp -f "$FALLBACK" "$OUT"
       cp -f "${FALLBACK}.tbi" "${OUT}.tbi"

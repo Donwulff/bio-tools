@@ -87,9 +87,9 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 if [ -z "$MARKERS" ]; then
   for p in \
+    "${PWD}/resources/snps_hg38.vcf.gz" \
     "${SCRIPT_DIR}/data/snps_hg38.vcf.gz" \
-    "${PWD}/snps_hg38.vcf.gz" \
-    "/mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz"
+    "${PWD}/snps_hg38.vcf.gz"
   do
     if [ -f "$p" ]; then
       MARKERS="$p"
@@ -117,8 +117,7 @@ if [ -z "$ICEMAN_GVCF" ]; then
 fi
 if [ -z "$SOLID_VCF" ]; then
   for p in \
-    "${PWD}/chrY_called_Iceman_tst_hg38.vcf.gz" \
-    "/mnt/GenomicData/Iceman_haplo/chrY_called_Iceman_tst_hg38.vcf.gz"
+    "${PWD}/chrY_called_Iceman_tst_hg38.vcf.gz"
   do
     if [ -f "$p" ]; then
       SOLID_VCF="$p"

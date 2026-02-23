@@ -161,6 +161,10 @@ samtools view -c -e 'XQ!="D" && (flag&0x400)' file.bam
 - Current interpretation:
   - Illumina branch is consistent with the published `G2a` direction and supports a downstream `Z6208*` placement.
   - SOLiD branch is not sufficient alone for robust terminal placement with the current marker set.
+- DeepVariant small-model on/off comparison on Iceman:
+  - all-sites shared GT differences are non-zero (`~0.76%`), but PASS-only shared GT differences are low (`~0.017%`).
+  - haplogroup-defining markers (`M201`, `L91`, `L166`, `Z6208`) stayed `PASS` + `GT=1/1` in both runs.
+  - `Z6208` confidence dropped in no-small run (`GQ/QUAL` lower), but call direction did not change.
 
 **Y Marker Analysis Tooling Added**
 - `annotate/y_haplo_from_vcf.sh`
@@ -182,3 +186,12 @@ samtools view -c -e 'XQ!="D" && (flag&0x400)' file.bam
   - https://doi.org/10.1101/2024.03.13.584607
 - Parsimonious path interpretation with ancestral-state evidence is conceptually aligned with:
   - PathPhynder (as cited by that work).
+
+**YBrowse Marker Source Notes (2026-02-23 refresh)**
+- `snps_hg38.vcf.gz` and `snps_hg38.gff3` are not row-equivalent exports.
+- Observed differences are mainly due to representation:
+  - GFF includes indels and more duplicate loci rows.
+  - VCF export is SNP-oriented and has fewer duplicate-locus rows.
+- Practical workflow decision:
+  - Use marker VCF as the canonical input for current haplogroup scripts.
+  - Sanitize marker VCF alleles before liftover/strict parsing (`ALT!=REF`, no duplicate ALT).

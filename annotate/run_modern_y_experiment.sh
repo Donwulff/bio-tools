@@ -14,7 +14,7 @@ Purpose:
   - Runs marker-state extraction when compatible
 
 Notes:
-  - Default marker path prefers /mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz,
+  - Default marker path prefers ./resources/snps_hg38.vcf.gz,
     then annotate/data/snps_hg38.vcf.gz.
   - For CHM13 sample calls and hg38 markers, liftover markers first or use
     a native GRCh38 callset.
@@ -55,11 +55,16 @@ need_cmd python3
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 if [ -z "$MARKERS" ]; then
-  if [ -f "/mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz" ]; then
-    MARKERS="/mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz"
-  else
-    MARKERS="${SCRIPT_DIR}/data/snps_hg38.vcf.gz"
-  fi
+  for p in \
+    "${PWD}/resources/snps_hg38.vcf.gz" \
+    "${PWD}/snps_hg38.vcf.gz" \
+    "${SCRIPT_DIR}/data/snps_hg38.vcf.gz"
+  do
+    if [ -f "$p" ]; then
+      MARKERS="$p"
+      break
+    fi
+  done
 fi
 [ -f "$MARKERS" ] || {
   echo "ERROR: marker VCF not found: $MARKERS" >&2
