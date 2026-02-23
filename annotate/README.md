@@ -74,6 +74,7 @@ using UCSC mirrors with MARBL chain-name fallback.
 Two-branch experiment driver for modern Y analysis:
 - branch A: liftover markers `hg38 -> hs1`, then call against native hs1 sample
 - branch B: liftover sample `hs1 -> hg38`, then call against hg38 markers
+- branch C: path ranking with configurable clade prefix (`--clade-prefix`, default `R`)
 
 Default output path is under the caller's working directory: `./experiments/...`.
 Run it from a private working directory for sensitive sample data.

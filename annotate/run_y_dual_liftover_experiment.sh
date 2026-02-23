@@ -11,6 +11,7 @@ Usage:
     --ref-hg38 REF_HG38.fa \
     --chain-hg38-to-hs1 hg38ToHs1.chain.gz \
     --chain-hs1-to-hg38 hs1ToHg38.chain.gz \
+    [--clade-prefix PREFIX] \
     [--markers-hg38 snps_hg38.vcf.gz] \
     [--picard-jar picard.jar] \
     [--java-opts "-Xms1g -Xmx8g"] \
@@ -20,6 +21,7 @@ Purpose:
   Runs both Y-haplogroup paths for cross-check:
   1) hg38 markers -> hs1 liftover, then call against native hs1 sample
   2) hs1 sample VCF -> hg38 liftover, then call against hg38 markers
+  3) rank candidate paths for a target clade prefix
 
 Defaults:
   out-dir defaults to ./experiments/y_dual_liftover_<timestamp>
@@ -47,6 +49,7 @@ MARKERS_HG38=""
 PICARD_JAR=""
 OUT_DIR=""
 JAVA_OPTS=""
+CLADE_PREFIX="${YPATH_CLADE_PREFIX:-R}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -56,6 +59,7 @@ while [ $# -gt 0 ]; do
     --ref-hg38) REF_HG38="$2"; shift 2 ;;
     --chain-hg38-to-hs1) CHAIN_HG38_TO_HS1="$2"; shift 2 ;;
     --chain-hs1-to-hg38) CHAIN_HS1_TO_HG38="$2"; shift 2 ;;
+    --clade-prefix) CLADE_PREFIX="$2"; shift 2 ;;
     --markers-hg38) MARKERS_HG38="$2"; shift 2 ;;
     --picard-jar) PICARD_JAR="$2"; shift 2 ;;
     --java-opts) JAVA_OPTS="$2"; shift 2 ;;
@@ -175,13 +179,16 @@ python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
 
 python3 "${SCRIPT_DIR}/y_path_rank.py" \
   --input "${OUT_DIR}/hs1_from_markers_lifted.marker_status.tsv" \
-  --out "${OUT_DIR}/hs1.paths.tsv"
+  --out "${OUT_DIR}/hs1.paths.tsv" \
+  --clade-prefix "$CLADE_PREFIX"
 python3 "${SCRIPT_DIR}/y_path_rank.py" \
   --input "${OUT_DIR}/hg38_from_sample_lifted.marker_status.tsv" \
-  --out "${OUT_DIR}/hg38.paths.tsv"
+  --out "${OUT_DIR}/hg38.paths.tsv" \
+  --clade-prefix "$CLADE_PREFIX"
 
 {
   echo "branch\tmetric\tvalue"
+  echo "global\tclade_prefix\t${CLADE_PREFIX}"
   awk '
     BEGIN{b="hs1"} /^  derived:/{print b"\tderived\t"$2}
     /^  ancestral:/{print b"\tancestral\t"$2}

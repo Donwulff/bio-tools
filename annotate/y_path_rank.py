@@ -32,6 +32,8 @@ from typing import Dict, Iterable, Iterator, List, Set, Tuple
 NOISE_PATTERNS = (
     "unknown",
     "not_listed",
+    "notlisted",
+    "removedfrom",
     "approx.",
     "aprrox.",
     "approx_",
@@ -55,6 +57,8 @@ def normalize_token(token: str) -> str:
     t = t.replace("Approx._", "")
     t = t.replace("_", "")
     t = t.replace(" ", "")
+    t = t.replace("(", "")
+    t = t.replace(")", "")
     return t
 
 
@@ -70,6 +74,10 @@ def tokenize_labels(hg: str, isogg: str, clade_prefix: str) -> List[str]:
         if any(np in low for np in NOISE_PATTERNS):
             continue
         if not t.startswith(clade_prefix):
+            continue
+        # Reject long free-text labels accidentally starting with the prefix.
+        # Keep short alpha labels (e.g. CT, IJK, NO) and normal alphanumeric/hyphen clade tokens.
+        if re.fullmatch(r"[A-Za-z]+", t) and len(t) > 3:
             continue
         out.append(t)
     return out
