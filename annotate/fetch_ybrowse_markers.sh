@@ -37,6 +37,7 @@ done
 need_cmd bcftools
 need_cmd tabix
 need_cmd wget
+need_cmd sh
 
 OUT_DIR=$(dirname "$OUT")
 mkdir -p "$OUT_DIR"
@@ -67,6 +68,12 @@ fi
 if [ ! -f "${OUT}.tbi" ]; then
   tabix -f "$OUT"
 fi
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+SAN_OUT="${OUT%.vcf.gz}.sanitized.vcf.gz"
+"${SCRIPT_DIR}/sanitize_marker_vcf.sh" --input "$OUT" --output "$SAN_OUT"
+mv -f "$SAN_OUT" "$OUT"
+mv -f "${SAN_OUT}.tbi" "${OUT}.tbi"
 
 echo "Marker header:"
 bcftools view -h "$OUT" | awk '/^##date=|^##copyright=|^##contig=<ID=chrY/'

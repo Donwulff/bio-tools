@@ -122,10 +122,13 @@ MARKERS_HS1="${OUT_DIR}/markers_hs1.vcf.gz"
 MARKERS_HS1_REJECT="${OUT_DIR}/markers_hs1.reject.vcf.gz"
 SAMPLE_HG38="${OUT_DIR}/sample_hg38_lifted.vcf.gz"
 SAMPLE_HG38_REJECT="${OUT_DIR}/sample_hg38_lifted.reject.vcf.gz"
+MARKERS_HG38_CLEAN="${OUT_DIR}/markers_hg38.clean.vcf.gz"
+
+"${SCRIPT_DIR}/sanitize_marker_vcf.sh" --input "$MARKERS_HG38" --output "$MARKERS_HG38_CLEAN"
 
 echo "Liftover markers: hg38 -> hs1"
 java $JAVA_OPTS -jar "$PICARD_JAR" LiftoverVcf \
-  I="$MARKERS_HG38" \
+  I="$MARKERS_HG38_CLEAN" \
   O="$MARKERS_HS1" \
   CHAIN="$CHAIN_HG38_TO_HS1" \
   R="$REF_HS1" \
@@ -165,7 +168,7 @@ fi
 echo "Run marker-state extraction on hg38-lifted sample branch"
 python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
   -i "$SAMPLE_HG38" \
-  --markers "$MARKERS_HG38" \
+  --markers "$MARKERS_HG38_CLEAN" \
   -o "${OUT_DIR}/hg38_from_sample_lifted" \
   --site-filter-mode deepvariant \
   --bgzip-index-input

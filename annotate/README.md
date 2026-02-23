@@ -57,6 +57,14 @@ Practical use:
 Fetches the YBrowse hg38 marker file (`snps_hg38.vcf.gz`) into a chosen path
 (default `./resources/snps_hg38.vcf.gz`), with optional fallback to an
 existing local mirror if network fetch fails.
+The fetched file is sanitized to remove invalid ALT definitions that can break
+strict VCF readers.
+
+### sanitize_marker_vcf.sh
+Cleans marker VCF allele fields:
+- removes ALT alleles equal to REF
+- removes duplicate ALT alleles within a record
+- drops records left with no ALT alleles
 
 ### fetch_liftover_chains.sh
 Fetches `hg38ToHs1` and `hs1ToHg38` chain files to `./resources/chains/`

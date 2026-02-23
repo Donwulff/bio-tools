@@ -75,6 +75,9 @@ if [ -z "$OUT_DIR" ]; then
 fi
 mkdir -p "$OUT_DIR"
 
+MARKERS_CLEAN="${OUT_DIR}/markers.clean.vcf.gz"
+"${SCRIPT_DIR}/sanitize_marker_vcf.sh" --input "$MARKERS" --output "$MARKERS_CLEAN"
+
 get_chr_len() {
   vcf="$1"
   chrom="$2"
@@ -90,7 +93,7 @@ get_chr_len() {
 }
 
 sample_y_len=$(get_chr_len "$SAMPLE_VCF" "chrY")
-marker_y_len=$(get_chr_len "$MARKERS" "chrY")
+marker_y_len=$(get_chr_len "$MARKERS_CLEAN" "chrY")
 
 if [ -z "$sample_y_len" ] || [ -z "$marker_y_len" ]; then
   echo "ERROR: could not determine chrY contig length from headers." >&2
@@ -103,6 +106,7 @@ fi
   echo "sample_vcf=$SAMPLE_VCF"
   echo "sample_gvcf=${SAMPLE_GVCF:-none}"
   echo "markers=$MARKERS"
+  echo "markers_clean=$MARKERS_CLEAN"
   echo "sample_chrY_length=$sample_y_len"
   echo "marker_chrY_length=$marker_y_len"
 } > "${OUT_DIR}/run.info"
@@ -127,7 +131,7 @@ if [ -n "$SAMPLE_GVCF" ]; then
   [ -f "$SAMPLE_GVCF" ] || { echo "ERROR: sample gVCF not found: $SAMPLE_GVCF" >&2; exit 1; }
   python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
     -i "$SAMPLE_GVCF" \
-    --markers "$MARKERS" \
+    --markers "$MARKERS_CLEAN" \
     -o "${OUT_DIR}/from_gvcf" \
     --site-filter-mode deepvariant \
     --bgzip-index-input
@@ -135,7 +139,7 @@ fi
 
 python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
   -i "$SAMPLE_VCF" \
-  --markers "$MARKERS" \
+  --markers "$MARKERS_CLEAN" \
   -o "${OUT_DIR}/from_vcf" \
   --site-filter-mode deepvariant \
   --bgzip-index-input
