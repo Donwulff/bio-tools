@@ -51,10 +51,11 @@ unless explicitly overridden.
 Practical use:
 - For hs1/CHM13 calls + hg38 markers, do **not** run direct assignment.
 - First liftover marker sites to hs1 (or use native GRCh38 calls), then run marker-state extraction.
+- Default output path is under the caller's working directory: `./experiments/...`
 
 ### fetch_ybrowse_markers.sh
 Fetches the YBrowse hg38 marker file (`snps_hg38.vcf.gz`) into a chosen path
-(default `/tmp/y_markers/snps_hg38.vcf.gz`), with optional fallback to an
+(default `./resources/snps_hg38.vcf.gz`), with optional fallback to an
 existing local mirror if network fetch fails.
 
 ### run_y_dual_liftover_experiment.sh
@@ -62,8 +63,14 @@ Two-branch experiment driver for modern Y analysis:
 - branch A: liftover markers `hg38 -> hs1`, then call against native hs1 sample
 - branch B: liftover sample `hs1 -> hg38`, then call against hg38 markers
 
-The script writes outputs under `/tmp` by default so sample-level results stay
-outside the source tree unless you explicitly set `--out-dir` to a repo path.
+Default output path is under the caller's working directory: `./experiments/...`.
+Run it from a private working directory for sensitive sample data.
+
+### liftover_to_hg38_batch.sh
+Batch liftover helper for hs1/CHM13 sample VCF/gVCF files to GRCh38.
+Designed for generating GRCh38 callsets for downstream tools (Exomiser/PharmCAT).
+Optional `--primary-only` emits a canonical-contig subset
+(`chr1-22,chrX,chrY,chrM`) per lifted sample.
 
 ### compare_vcf_runs.sh
 General run-vs-run VCF comparator for the same sample/reference.

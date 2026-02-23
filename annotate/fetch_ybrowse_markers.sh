@@ -8,7 +8,7 @@ Usage:
 
 Fetches YBrowse hg38 chrY marker VCF and index.
 Default output:
-  /tmp/y_markers/snps_hg38.vcf.gz
+  ./resources/snps_hg38.vcf.gz
 EOF
 }
 
@@ -19,7 +19,7 @@ need_cmd() {
   }
 }
 
-OUT="/tmp/y_markers/snps_hg38.vcf.gz"
+OUT="$(pwd)/resources/snps_hg38.vcf.gz"
 REFRESH=0
 FALLBACK="/mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz"
 URL_BASE="http://ybrowse.org/gbrowse2/gff/snps_hg38.vcf.gz"

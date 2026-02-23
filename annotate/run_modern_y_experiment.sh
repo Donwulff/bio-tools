@@ -53,7 +53,6 @@ need_cmd bcftools
 need_cmd python3
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-REPO_ROOT=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
 
 if [ -z "$MARKERS" ]; then
   if [ -f "/mnt/GenomicData/Iceman_haplo/snps_hg38.vcf.gz" ]; then
@@ -72,7 +71,7 @@ if [ -z "$OUT_DIR" ]; then
   base=$(basename "$SAMPLE_VCF")
   base=${base%.vcf.gz}
   base=${base%.vcf}
-  OUT_DIR="${REPO_ROOT}/mapping/tst/modern_y_${base}"
+  OUT_DIR="$(pwd)/experiments/modern_y_${base}"
 fi
 mkdir -p "$OUT_DIR"
 

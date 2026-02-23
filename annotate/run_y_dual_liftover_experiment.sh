@@ -101,14 +101,14 @@ fi
 [ -f "$PICARD_JAR" ] || { echo "ERROR: not found: $PICARD_JAR" >&2; exit 1; }
 
 if [ -z "$MARKERS_HG38" ]; then
-  MARKERS_HG38="/tmp/y_markers/snps_hg38.vcf.gz"
+  MARKERS_HG38="$(pwd)/resources/snps_hg38.vcf.gz"
   "${SCRIPT_DIR}/fetch_ybrowse_markers.sh" --out "$MARKERS_HG38"
 fi
 [ -f "$MARKERS_HG38" ] || { echo "ERROR: not found: $MARKERS_HG38" >&2; exit 1; }
 [ -f "${MARKERS_HG38}.tbi" ] || tabix -f "$MARKERS_HG38"
 
 if [ -z "$OUT_DIR" ]; then
-  OUT_DIR="/tmp/y_dual_liftover_$(date +%Y%m%d_%H%M%S)"
+  OUT_DIR="$(pwd)/experiments/y_dual_liftover_$(date +%Y%m%d_%H%M%S)"
 fi
 mkdir -p "$OUT_DIR"
 
