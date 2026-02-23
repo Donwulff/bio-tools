@@ -32,6 +32,7 @@ Ranks clade/path candidates from `*.marker_status.tsv` with tunable scoring:
 - ancestral conflict
 - no-call handling
 - optional down-weighting for possible deamination transitions (`C>T`, `G>A`).
+- supports `--auto-clade` to infer top-level clade before ranking subpaths.
 
 ### run_iceman_y_compare.sh
 Single-command driver for reproducible multi-branch Iceman chrY comparison:
@@ -74,7 +75,7 @@ using UCSC mirrors with MARBL chain-name fallback.
 Two-branch experiment driver for modern Y analysis:
 - branch A: liftover markers `hg38 -> hs1`, then call against native hs1 sample
 - branch B: liftover sample `hs1 -> hg38`, then call against hg38 markers
-- branch C: path ranking with configurable clade prefix (`--clade-prefix`, default `R`)
+- branch C: path ranking with auto top-level clade (default) or manual `--clade-prefix`
 
 Default output path is under the caller's working directory: `./experiments/...`.
 Run it from a private working directory for sensitive sample data.

@@ -112,11 +112,24 @@ def hierarchical_prefixes(token: str, clade_prefix: str) -> List[str]:
     return list(dict.fromkeys(prefixes))
 
 
+def top_level_clade(token: str) -> str:
+    t = token.strip().strip('"').rstrip("~*")
+    m = re.match(r"^([A-T])", t)
+    if not m:
+        return ""
+    return m.group(1)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Rank clade paths from marker status rows.")
     ap.add_argument("--input", required=True, help="marker_status.tsv from y_haplo_from_markers.py")
     ap.add_argument("--out", required=True, help="output TSV")
     ap.add_argument("--clade-prefix", default="G", help="target clade prefix (default: G)")
+    ap.add_argument(
+        "--auto-clade",
+        action="store_true",
+        help="infer top-level clade (A-T) from marker evidence, then rank within it",
+    )
     ap.add_argument(
         "--deam-derived-weight",
         type=float,
@@ -147,6 +160,8 @@ def main() -> int:
     if not in_path.exists():
         raise SystemExit(f"ERROR: input file not found: {in_path}")
 
+    parse_prefix = "" if args.auto_clade else args.clade_prefix
+
     derived_total = defaultdict(int)
     derived_transversion = defaultdict(int)
     derived_deamination = defaultdict(int)
@@ -156,6 +171,9 @@ def main() -> int:
     other_total = defaultdict(int)
     score_total = defaultdict(float)
     candidates_seen: Set[str] = set()
+    top_score = defaultdict(float)
+    top_derived = defaultdict(int)
+    top_ancestral = defaultdict(int)
 
     with in_path.open("r", encoding="utf-8", newline="") as fh:
         reader = csv.reader(fh, delimiter="\t")
@@ -168,7 +186,7 @@ def main() -> int:
             isogg = row[7]
             status = row[12]
 
-            labels = tokenize_labels(hg, isogg, args.clade_prefix)
+            labels = tokenize_labels(hg, isogg, parse_prefix)
             if not labels:
                 continue
 
@@ -203,6 +221,30 @@ def main() -> int:
                 else:
                     other_total[c] += 1
 
+                tc = top_level_clade(c)
+                if tc:
+                    if status == "derived":
+                        top_score[tc] += args.deam_derived_weight if deam else args.normal_derived_weight
+                        top_derived[tc] += 1
+                    elif status == "ancestral":
+                        top_score[tc] += args.ancestral_weight
+                        top_ancestral[tc] += 1
+
+    effective_prefix = args.clade_prefix
+    if args.auto_clade:
+        if not top_score:
+            raise SystemExit("ERROR: could not infer top-level clade from input")
+        effective_prefix = sorted(
+            top_score.keys(),
+            key=lambda c: (top_score[c], top_derived[c], -top_ancestral[c], c),
+            reverse=True,
+        )[0]
+        print(
+            f"Auto clade selected: {effective_prefix} "
+            f"(score={top_score[effective_prefix]:.3f}, derived={top_derived[effective_prefix]}, ancestral={top_ancestral[effective_prefix]})"
+        )
+
+    candidates_seen = {c for c in candidates_seen if c.startswith(effective_prefix)}
     ranked = sorted(
         candidates_seen,
         key=lambda c: (score_total[c], derived_total[c], -ancestral_total[c], c),
