@@ -58,6 +58,10 @@ Fetches the YBrowse hg38 marker file (`snps_hg38.vcf.gz`) into a chosen path
 (default `./resources/snps_hg38.vcf.gz`), with optional fallback to an
 existing local mirror if network fetch fails.
 
+### fetch_liftover_chains.sh
+Fetches `hg38ToHs1` and `hs1ToHg38` chain files to `./resources/chains/`
+using UCSC mirrors with MARBL chain-name fallback.
+
 ### run_y_dual_liftover_experiment.sh
 Two-branch experiment driver for modern Y analysis:
 - branch A: liftover markers `hg38 -> hs1`, then call against native hs1 sample
