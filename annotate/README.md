@@ -70,6 +70,8 @@ Two-branch experiment driver for modern Y analysis:
 Default output path is under the caller's working directory: `./experiments/...`.
 Run it from a private working directory for sensitive sample data.
 Supports `--java-opts` (or env `PICARD_JAVA_OPTS`) for LiftoverVcf heap sizing.
+Uses `RECOVER_SWAPPED_REF_ALT=true` to retain loci where reference/alternate
+alleles are swapped between assemblies.
 
 ### liftover_to_hg38_batch.sh
 Batch liftover helper for hs1/CHM13 sample VCF/gVCF files to GRCh38.
@@ -77,6 +79,8 @@ Designed for generating GRCh38 callsets for downstream tools (Exomiser/PharmCAT)
 Optional `--primary-only` emits a canonical-contig subset
 (`chr1-22,chrX,chrY,chrM`) per lifted sample.
 Supports `--java-opts` (or env `PICARD_JAVA_OPTS`) for LiftoverVcf heap sizing.
+Uses `RECOVER_SWAPPED_REF_ALT=true` to retain loci where reference/alternate
+alleles are swapped between assemblies.
 
 ### compare_vcf_runs.sh
 General run-vs-run VCF comparator for the same sample/reference.

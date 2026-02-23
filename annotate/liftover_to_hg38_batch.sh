@@ -106,6 +106,7 @@ for sample in $SAMPLES; do
     CHAIN="$CHAIN" \
     R="$REF_HG38" \
     REJECT="$rej_vcf" \
+    RECOVER_SWAPPED_REF_ALT=true \
     WARN_ON_MISSING_CONTIG=true
   tabix -f "$out_vcf"
   tabix -f "$rej_vcf"
