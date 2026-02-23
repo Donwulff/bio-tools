@@ -13,6 +13,7 @@ Usage:
     --chain-hs1-to-hg38 hs1ToHg38.chain.gz \
     [--markers-hg38 snps_hg38.vcf.gz] \
     [--picard-jar picard.jar] \
+    [--java-opts "-Xms1g -Xmx8g"] \
     [--out-dir DIR]
 
 Purpose:
@@ -45,6 +46,7 @@ CHAIN_HS1_TO_HG38=""
 MARKERS_HG38=""
 PICARD_JAR=""
 OUT_DIR=""
+JAVA_OPTS=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -56,6 +58,7 @@ while [ $# -gt 0 ]; do
     --chain-hs1-to-hg38) CHAIN_HS1_TO_HG38="$2"; shift 2 ;;
     --markers-hg38) MARKERS_HG38="$2"; shift 2 ;;
     --picard-jar) PICARD_JAR="$2"; shift 2 ;;
+    --java-opts) JAVA_OPTS="$2"; shift 2 ;;
     --out-dir) OUT_DIR="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "ERROR: unknown argument: $1" >&2; usage; exit 1 ;;
@@ -99,6 +102,9 @@ if [ -z "$PICARD_JAR" ]; then
 fi
 [ -n "$PICARD_JAR" ] || { echo "ERROR: set --picard-jar (picard.jar not auto-detected)" >&2; exit 1; }
 [ -f "$PICARD_JAR" ] || { echo "ERROR: not found: $PICARD_JAR" >&2; exit 1; }
+if [ -z "$JAVA_OPTS" ]; then
+  JAVA_OPTS="${PICARD_JAVA_OPTS:-"-Xms1g -Xmx8g"}"
+fi
 
 if [ -z "$MARKERS_HG38" ]; then
   MARKERS_HG38="$(pwd)/resources/snps_hg38.vcf.gz"
@@ -118,7 +124,7 @@ SAMPLE_HG38="${OUT_DIR}/sample_hg38_lifted.vcf.gz"
 SAMPLE_HG38_REJECT="${OUT_DIR}/sample_hg38_lifted.reject.vcf.gz"
 
 echo "Liftover markers: hg38 -> hs1"
-java -jar "$PICARD_JAR" LiftoverVcf \
+java $JAVA_OPTS -jar "$PICARD_JAR" LiftoverVcf \
   I="$MARKERS_HG38" \
   O="$MARKERS_HS1" \
   CHAIN="$CHAIN_HG38_TO_HS1" \
@@ -128,7 +134,7 @@ java -jar "$PICARD_JAR" LiftoverVcf \
 tabix -f "$MARKERS_HS1"
 
 echo "Liftover sample VCF: hs1 -> hg38"
-java -jar "$PICARD_JAR" LiftoverVcf \
+java $JAVA_OPTS -jar "$PICARD_JAR" LiftoverVcf \
   I="$SAMPLE_VCF_HS1" \
   O="$SAMPLE_HG38" \
   CHAIN="$CHAIN_HS1_TO_HG38" \

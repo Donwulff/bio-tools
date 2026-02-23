@@ -8,6 +8,7 @@ Usage:
     --chain-hs1-to-hg38 hs1ToHg38.chain.gz \
     --ref-hg38 GRCh38.fa \
     [--picard-jar picard.jar] \
+    [--java-opts "-Xms1g -Xmx8g"] \
     [--out-dir DIR] \
     [--primary-only] \
     --sample sample1.vcf.gz [--sample sample2.vcf.gz ...]
@@ -31,12 +32,14 @@ PICARD_JAR=""
 OUT_DIR=""
 PRIMARY_ONLY=0
 SAMPLES=""
+JAVA_OPTS=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --chain-hs1-to-hg38) CHAIN="$2"; shift 2 ;;
     --ref-hg38) REF_HG38="$2"; shift 2 ;;
     --picard-jar) PICARD_JAR="$2"; shift 2 ;;
+    --java-opts) JAVA_OPTS="$2"; shift 2 ;;
     --out-dir) OUT_DIR="$2"; shift 2 ;;
     --primary-only) PRIMARY_ONLY=1; shift ;;
     --sample) SAMPLES="${SAMPLES} $2"; shift 2 ;;
@@ -71,6 +74,9 @@ if [ -z "$PICARD_JAR" ]; then
 fi
 [ -n "$PICARD_JAR" ] || { echo "ERROR: set --picard-jar (picard.jar not auto-detected)" >&2; exit 1; }
 [ -f "$PICARD_JAR" ] || { echo "ERROR: not found: $PICARD_JAR" >&2; exit 1; }
+if [ -z "$JAVA_OPTS" ]; then
+  JAVA_OPTS="${PICARD_JAVA_OPTS:-"-Xms1g -Xmx8g"}"
+fi
 
 if [ -z "$OUT_DIR" ]; then
   OUT_DIR="$(pwd)/experiments/liftover_hg38_$(date +%Y%m%d_%H%M%S)"
@@ -94,7 +100,7 @@ for sample in $SAMPLES; do
   rej_vcf="${OUT_DIR}/${b}.hg38.reject.vcf.gz"
 
   echo "Liftover: $sample -> $out_vcf"
-  java -jar "$PICARD_JAR" LiftoverVcf \
+  java $JAVA_OPTS -jar "$PICARD_JAR" LiftoverVcf \
     I="$sample" \
     O="$out_vcf" \
     CHAIN="$CHAIN" \
