@@ -43,6 +43,37 @@ Defaults target:
 - marker fallback: `annotate/data/snps_hg38.vcf.gz`
 - optional overrides via env vars: `YCOMPARE_MARKERS`, `YCOMPARE_ICEMAN_VCF`, `YCOMPARE_ICEMAN_GVCF`, `YCOMPARE_SOLID_VCF`
 
+### run_modern_y_experiment.sh
+Driver for modern chrY experiments with assembly-safety checks.
+It compares `chrY` contig lengths between sample VCF and marker VCF and stops on mismatch
+unless explicitly overridden.
+
+Practical use:
+- For hs1/CHM13 calls + hg38 markers, do **not** run direct assignment.
+- First liftover marker sites to hs1 (or use native GRCh38 calls), then run marker-state extraction.
+
+### fetch_ybrowse_markers.sh
+Fetches the YBrowse hg38 marker file (`snps_hg38.vcf.gz`) into a chosen path
+(default `/tmp/y_markers/snps_hg38.vcf.gz`), with optional fallback to an
+existing local mirror if network fetch fails.
+
+### run_y_dual_liftover_experiment.sh
+Two-branch experiment driver for modern Y analysis:
+- branch A: liftover markers `hg38 -> hs1`, then call against native hs1 sample
+- branch B: liftover sample `hs1 -> hg38`, then call against hg38 markers
+
+The script writes outputs under `/tmp` by default so sample-level results stay
+outside the source tree unless you explicitly set `--out-dir` to a repo path.
+
+### compare_vcf_runs.sh
+General run-vs-run VCF comparator for the same sample/reference.
+Useful for DeepVariant A/B checks such as small-model on/off.
+Outputs:
+- all-sites and PASS-only overlap counts (`summary.tsv`)
+- shared-site GT concordance (`shared_gt_diff`)
+- per-run private/shared VCFs
+- optional per-position comparison (`--regions-file`) for marker checks.
+
 ### genos_annotate.sh
 Genos Research provided exome VCF's have weird format which cointains NT=Not Targeted Regions and NC=No Call.
 This script is intended to merge the Genos Research VCF with the variants in dbSNP to fill in ref-calls.
