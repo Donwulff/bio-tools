@@ -9,6 +9,7 @@ classifies each marker as derived/ancestral/nocall/ambiguous.
 from __future__ import annotations
 
 import argparse
+import bisect
 import gzip
 import re
 import shutil
@@ -75,6 +76,19 @@ def parse_info(info: str) -> Dict[str, str]:
     return out
 
 
+def parse_gff3_attrs(attr: str) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    if not attr or attr == ".":
+        return out
+    for field in attr.split(";"):
+        if not field:
+            continue
+        if "=" in field:
+            k, v = field.split("=", 1)
+            out[k] = v
+    return out
+
+
 def site_filter_ok(filt: str, mode: str) -> bool:
     if mode == "any":
         return True
@@ -95,6 +109,7 @@ class MarkerRow:
     ref: str
     alt: str
     aa: str
+    der: str
     hg: str
     isogg: str
 
@@ -141,26 +156,37 @@ def classify_marker(marker: MarkerRow, sample: Optional[SampleRow]) -> Tuple[str
         return source, "ambiguous"
     assert allele_idx is not None
 
-    marker_ref = marker.ref
-    marker_alt = marker.alt.split(",")[0]
     aa = marker.aa
     if not aa or aa == ".":
         return source, "unknown"
 
-    # same logic as bcftools expression previously used:
-    # derived if (GT=1 and AA=REF) or (GT=0 and AA=ALT)
-    if allele_idx == 1 and aa == marker_ref:
-        return source, "derived"
-    if allele_idx == 0 and aa == marker_alt:
-        return source, "derived"
-    if allele_idx == 0 and aa == marker_ref:
+    # Resolve called base from sample row. This is robust to marker REF/ALT
+    # representation differences (e.g. after liftover or swapped alleles).
+    sample_alts = sample.alt.split(",")
+    if allele_idx == 0:
+        called = sample.ref
+    elif 1 <= allele_idx <= len(sample_alts):
+        called = sample_alts[allele_idx - 1]
+    else:
+        return source, "other"
+
+    if called == aa:
         return source, "ancestral"
-    if allele_idx == 1 and aa == marker_alt:
-        return source, "ancestral"
+
+    der = marker.der
+    if not der or der == ".":
+        marker_alt = marker.alt.split(",")[0]
+        if aa == marker.ref:
+            der = marker_alt
+        elif aa == marker_alt:
+            der = marker.ref
+
+    if der and der != "." and called == der:
+        return source, "derived"
     return source, "other"
 
 
-def marker_rows(path: Path, chrom: str = "chrY") -> Iterator[MarkerRow]:
+def marker_rows_vcf(path: Path, chrom: str = "chrY") -> Iterator[MarkerRow]:
     for line in line_stream_for_chrom(path, chrom):
         if not line or line[0] == "#":
             continue
@@ -177,9 +203,62 @@ def marker_rows(path: Path, chrom: str = "chrY") -> Iterator[MarkerRow]:
             ref=cols[3],
             alt=cols[4],
             aa=info.get("AA", "."),
+            der=".",
             hg=info.get("HG", "."),
             isogg=info.get("ISOGG", "."),
         )
+
+
+def marker_rows_gff3(path: Path, chrom: str = "chrY") -> Iterator[MarkerRow]:
+    seen: set[Tuple[int, str]] = set()
+    with open_text(path) as fh:
+        for line in fh:
+            if not line or line[0] == "#":
+                continue
+            cols = line.rstrip("\n").split("\t")
+            if len(cols) < 9:
+                continue
+            if cols[0] != chrom:
+                continue
+            ftype = cols[2].lower()
+            if ftype not in {"snp", "point"}:
+                continue
+            start = cols[3]
+            end = cols[4]
+            if start != end:
+                continue
+            attrs = parse_gff3_attrs(cols[8])
+            vid = attrs.get("ID") or attrs.get("Name") or "."
+            aa = attrs.get("allele_anc", ".")
+            der = attrs.get("allele_der", ".")
+            # Prefer YFull node when available for finer terminal naming.
+            yfull = attrs.get("yfull_node", ".")
+            hg = yfull if (yfull and yfull != "." and yfull.lower() != "not") else attrs.get("ycc_haplogroup", ".")
+            isogg = attrs.get("isogg_haplogroup", ".")
+            key = (int(start), vid)
+            # GFF exports can contain duplicate marker rows; keep first occurrence.
+            if key in seen:
+                continue
+            seen.add(key)
+            yield MarkerRow(
+                chrom=chrom,
+                pos=int(start),
+                vid=vid,
+                ref=aa if aa and aa != "." else ".",
+                alt=der if der and der != "." else ".",
+                aa=aa if aa else ".",
+                der=der if der else ".",
+                hg=hg if hg else ".",
+                isogg=isogg if isogg else ".",
+            )
+
+
+def marker_rows(path: Path, chrom: str = "chrY") -> Iterator[MarkerRow]:
+    name = path.name.lower()
+    if name.endswith(".gff3") or name.endswith(".gff3.gz") or name.endswith(".gff") or name.endswith(".gff.gz"):
+        yield from marker_rows_gff3(path, chrom=chrom)
+        return
+    yield from marker_rows_vcf(path, chrom=chrom)
 
 
 def sample_rows(path: Path, sample_name: Optional[str], chrom: str = "chrY") -> Iterator[SampleRow]:
@@ -253,6 +332,41 @@ def to_int_or_none(x: str) -> Optional[int]:
         return None
 
 
+def build_sample_lookup(
+    path: Path, sample_name: Optional[str], chrom: str, filter_mode: str
+) -> Tuple[Dict[int, List[SampleRow]], List[int], List[SampleRow]]:
+    variants_by_pos: Dict[int, List[SampleRow]] = {}
+    blocks: List[SampleRow] = []
+    for row in sample_rows(path, sample_name=sample_name, chrom=chrom):
+        if not site_filter_ok(row.filt, filter_mode):
+            continue
+        if row.is_block:
+            blocks.append(row)
+        else:
+            variants_by_pos.setdefault(row.pos, []).append(row)
+    blocks.sort(key=lambda r: (r.pos, r.end))
+    block_starts = [b.pos for b in blocks]
+    return variants_by_pos, block_starts, blocks
+
+
+def sample_for_pos(
+    pos: int, variants_by_pos: Dict[int, List[SampleRow]], block_starts: List[int], blocks: List[SampleRow]
+) -> Optional[SampleRow]:
+    rows = variants_by_pos.get(pos, [])
+    picked = pick_variant(rows)
+    if picked is not None:
+        return picked
+    if not blocks:
+        return None
+    i = bisect.bisect_right(block_starts, pos) - 1
+    if i < 0:
+        return None
+    b = blocks[i]
+    if b.pos <= pos <= b.end:
+        return b
+    return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Y marker status from VCF/gVCF.")
     ap.add_argument("-i", "--input", required=True, help="sample VCF/gVCF (plain or gzip)")
@@ -313,10 +427,9 @@ def main() -> int:
     summary_txt = Path(f"{out_prefix}.summary.txt")
 
     m_iter = marker_rows(marker_path, chrom=args.chrom)
-    s_iter = sample_rows(sample_path_for_read, sample_name=(args.sample or None), chrom=args.chrom)
-
-    cur_s: Optional[SampleRow] = next(s_iter, None)
-    active_block: Optional[SampleRow] = None
+    variants_by_pos, block_starts, blocks = build_sample_lookup(
+        sample_path_for_read, sample_name=(args.sample or None), chrom=args.chrom, filter_mode=args.site_filter_mode
+    )
 
     counts = {
         "total_markers": 0,
@@ -334,30 +447,7 @@ def main() -> int:
     with marker_status_tsv.open("w", encoding="utf-8") as m_out, derived_tsv.open("w", encoding="utf-8") as d_out:
         for m in m_iter:
             counts["total_markers"] += 1
-            pos = m.pos
-
-            if active_block is not None and active_block.end < pos:
-                active_block = None
-
-            while cur_s is not None and cur_s.pos < pos:
-                if site_filter_ok(cur_s.filt, args.site_filter_mode):
-                    if cur_s.is_block and cur_s.end >= pos:
-                        active_block = cur_s
-                cur_s = next(s_iter, None)
-
-            same_pos: List[SampleRow] = []
-            while cur_s is not None and cur_s.pos == pos:
-                if site_filter_ok(cur_s.filt, args.site_filter_mode):
-                    same_pos.append(cur_s)
-                    if cur_s.is_block and cur_s.end >= pos:
-                        active_block = cur_s
-                cur_s = next(s_iter, None)
-
-            picked = pick_variant(same_pos)
-            if picked is None and active_block is not None and active_block.end >= pos and site_filter_ok(
-                active_block.filt, args.site_filter_mode
-            ):
-                picked = active_block
+            picked = sample_for_pos(m.pos, variants_by_pos, block_starts, blocks)
 
             source, status = classify_marker(m, picked)
 

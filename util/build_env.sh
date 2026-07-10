@@ -69,6 +69,12 @@ git submodule update --init --recursive
 autoreconf -i
 # --enable-libcurl required by ref-cache default feature on 2025-06-25
 ./configure --enable-libcurl
+# Build static-only: avoid libhts.so (PIC/LTO issues) and plugins
+sed -i 's/^all: lib-static lib-shared /all: lib-static /' Makefile
+sed -i '/^all:/ s/ plugins / /' Makefile
+sed -i 's/ install-$(SHLIB_FLAVOUR)//' Makefile
+sed -i 's/ $(BUILT_PLUGINS)//' Makefile
+sed -i '/^\tif test -n "$(BUILT_PLUGINS)"/d' Makefile
 sed -i 's/ -lz / /g' Makefile *.mk
 make -j8
 sudo -E make install
@@ -108,8 +114,9 @@ sed -i 's/^BT_CXXFLAGS = /BT_CXXFLAGS := /' Makefile
 sed -i 's/^BT_LIBS    = /BT_LIBS := /' Makefile
 sed -i "/^BT_CXXFLAGS :=/ s/$/ \${CPPFLAGS}/" Makefile
 sed -i "/^BT_LIBS :=/ s/$/ \${LIBS}/" Makefile
-make -j8
-sudo -E make install
+# Force zlib into the link line to avoid gz*/inflate*/crc32 undefined refs
+#make -j8 BT_LIBS="-lm -lbz2 -llzma -lpthread ../zlib/libz.a"
+#sudo -E make install
 cd ..
 
 # Build bwa
@@ -121,8 +128,8 @@ sed -i 's/^CFLAGS= /CFLAGS := /' Makefile
 sed -i 's/^LIBS= /LIBS := /' Makefile
 sed -i "/^CFLAGS :=/ s/$/ \${CFLAGS}/" Makefile
 sed -i "/^LIBS :=/ s/$/ \${LIBS}/" Makefile
-make -j8
-sudo cp bwa /usr/local/bin/
+#make -j8
+#sudo cp bwa /usr/local/bin/
 cd ..
 
 # Install additional package for isa-l

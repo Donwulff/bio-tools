@@ -205,6 +205,7 @@ subtree_pat = "G2a2a1a2a1a1"
 key_rows = []
 subtree_rows = []
 top_path_rows = []
+path_header = None
 
 for name, marker_file in datasets:
     status_counts = {}
@@ -231,10 +232,12 @@ for name, marker_file in datasets:
         with path_file.open("r", encoding="utf-8", errors="replace") as fh:
             reader = csv.reader(fh, delimiter="\t")
             header = next(reader, None)
+            if header and path_header is None:
+                path_header = header
             for i, row in enumerate(reader, start=1):
                 if i > 10:
                     break
-                top_path_rows.append([name] + row)
+                top_path_rows.append([name, str(i)] + row)
 
 with (out_dir / "key_markers.tsv").open("w", encoding="utf-8", newline="") as fh:
     w = csv.writer(fh, delimiter="\t")
@@ -248,10 +251,10 @@ with (out_dir / "subtree_status.tsv").open("w", encoding="utf-8", newline="") as
 
 with (out_dir / "top_paths.tsv").open("w", encoding="utf-8", newline="") as fh:
     w = csv.writer(fh, delimiter="\t")
-    w.writerow([
-        "dataset", "candidate", "score", "derived_total", "derived_transversion",
-        "derived_deamination", "ancestral_total", "nocall_total", "ambiguous_total", "other_total"
-    ])
+    if path_header:
+        w.writerow(["dataset", "rank"] + path_header)
+    else:
+        w.writerow(["dataset", "rank", "candidate", "score"])
     w.writerows(top_path_rows)
 PY
 

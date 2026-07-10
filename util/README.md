@@ -4,6 +4,8 @@
 
 ### is_stats.py - summarize insert-size distribution from `samtools stats`
 
+### samtools_if.sh - run a samtools subcommand only if output is missing/stale (writes `<bam>.<subcmd>`)
+
 ### bindex.pl - writes BAM file metadata into SQL database, work in progress
 
 ### cigar-hist.pl - generates various analysis histograms from BAM file

@@ -1,0 +1,3 @@
+set	label_a	label_b	total_a	total_b	shared	only_a	only_b	shared_gt_same	shared_gt_diff
+all	small	nosmall	5011174	5011174	5010771	403	403	4972747	38024
+pass	small	nosmall	3987840	3970147	3969848	17992	299	3969177	671

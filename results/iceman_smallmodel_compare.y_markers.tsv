@@ -1,0 +1,5 @@
+label	chrom	pos	small_gt	small_gq	small_dp	small_qual	small_filter	small_ref	small_alt	nosmall_gt	nosmall_gq	nosmall_dp	nosmall_qual	nosmall_filter	nosmall_ref	nosmall_alt
+M201	chrY	12915617	1/1	42	10	41.8	PASS	G	T	1/1	24	10	24.3	PASS	G	T
+Z6208	chrY	13776249	1/1	39	9	38.5	PASS	G	A	1/1	19	9	18.9	PASS	G	A
+L91	chrY	19483669	1/1	23	7	23.3	PASS	G	C	1/1	23	7	23.3	PASS	G	C
+L166	chrY	21843737	1/1	14	3	13.5	PASS	C	A	1/1	14	3	13.5	PASS	C	A

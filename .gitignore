@@ -1,0 +1,179 @@
+# .gitignore for bio-tools
+#
+# Goal: Prevent committing huge or regenerable content while keeping the
+#       repository useful as a collection of scripts + the minimal reference
+#       "source" assets needed to reproduce builds.
+#
+# What we intentionally keep (examples):
+#   - All the .sh / .py / .pl scripts
+#   - Documentation (READMEs, AGENTS.md, NOTES.md, METHODS.md, etc.)
+#   - Minimal "source" reference pieces under mapping/ that are needed to
+#     reproduce index builds (the committed GRCh38Patch*.fa.gz, GCA_*.fna.gz,
+#     and the additional_*.alt files that have been explicitly added).
+#   - Example output PDFs in results/ that serve as qualitative references.
+#
+# What we do NOT want in the repo:
+#   - Massive generated index directories (~100+ GB)
+#   - Full source trees of vendored third-party tools (e.g. DeDup/)
+#   - Full source + build artifacts of build-time dependencies (util/src/ ~1GB+)
+#   - Large downloaded public datasets (YBrowse markers etc. under resources/)
+#   - Python/Java build caches, logs, editor droppings, experiment outputs
+#   - Any modern/personal sample data (see privacy section below)
+#
+# Regenerate with:
+#   ./util/build_env.sh
+#   cd mapping && ./GRCh38_bwa_index.sh
+#   ./annotate/fetch_ybrowse_markers.sh
+#   ./annotate/prepare_y_refs.sh
+#   (and the various liftover / experiment drivers)
+#
+# For real sample work (especially modern/private), run outside this tree
+# and/or use Y_RESOURCES_DIR, BIO_TOOLS_INDEX_DIR, TMP, etc. See AGENTS.md.
+
+# =============================================================================
+# Large generated outputs, build trees, and vendored third-party code
+# =============================================================================
+
+# BWA / samtools / bcftools / htslib / bedtools / fastp full source + objects
+# produced by util/build_env.sh
+util/src/
+
+# The actual BWA indices + .dict/.fai etc. (output of GRCh38_bwa_index.sh)
+mapping/index/
+
+# DeDup: third-party vendored aDNA deduplication tool (not our code).
+# Entire tree ignored (it carries its own .git, LICENSE, full source, Gradle build).
+# We only reference it locally for aDNA workflows.
+DeDup/
+
+# =============================================================================
+# Python
+# =============================================================================
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# =============================================================================
+# Fetched / downloaded large public data (regenerable via scripts)
+# =============================================================================
+#
+# annotate/ Y-chromosome workflows fetch YBrowse markers and GFF3 here,
+# plus liftover chains and staged references. These files are large and
+# can be re-fetched. Use Y_RESOURCES_DIR to redirect outside the repo if
+# you prefer to keep a local mirror.
+
+resources/
+
+# Legacy / alternate location some older scripts or fallbacks use
+annotate/data/
+
+# Catch marker files if a fetch or copy lands them directly in annotate/
+annotate/snps_hg38.vcf.gz
+annotate/snps_hg38.vcf.gz.tbi
+annotate/snps_hg38.gff3
+
+# =============================================================================
+# Logs, temporary, and backup files
+# =============================================================================
+*.log
+util/build.log
+**/*~
+**/*.tmp
+**/*.bak
+**/*.swp
+**/*.swo
+
+# =============================================================================
+# Editor, IDE, and operating system cruft
+# =============================================================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-*
+
+# =============================================================================
+# Other common build / stray artifacts (most are already covered by the
+# directory rules above)
+# =============================================================================
+**/.gradle/
+
+# =============================================================================
+# AI coding assistant local state (Claude Code, Cursor, etc.)
+# Keep the committed instruction files (AGENTS.md, mapping/CLAUDE.md) but
+# ignore per-user / per-session settings and caches.
+# =============================================================================
+**/.claude/
+**/.cursor/
+**/.windsurf/
+
+# Local tool setups (Codex exporter skills, etc.)
+.agents/
+.clawhub/
+
+# =============================================================================
+# Local experiment / analysis output directories
+# The Y-liftover and modern sample experiment drivers document that you
+# should run them from a private directory outside this repo. Ignore the
+# conventional names in case someone runs them here by accident.
+# =============================================================================
+experiments/
+local-analysis/
+private/
+
+# Exported chat logs from other tools (Codex, etc.) — often contain private paths/data
+codex-session.md
+*-session.md
+codex-*.md
+*.codex*
+
+# =============================================================================
+# Personal / modern sample data guardrails
+# See "Data Handling & Privacy" and Y/Liftover Guardrails in AGENTS.md
+#
+# Core rule: Modern/private human datasets must never enter git history.
+#   - No sample identifiers, read names, or raw data.
+#   - No VCF/gVCF contents or derived per-sample reports from living or
+#     modern individuals.
+#   - Ancient/public datasets (e.g. published Iceman/Otzi) are explicitly
+#     allowed and may be committed with proper documentation.
+#
+# Practical defense layers:
+#   - Scripts instruct you to run sensitive work from an external
+#     <private_analysis_dir>.
+#   - Use placeholders (<sample_id>, etc.) in any committed notes.
+#   - This .gitignore provides a safety net against accidental inclusion.
+#
+# If you ever need to force something (public example data only), use
+# `git add -f`, but prefer to keep even examples minimal.
+# =============================================================================
+
+# Per-sample or private genomic data formats.
+# (Public YBrowse marker sets are fetched into resources/ and annotate/data/,
+#  which are already fully ignored above. Reference genomes use .fa.gz/.fna.gz.)
+*.vcf
+*.vcf.gz
+*.gvcf
+*.gvcf.gz
+*.bcf
+
+# Alignment files from personal sequencing runs
+*.bam
+*.bai
+*.cram
+*.crai
+
+# Fastq / raw reads (should never be here anyway)
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+
+# Common patterns for personal analysis outputs
+*personal*
+*private*
+modern*.tsv
+sample_*.tsv
+*_realigned.*
+*_deduped.*
+

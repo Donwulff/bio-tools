@@ -9,6 +9,10 @@ Cell Genomics 2023 short article (Sep 13, 2023): "High-coverage genome of the Ty
 - `<legacy_data_dir>`: location of legacy comparison VCF datasets.
 - `<output_dir>`: location of final variant-calling outputs.
 
+**Data Policy**
+- Ancient/public sample results are in-scope for repository docs and commits.
+- Modern/private sample IDs and per-sample outputs are out-of-scope for committed docs; keep them in external analysis directories and use placeholders in tracked notes.
+
 **Findings**
 - EAGER/AdapterRemoval BAMs can be merged and mate-stripped. MarkDuplicates will treat singletons as single-end and can over-mark duplicates in repetitive regions.
 - Pseudo-pairing merged reads enables BWA MEM insert-size modeling. BWA MEM typically reports only FR orientation for Illumina/BGI libraries because other orientations are too rare to model.
@@ -69,6 +73,41 @@ Fix pattern:
 - Requires `M_/F_/R_` prefixes unless `--merged` is used.
 - DeDup ignores read-group (RG). Original protocol: DeDup each library, then merge and DeDup again (likely to reduce compute and catch cross-library duplicates).
 - Per-library DeDup also supports per-library QC reporting (duplication rates by library); final DeDup captures cross-library duplicates after merge.
+
+**EAGER aDNA BAMs → Modern GRCh38 Pipelines (Iceman / Otzi re-analysis findings)**
+Published EAGER-processed BAMs are common in aDNA. They are typically:
+- Merged reads (AdapterRemoval) with `M_ / F_ / R_` prefixes.
+- Mate information stripped for unmapped or filtered reads.
+- Already deduplicated against an older reference.
+
+Feeding them to modern pipelines (revert + BWA + MarkDuplicates + variant calling on GRCh38/hs1) is mostly straightforward using the repair tool, **but**:
+- Standard Picard/GATK `MarkDuplicates` (even with pseudo-paired reads via `eager_repair_bam.py`) falls back to single-end logic on stripped data and over-marks in repetitive regions.
+- DeDup is required for correct aDNA-aware deduplication on merged reads and to produce comparable "passing reads" counts to the original paper.
+- The goal of the re-analysis was to enable fair comparison on updated references while preserving the ability to match published metrics.
+
+Recommended reusable flow (see also `util/eager_repair_bam.py` and `mapping/eager_prep.sh`):
+1. Start from the published EAGER BAM.
+2. Name-sort + strip prefixes + duplicate merged reads (for PE-tool compatibility):
+   ```sh
+   samtools sort -n input.bam -o qn.bam
+   ./util/eager_repair_bam.py --strip-prefix --duplicate-merged qn.bam -o repaired.bam
+   ```
+3. `samtools fixmate` + coordinate sort.
+4. For DeDup branch: re-apply prefixes (or keep the tagged version) and run DeDup on coordinate-sorted input.
+5. Keep both the "standard pipeline" output and the DeDup branch for comparison.
+
+**Building DeDup (third-party Gradle/Java tool)**
+The vendored copy in this tree is for reference only (full source ignored via `.gitignore`). It contains a pre-built jar in `build/libs/`.
+
+Historical build notes (from analysis sessions):
+- No Gradle wrapper (`gradlew`) was present.
+- System `gradle` (e.g. from apt) is often too old (4.x) for the project.
+- Direct `gradle shadowJar` or `gradle jar` hits compatibility errors (`java {}` DSL block, `archiveClassifier`, `runtimeClasspath`, etc.).
+- Workaround used: generate wrapper (`gradle wrapper --gradle-version 7.6.4` or similar) + apply compatibility patches to `build.gradle`.
+- A local patch exists in the reference tree for Gradle 4.x/8 compatibility (comments out new DSL, falls back to old `classifier`, etc.).
+- Practical options: use the pre-built jar, build from a maintained fork that includes the wrapper + patches, or use bioconda (`conda install -c bioconda dedup`).
+
+A fork with the compatibility patches, Gradle wrapper, and build tools will be maintained separately (outside this repository). Do not keep the full DeDup source tree here.
 
 **eager_repair_bam Usage**
 Tags:
@@ -195,3 +234,23 @@ samtools view -c -e 'XQ!="D" && (flag&0x400)' file.bam
 - Practical workflow decision:
   - Use marker VCF as the canonical input for current haplogroup scripts.
   - Sanitize marker VCF alleles before liftover/strict parsing (`ALT!=REF`, no duplicate ALT).
+  - For modern terminal-label comparisons against YFull-style nodes, marker GFF3 can be used in `y_haplo_from_markers.py` because it includes `yfull_node` labels.
+  - YBrowse GFF3 is not position-sorted; marker evaluation must not assume monotonic marker order.
+
+**Liftover Ops Gotcha (2026-02-24)**
+- A frequent failure mode was not the chain or markers, but reference sidecar naming for compressed FASTA.
+- For `.fa.gz` references, `CreateSequenceDictionary` may produce `ref.fa.dict` while `LiftoverVcf` path checks may look for `ref.dict` (tool/path dependent).
+- Mitigation now used in scripts:
+  - create/use the canonical dictionary path based on FASTA suffix,
+  - add dictionary alias symlink so both names resolve,
+  - preflight `.fai` + `.dict` before liftover starts.
+  - reuse shared liftover helper module (`annotate/lib_liftover.sh`) so this behavior is consistent across drivers.
+
+**Y Path Ranking Readability/Label Gotcha (2026-02-24)**
+- Some marker tables carry coarse clade labels (e.g. `I1`) even when marker IDs are specific (e.g. `Y47125`).
+- Without ID-aware labeling, path outputs can show specific SNP labels as `score=0` even when the marker is derived in status tables.
+- Current ranking adds synthetic `<top-clade>-<marker_id>` labels for these rows (example: `I-Y47125`), and dual-liftover runs now emit compact `top_paths.tsv` summaries.
+
+**VCF vs gVCF Path-Rank Note**
+- gVCF can slightly change path ranking compared with VCF because explicit non-variant blocks reduce `nocall` counts at marker positions.
+- Low-score candidates present only in gVCF top-path output should be treated as weak evidence unless they also gain additional derived-marker support.

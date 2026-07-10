@@ -1,6 +1,8 @@
 #!/bin/sh
 set -eu
 
+echo "WARN: run_modern_y_experiment.sh is compatibility-only. Prefer run_y_dual_liftover_experiment.sh for modern Y workflows." >&2
+
 usage() {
   cat <<'EOF'
 Usage:

@@ -7,19 +7,20 @@ Finally, creates tabix file from genomic feature file and uses it to annotate sa
 Has not been tested with current output files.
 
 ### y_haplo_from_vcf.sh
-Current Y-chromosome marker workflow for VCF input.
-Uses the YBrowse hg38 marker VCF (`snps_hg38.vcf.gz`) directly, merges markers with sample chrY calls,
-filters derived markers via ancestral allele (`INFO/AA`), and reports deepest haplogroup-chain candidates.
-Recommended for current Iceman and modern re-calls.
-Supports caller-specific filtering via `--site-filter-mode` / `--site-filter-expr` (includes `deepvariant` mode).
+Legacy chrY marker workflow for VCF input.
+Current development uses `y_haplo_from_markers.py` + `y_path_rank.py` as the canonical engine.
+Keep `y_haplo_from_vcf.sh` mainly for backward compatibility with older runbooks.
 
 ### y_haplo_from_markers.py
-Python marker resolver for both VCF and gVCF inputs.
+Python marker resolver for VCF/gVCF sample inputs and marker definitions from either VCF or GFF3.
 Streams marker rows against sample rows, resolves each marker to `derived|ancestral|nocall|ambiguous`,
 and writes:
 - `<prefix>.marker_status.tsv` (all marker statuses)
 - `<prefix>.derived.tsv` (derived-only rows, optional `--min-gq/--min-dp`)
 - `<prefix>.summary.txt`
+Notes:
+- For marker GFF3 input, `yfull_node` is preferred for `HG` when available (fallback: `ycc_haplogroup`).
+- Marker/source ordering does not need to be pre-sorted.
 
 ### y_clade_consistency.py
 Scores candidate clades against derived marker tables (`*.derived.tsv`) and reports
@@ -33,6 +34,11 @@ Ranks clade/path candidates from `*.marker_status.tsv` with tunable scoring:
 - no-call handling
 - optional down-weighting for possible deamination transitions (`C>T`, `G>A`).
 - supports `--auto-clade` to infer top-level clade before ranking subpaths.
+- filters noisy mixed-branch labels containing `&`/`|`.
+- adds synthetic SNP labels from marker IDs when labels are coarse
+  (e.g. `HG=I1` + `ID=Y47125` can contribute to `I-Y47125` ranking).
+- reports simple support-strength summaries from derived marker rows:
+  `derived_dp_sum`, `derived_dp_mean`, `derived_dp_max`, `derived_gq_mean`.
 
 ### run_iceman_y_compare.sh
 Single-command driver for reproducible multi-branch Iceman chrY comparison:
@@ -48,18 +54,24 @@ Defaults target:
 Driver for modern chrY experiments with assembly-safety checks.
 It compares `chrY` contig lengths between sample VCF and marker VCF and stops on mismatch
 unless explicitly overridden.
+Status: compatibility helper. Prefer `run_y_dual_liftover_experiment.sh`.
 
 Practical use:
 - For hs1/CHM13 calls + hg38 markers, do **not** run direct assignment.
 - First liftover marker sites to hs1 (or use native GRCh38 calls), then run marker-state extraction.
 - Default output path is under the caller's working directory: `./experiments/...`
+- Treat modern sample IDs and outputs as private: keep runs outside the repo and do not commit per-sample artifacts.
 
 ### fetch_ybrowse_markers.sh
-Fetches the YBrowse hg38 marker file (`snps_hg38.vcf.gz`) into a chosen path
+Fetches the YBrowse hg38 marker VCF (`snps_hg38.vcf.gz`) into a chosen path
 (default `./resources/snps_hg38.vcf.gz`), with optional fallback to an
 existing local mirror if network fetch fails (`--fallback` or env `YMARKERS_FALLBACK`).
 The fetched file is sanitized to remove invalid ALT definitions that can break
 strict VCF readers.
+By default it also fetches marker GFF3 to the sibling path (`snps_hg38.gff3`);
+use `--no-gff3` to skip.
+If `./bio-tools.cfg` defines `Y_RESOURCES_DIR`, default output is
+`$Y_RESOURCES_DIR/snps_hg38.vcf.gz`.
 
 ### sanitize_marker_vcf.sh
 Cleans marker VCF allele fields:
@@ -71,17 +83,52 @@ Cleans marker VCF allele fields:
 Fetches `hg38ToHs1` and `hs1ToHg38` chain files to `./resources/chains/`
 using UCSC mirrors with MARBL chain-name fallback.
 
+### lib_liftover.sh
+Shared shell helpers used by liftover drivers (`prepare_y_refs.sh`,
+`run_y_dual_liftover_experiment.sh`, `liftover_to_hg38_batch.sh`):
+- Picard auto-detection
+- FASTA sidecar preparation (`.fai`, `.dict`)
+- compressed-FASTA dictionary alias handling (`ref.dict` and `ref.fa.dict`)
+
+### prepare_y_refs.sh
+Stages hs1 and hg38 reference FASTAs into `./resources/ref/` and ensures
+required sidecars exist (`.fai`, `.dict`). By default it symlinks source
+FASTA files; use `--copy` to copy. Use `--primary-only` to build staged
+FASTA files containing canonical contigs only (`chr1-22,chrX,chrY,chrM` by default).
+
 ### run_y_dual_liftover_experiment.sh
 Two-branch experiment driver for modern Y analysis:
 - branch A: liftover markers `hg38 -> hs1`, then call against native hs1 sample
 - branch B: liftover sample `hs1 -> hg38`, then call against hg38 markers
-- branch C: path ranking with auto top-level clade (default) or manual `--clade-prefix`
+- branch C (if GFF3 markers are available): rank hg38-lifted sample with hg38 marker GFF3 (`yfull_node` labels) for terminal-style naming
+- branch D: path ranking with auto top-level clade (default) or manual `--clade-prefix`
+- branch E: condensed `top_paths.tsv` summary (top positive-score rows per dataset)
 
 Default output path is under the caller's working directory: `./experiments/...`.
 Run it from a private working directory for sensitive sample data.
 Supports `--java-opts` (or env `PICARD_JAVA_OPTS`) for LiftoverVcf heap sizing.
 Uses `RECOVER_SWAPPED_REF_ALT=true` to retain loci where reference/alternate
 alleles are swapped between assemblies.
+Accepts `--markers-gff3-hg38` to force a specific GFF3 marker file.
+References can be passed directly from your index build (full assemblies are fine);
+the script ensures `.fai` and `.dict` sidecars exist before liftover.
+If refs are omitted, the script auto-detects from:
+- `--ref-root` or `BIO_TOOLS_INDEX_DIR`/`INDEX_DIR`
+- `./resources/ref`
+- `mapping/index`
+and prefers no-alt/smaller analysis references before `...DH3630O1102.fa`.
+By default the script rejects references that look like extended H3630/decoy sets;
+use `--allow-extended-ref` only when you explicitly want that behavior.
+
+Hard-won operational notes:
+- For routine Y analysis, prefer non-extended refs (`chm13v2.0_maskedY_rCRS.fa(.gz)` and
+  `GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna`) to avoid decoy-driven confusion.
+- Picard liftover is strict about reference sidecars; ensure both `.fai` and `.dict` exist.
+- With compressed FASTA (`.fa.gz`), some tool paths expect `ref.dict` and others `ref.fa.dict`.
+  This script now normalizes/aliases both dictionary names to avoid false "missing dictionary" failures.
+Canonical usage:
+- Male sample QC + assignment cross-check: use this script.
+- It is the maintained modern Y entrypoint.
 
 ### liftover_to_hg38_batch.sh
 Batch liftover helper for hs1/CHM13 sample VCF/gVCF files to GRCh38.
@@ -91,6 +138,9 @@ Optional `--primary-only` emits a canonical-contig subset
 Supports `--java-opts` (or env `PICARD_JAVA_OPTS`) for LiftoverVcf heap sizing.
 Uses `RECOVER_SWAPPED_REF_ALT=true` to retain loci where reference/alternate
 alleles are swapped between assemblies.
+Canonical usage:
+- For non-Y pipelines (including female exome), use this script for hs1 -> hg38 conversion.
+- `--ref-hg38` can be omitted if your index root is discoverable via `--ref-root` or `BIO_TOOLS_INDEX_DIR`.
 
 ### compare_vcf_runs.sh
 General run-vs-run VCF comparator for the same sample/reference.
@@ -100,6 +150,15 @@ Outputs:
 - shared-site GT concordance (`shared_gt_diff`)
 - per-run private/shared VCFs
 - optional per-position comparison (`--regions-file`) for marker checks.
+
+### compare_marker_status_sets.py
+Comparator for `*.marker_status.tsv` outputs across multiple datasets.
+Useful for side-by-side checks such as:
+- hs1 native vs hs1->hg38 liftover vs direct hg38 callset
+- filtered marker subsets (e.g. terminal/trunk SNP IDs)
+Outputs:
+- `<prefix>.matrix.tsv` row-wise status/GT/DP/GQ/HG across datasets
+- `<prefix>.summary.tsv` per-dataset status counts + pairwise agreement/flip counts
 
 ### genos_annotate.sh
 Genos Research provided exome VCF's have weird format which cointains NT=Not Targeted Regions and NC=No Call.

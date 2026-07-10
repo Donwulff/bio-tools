@@ -6,6 +6,11 @@ This file is the operator-facing ledger for reproducibility. Keep methods in `ME
 - Dataset: Otzi 2023 resequencing BAMs, EAGER-style prefixed reads (`M_/F_/R_`), published in filtered form.
 - Goal: reconstruct PE semantics where possible, remap, evaluate duplicate handling, and compare variant-calling branches.
 
+## Privacy Guardrail
+- This file is for ancient/public runs only.
+- Do not record modern/private sample IDs, direct file paths, or sample-specific call summaries here.
+- For modern/private runs, store outputs outside the repo and keep only generalized commands/templates in tracked docs.
+
 ## Canonical Inputs
 - Baseline BAM: `<raw_data_dir>/iceman.oetzi.UDG_D2049_combined.mapped_rmdup.bam`
 - Reference (primary run): `mapping/index/hg38p14DH3630O.fa`
@@ -22,6 +27,8 @@ This file is the operator-facing ledger for reproducibility. Keep methods in `ME
 - Use explicit `samtools fastq` split stream before `bwa mem -p` for mixed PE/SE handling.
 - For DeDup, use primary-assembly slice for production branch.
 - Treat DeDup output as one branch; singleton-heavy over-pruning is a documented caveat.
+- For Y dual-liftover experiments, default to non-extended refs; only opt into H3630/decoy references intentionally.
+- Treat compressed-reference dictionary naming (`ref.dict` vs `ref.fa.dict`) as a required preflight item.
 
 ## Confirmed Counts
 ### D2049 prefix counts
@@ -123,6 +130,47 @@ wc -l <output_dir>/iceman_sm_cmp/0000.vcf \
       <output_dir>/iceman_sm_cmp/0003.vcf
 ```
 
+### Implemented VCF comparator (small_model on/off)
+Reusable script:
+- `annotate/compare_vcf_runs.sh`
+
+Example command:
+```bash
+cat > /tmp/iceman_y_markers.tsv <<'EOF'
+chrY	12915617	M201
+chrY	13776249	Z6208
+chrY	19483669	L91
+chrY	21843737	L166
+EOF
+
+annotate/compare_vcf_runs.sh \
+  -a <output_dir>/iceman.vcf \
+  -b <output_dir>/iceman-nosmall.vcf.gz \
+  --label-a small \
+  --label-b nosmall \
+  --out-dir /tmp/iceman_smallmodel_compare \
+  --regions-file /tmp/iceman_y_markers.tsv
+```
+
+Observed Iceman A/B results:
+- all sites:
+  - totals: `5011174 / 5011174`
+  - shared: `5010771`
+  - private: `403 / 403`
+  - shared GT diff: `38024` (`0.758845%`)
+- PASS-only:
+  - totals: `3987840 / 3970147`
+  - shared: `3969848`
+  - private: `17992 / 299`
+  - shared GT diff: `671` (`0.016902%`)
+- Y marker check (`M201`, `Z6208`, `L91`, `L166`):
+  - all four are `PASS` and `GT=1/1` in both runs.
+  - notable confidence shift at `Z6208`: `GQ 39 -> 19`, `QUAL 38.5 -> 18.9`.
+
+Saved result artifacts:
+- `results/iceman_smallmodel_compare.summary.tsv`
+- `results/iceman_smallmodel_compare.y_markers.tsv`
+
 ## Y Haplogroup Comparison Run
 ### Input branches compared
 - Legacy SOLiD-era test VCF:
@@ -201,6 +249,9 @@ annotate/y_path_rank.py \
   --out /tmp/iceman_markers_vcf2.path_rank.tsv \
   --clade-prefix G
 ```
+
+Interpretation note:
+- A candidate that appears only in gVCF top-path output can be caused by one or a few `nocall -> ancestral` state changes from non-variant blocks. Treat low-score gVCF-only additions as weak ranking shifts unless supported by additional derived markers.
 
 ## Open Questions
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).

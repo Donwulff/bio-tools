@@ -7,6 +7,11 @@ This document records practical methods and reasoning for re-mapping ancient DNA
 - Examples reference the Otzi 2023 resequencing data (Cell Genomics 2023).
 - Assumes reference builds produced by `mapping/GRCh38_bwa_index.sh`.
 
+## Data Governance
+- Published ancient/public data can be documented and versioned in this repository.
+- Modern/private sample analysis must be performed in external paths and must not be committed with sample identifiers or per-sample variant outputs.
+- Keep committed content to reusable scripts, parameter templates, and de-identified method notes.
+
 ## Path Conventions
 - `<raw_data_dir>`: location of original input BAM files.
 - `<analysis_dir>`: location of per-run working/output files.
@@ -221,3 +226,18 @@ Attribution:
 Current result snapshot (Iceman):
 - Illumina branch supports `M201`, `L91`, `L166`, and `Z6208` as derived.
 - SOLiD branch remains conflict-heavy/inconclusive for terminal placement with current panel.
+
+## Dual Liftover Workflow Checklist (Modern Y, hs1 <-> hg38)
+Use this when validating both directions:
+1. `hg38 markers -> hs1` (score on native hs1 sample).
+2. `hs1 sample -> hg38` (score on hg38 markers/resources).
+
+Practical guardrails:
+- Prefer non-extended references for this task:
+  - hs1: `chm13v2.0_maskedY_rCRS.fa(.gz)`
+  - hg38: `GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna`
+- Ensure reference sidecars exist before liftover:
+  - `<ref>.fai`
+  - dictionary (`.dict`), accounting for compressed FASTA naming (`ref.dict` vs `ref.fa.dict` aliasing).
+- Sanitize marker VCF before liftover (`ALT!=REF`, no duplicate ALT alleles).
+- Keep private modern outputs outside repo; commit only scripts/method text.

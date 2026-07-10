@@ -30,6 +30,8 @@ Notes:
 EOF
 }
 
+echo "WARN: y_haplo_from_vcf.sh is legacy. Prefer y_haplo_from_markers.py + y_path_rank.py (via run_* drivers)." >&2
+
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
     echo "ERROR: missing required command: $1" >&2

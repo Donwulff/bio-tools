@@ -74,12 +74,29 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Append /1 or /2 to query names for paired reads.",
     )
+    parser.add_argument(
+        "--dup-prefix",
+        choices=("M", "D", "drop"),
+        default="M",
+        help="How to handle XQ:D when restoring prefixes (default: M).",
+    )
+    parser.add_argument(
+        "--clear-dup-flag",
+        action="store_true",
+        help="Clear duplicate flag (0x400) on output records.",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--strip-prefix",
         action="store_true",
         dest="strip_prefix",
         help="Strip M_/F_/R_ prefix and add prefix tag; no pairing changes.",
+    )
+    mode.add_argument(
+        "--restore-prefix",
+        action="store_true",
+        dest="restore_prefix",
+        help="Restore M_/F_/R_ prefix from prefix tag (maps D using --dup-prefix).",
     )
     mode.add_argument(
         "--pair",
@@ -148,7 +165,10 @@ def add_suffix(name: str, suffix: str) -> str:
 def main() -> int:
     args = parse_args()
     prefix_re = re.compile(args.prefix_regex)
-    if args.strip_prefix:
+    if args.restore_prefix:
+        use_qname_prefix = False
+        strip_prefix = False
+    elif args.strip_prefix:
         use_qname_prefix = True
         strip_prefix = True
     elif args.pair_only:
@@ -188,6 +208,30 @@ def main() -> int:
         )
         out_header = pysam.AlignmentHeader.from_dict(header_dict)
         with pysam.AlignmentFile(output_bam, out_mode, header=out_header) as bam_out:
+            def write_out(rec):
+                if args.clear_dup_flag and rec.is_duplicate:
+                    rec.is_duplicate = False
+                bam_out.write(rec)
+
+            if args.restore_prefix:
+                for rec in bam_in:
+                    pfx = None
+                    if args.prefix_tag and rec.has_tag(args.prefix_tag):
+                        pfx = rec.get_tag(args.prefix_tag)
+                    if pfx == "D":
+                        if args.dup_prefix == "drop":
+                            continue
+                        pfx = args.dup_prefix
+
+                    base = rec.query_name
+                    m = prefix_re.match(base)
+                    if m:
+                        base = base[m.end():]
+
+                    if pfx in ("M", "F", "R", "D"):
+                        rec.query_name = f"{pfx}_{base}"
+                    write_out(rec)
+                return 0
             for base, records in group_records(
                 bam_in, prefix_re, args.prefix_tag, use_qname_prefix, strip_prefix
             ):
@@ -236,10 +280,10 @@ def main() -> int:
                             else:
                                 rec1.template_length = 0
                                 rec2.template_length = 0
-                            bam_out.write(rec1)
-                            bam_out.write(rec2)
+                            write_out(rec1)
+                            write_out(rec2)
                         else:
-                            bam_out.write(rec)
+                            write_out(rec)
                     continue
 
                 by_prefix = {"M": [], "F": [], "R": [], None: []}
@@ -261,7 +305,7 @@ def main() -> int:
                     rec.mate_is_unmapped = not mate_present
                     if args.add_legacy_suffix:
                         rec.query_name = add_suffix(rec.query_name, "/1")
-                    bam_out.write(rec)
+                    write_out(rec)
 
                 for rec in by_prefix["R"]:
                     if not args.pair_only:
@@ -273,7 +317,7 @@ def main() -> int:
                     rec.mate_is_unmapped = not mate_present
                     if args.add_legacy_suffix:
                         rec.query_name = add_suffix(rec.query_name, "/2")
-                    bam_out.write(rec)
+                    write_out(rec)
 
                 # Process merged reads
                 for rec in by_prefix["M"]:
@@ -289,7 +333,7 @@ def main() -> int:
                         rec.next_reference_id = -1
                         rec.next_reference_start = -1
                         rec.template_length = 0
-                        bam_out.write(rec)
+                        write_out(rec)
                         continue
 
                     # Duplicate into pseudo-pairs (tagged)
@@ -325,14 +369,14 @@ def main() -> int:
                     else:
                         rec1.template_length = 0
                         rec2.template_length = 0
-                    bam_out.write(rec1)
-                    bam_out.write(rec2)
+                    write_out(rec1)
+                    write_out(rec2)
 
                 # Unprefixed reads: pass through with optional tag
                 for rec in by_prefix[None]:
                     if not args.pair_only:
                         rec.set_tag(args.prefix_tag, "U", value_type="Z")
-                    bam_out.write(rec)
+                    write_out(rec)
 
     return 0
 

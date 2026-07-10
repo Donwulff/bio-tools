@@ -73,6 +73,8 @@ def tokenize_labels(hg: str, isogg: str, clade_prefix: str) -> List[str]:
         low = t.lower()
         if any(np in low for np in NOISE_PATTERNS):
             continue
+        if "&" in t or "|" in t:
+            continue
         if not t.startswith(clade_prefix):
             continue
         # Reject long free-text labels accidentally starting with the prefix.
@@ -112,12 +114,58 @@ def hierarchical_prefixes(token: str, clade_prefix: str) -> List[str]:
     return list(dict.fromkeys(prefixes))
 
 
+def id_based_label(row_id: str, labels: List[str]) -> str:
+    """
+    Build a synthetic SNP label like I-Y47125 from marker ID when row labels are coarse
+    (e.g. HG=I1) and the ID itself carries the informative SNP name.
+    """
+    rid = (row_id or "").strip().strip('"')
+    if not rid or rid == ".":
+        return ""
+    # Keep first token if IDs are compound.
+    rid = rid.split(";")[0].split(",")[0]
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]{1,20}", rid):
+        return ""
+
+    tops = {top_level_clade(t) for t in labels}
+    tops.discard("")
+    if len(tops) != 1:
+        return ""
+    top = next(iter(tops))
+    if rid.startswith(f"{top}-"):
+        return rid
+    if rid.startswith(top) and len(rid) > 1 and rid[1].isdigit():
+        return rid
+    return f"{top}-{rid}"
+
+
 def top_level_clade(token: str) -> str:
     t = token.strip().strip('"').rstrip("~*")
     m = re.match(r"^([A-T])", t)
     if not m:
         return ""
     return m.group(1)
+
+
+def candidate_style(token: str) -> str:
+    t = token.rstrip("~*")
+    if re.fullmatch(r"[A-T]", t):
+        return "path"
+    if re.fullmatch(r"[A-T][0-9A-Za-z]+", t):
+        return "path"
+    if re.fullmatch(r"[A-T][0-9A-Za-z]*-[A-Za-z0-9]+", t):
+        return "snp_label"
+    return "mixed"
+
+
+def parse_int_field(value: str) -> int | None:
+    v = (value or "").strip()
+    if not v or v == ".":
+        return None
+    try:
+        return int(float(v))
+    except ValueError:
+        return None
 
 
 def main() -> int:
@@ -170,6 +218,11 @@ def main() -> int:
     ambiguous_total = defaultdict(int)
     other_total = defaultdict(int)
     score_total = defaultdict(float)
+    derived_dp_sum = defaultdict(int)
+    derived_dp_n = defaultdict(int)
+    derived_dp_max = defaultdict(int)
+    derived_gq_sum = defaultdict(int)
+    derived_gq_n = defaultdict(int)
     candidates_seen: Set[str] = set()
     top_score = defaultdict(float)
     top_derived = defaultdict(int)
@@ -182,8 +235,11 @@ def main() -> int:
                 continue
             ref = row[3]
             alt = row[4].split(",")[0]
+            row_id = row[2]
             hg = row[6]
             isogg = row[7]
+            gq = parse_int_field(row[9])
+            dp = parse_int_field(row[10])
             status = row[12]
 
             labels = tokenize_labels(hg, isogg, parse_prefix)
@@ -194,6 +250,9 @@ def main() -> int:
             for label in labels:
                 for c in hierarchical_prefixes(label, args.clade_prefix):
                     cand_for_row.add(c)
+            synth = id_based_label(row_id, labels)
+            if synth:
+                cand_for_row.add(synth)
             if not cand_for_row:
                 continue
 
@@ -206,6 +265,14 @@ def main() -> int:
                     w = args.deam_derived_weight if deam else args.normal_derived_weight
                     derived_total[c] += 1
                     score_total[c] += w
+                    if dp is not None:
+                        derived_dp_sum[c] += dp
+                        derived_dp_n[c] += 1
+                        if dp > derived_dp_max[c]:
+                            derived_dp_max[c] = dp
+                    if gq is not None:
+                        derived_gq_sum[c] += gq
+                        derived_gq_n[c] += 1
                     if deam:
                         derived_deamination[c] += 1
                     if transv:
@@ -265,20 +332,38 @@ def main() -> int:
                 "nocall_total",
                 "ambiguous_total",
                 "other_total",
+                "net_support",
+                "support_ratio",
+                "derived_dp_sum",
+                "derived_dp_mean",
+                "derived_dp_max",
+                "derived_gq_mean",
+                "label_style",
             ]
         )
         for c in ranked:
+            anc = ancestral_total[c]
+            der = derived_total[c]
+            dp_mean = (derived_dp_sum[c] / derived_dp_n[c]) if derived_dp_n[c] else 0.0
+            gq_mean = (derived_gq_sum[c] / derived_gq_n[c]) if derived_gq_n[c] else 0.0
             w.writerow(
                 [
                     c,
                     f"{score_total[c]:.3f}",
-                    derived_total[c],
+                    der,
                     derived_transversion[c],
                     derived_deamination[c],
-                    ancestral_total[c],
+                    anc,
                     nocall_total[c],
                     ambiguous_total[c],
                     other_total[c],
+                    der - anc,
+                    f"{(der / (anc + 1.0)):.3f}",
+                    derived_dp_sum[c],
+                    f"{dp_mean:.3f}",
+                    derived_dp_max[c],
+                    f"{gq_mean:.3f}",
+                    candidate_style(c),
                 ]
             )
 
