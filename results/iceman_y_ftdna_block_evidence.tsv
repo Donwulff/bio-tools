@@ -28,7 +28,7 @@ G-Z6488	Z6488	chrY	22225244	T>C	transition	3	0	3	0	DERIVED	G2a2a1a2a	G-Z6484
 G-Z6488	FGC2271	chrY	20907600	G>A	transition(deamination-prone)	6	0	6	0	DERIVED	unknown	G-Z6484
 G-Z6488	PF3237	chrY	14905951	G>A	transition(deamination-prone)	4	0	4	0	DERIVED	G2a2a1a2a	G-Z6484
 G-PF3238	PF3238	chrY	15144551	G>A	transition(deamination-prone)	5	0	5	0	DERIVED	G2a2a1a2a	G-Z6484
-G-PF3238	FGC2274	chrY	5094513	G>A	transition(deamination-prone)	1	0	1	0	DERIVED	unknown	G-Z6484
+G-PF3238	FGC2274	chrY	5094513	G>A	transition(deamination-prone)	1	0	1	0	nocall_damage_prone_1read	unknown	G-Z6484
 G-PF3238	Y232445	chrY	11361597	C>T	transition(deamination-prone)	9	0	9	0	DERIVED	unknown	G-Z6484
 G-PF3238	Z6118	chrY	3824595	T>C	transition	2	0	2	0	DERIVED	G (not listed)	G-Z6484
 G-PF3238	Z6119	chrY	3824608	A>G	transition	3	0	3	0	DERIVED	G (not listed)	G-Z6484

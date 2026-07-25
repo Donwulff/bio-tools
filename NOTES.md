@@ -427,7 +427,7 @@ are *finer* than ISOGG's, which lumps all of them at `G2a2a1a2a`. Two blocks wer
 | `G-Z6488` | FGC2271/Z6484/S25082 | 20907600 | G>A | 6 | 0 | 6 | DERIVED |
 | `G-Z6488` | PF3237 | 14905951 | G>A | 4 | 0 | 4 | DERIVED |
 | `G-PF3238` | PF3238 | 15144551 | G>A | 5 | 0 | 5 | DERIVED |
-| `G-PF3238` | FGC2274 | 5094513 | G>A | 1 | 0 | 1 | DERIVED (weak) |
+| `G-PF3238` | FGC2274 | 5094513 | G>A | 1 | 0 | 1 | `nocall_damage_prone_1read` (was "DERIVED (weak)") |
 | `G-PF3238` | Y232445 | 11361597 | C>T | 9 | 0 | 9 | DERIVED |
 | `G-PF3238` | Z6118 | 3824595 | T>C | 2 | 0 | 2 | DERIVED |
 | `G-PF3238` | Z6119 | 3824608 | A>G | 3 | 0 | 3 | DERIVED |
@@ -612,6 +612,43 @@ Anything claiming a variant is "novel" must say which catalogue it was checked a
 Both files are from the 2026-02-23 refresh — roughly five months stale as of this work. FTDNA registers
 new SNP names (`FT*`, `BY*`, `MF*`) with YBrowse continuously, so `annotate/fetch_ybrowse_markers.sh`
 should be re-run before any future claim that a variant is uncatalogued.
+
+**y_markers_pileup.py Did Not Implement The Registered Call Rules (2026-07-25)**
+Found by running the first Swiss sample through it. `y_markers_pileup.py` called any site with
+`der > 0, anc == 0` **DERIVED** and any site with `anc > 0, der == 0` **ancestral**, with no depth
+threshold and no damage rule. Both contradict the decision rules in
+`PREREG_swiss_neolithic_L166.md`, and one of them contradicts the point of writing that document:
+
+> Ancestral call: >=2 independent reads. A site with 1 ancestral read is reported as `low_power`,
+> **not** as ancestral.
+
+On MX182 the old logic reported `L166` as **ancestral** off a single read at DP 1. That is H0 — no
+power — presented as H2 — tested and negative. The prereg names that specific substitution as "the
+single most important commitment in this document", so the tool was violating the registered
+protocol on the very first sample it saw.
+
+The rules now live in `site_call()` in `y_markers_pileup.py`, identical to the logic in
+`y_sites_pileup.py`, and MX182 correctly reports `low_power_1read_ancestral`.
+
+**Nothing about the Iceman conclusion moves.** Re-running the Iceman BAM through the corrected tool
+gives byte-identical output for `L166_defining` (9 DERIVED), `Z6494_exclusion` (3 ancestral) and
+`backbone_control` (10 DERIVED) — every call there rests on DP>=2 with unanimous support, so the
+stricter rules cannot touch it. Across all committed Iceman tables only **3 calls** change, all
+DP-1 deamination-prone transitions and all in the conservative direction:
+
+| file | marker | change |
+|---|---|---|
+| `iceman_y_ftdna_block_evidence.tsv` | `FGC2274` | DERIVED -> `nocall_damage_prone_1read` |
+| `iceman_y_L166_subtree_exhaustive.tsv` | `FT172194` | DERIVED -> `nocall_damage_prone_1read` |
+| `iceman_y_L166_subtree_exhaustive.tsv` | `Y126330` | DERIVED -> `nocall_damage_prone_1read` |
+
+`iceman_y_L166_evidence.tsv` and `iceman_y_ftdna_project_terminals.tsv` are unchanged.
+
+All three had already been dismissed as artifacts in prose above ("0 credible derived", "DERIVED
+(weak)"), so the analyst's reading was right and only the `call` column was out of step. The useful
+consequence is that the L166 subtree scan now tallies **88 ancestral / 1 mixed / 2 damage-nocall /
+2 no-coverage — zero derived** as data, rather than showing two DERIVED rows that had to be argued
+away in a footnote.
 
 **Ad-hoc MAPQ Table Reproduced By Committed Tool (2026-07-25) — two errors found in the table**
 The MAPQ audit below was originally produced by a process that was never committed, which meant the

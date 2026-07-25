@@ -36,7 +36,7 @@ L166_subtree	FGC5745	chrY	26617338	A>C	transversion	11	11	0	0	ancestral	unknown	
 L166_subtree	FGC8006	chrY	20867823	G>A	transition(deamination-prone)	8	8	0	0	ancestral	G2a2a1a2a1a	G-Z6494&E-Y610327
 L166_subtree	FGC8012	chrY	13760685	G>C	transversion	6	6	0	0	ancestral	unknown	G-FGC5697
 L166_subtree	FT159105	chrY	5333036	A>T	transversion	8	8	0	0	ancestral	G	G-Z6212
-L166_subtree	FT172194	chrY	2891795	C>T	transition(deamination-prone)	1	0	1	0	DERIVED	G	G-Z6494
+L166_subtree	FT172194	chrY	2891795	C>T	transition(deamination-prone)	1	0	1	0	nocall_damage_prone_1read	G	G-Z6494
 L166_subtree	FT173250	chrY	5266297	G>T	transversion	6	6	0	0	ancestral	G	G-Z6212
 L166_subtree	FT173465	chrY	5757133	G>T	transversion	6	6	0	0	ancestral	G	G-Z6214
 L166_subtree	FT174114	chrY	7651141	G>C	transversion	8	8	0	0	ancestral	G	G-Z6212
@@ -54,7 +54,7 @@ L166_subtree	FT85286	chrY	26338336	C>A	transversion	12	12	0	0	ancestral	G	G-Z628
 L166_subtree	M1182	chrY	26552372	C>T	transition(deamination-prone)	11	11	0	0	ancestral	unknown	G-CTS12768&I-CTS12768&Q-L472
 L166_subtree	MF606384	chrY	5108711	C>T	transition(deamination-prone)	0	0	0	1	no_coverage	O	G-Z6285&R-FT362841
 L166_subtree	S19929	chrY	15481735	G>A	transition(deamination-prone)	12	12	0	0	ancestral	not listed	G-Z6285&R-S19929
-L166_subtree	Y126330	chrY	2891795	C>T	transition(deamination-prone)	1	0	1	0	DERIVED	unknown	G-Z6494
+L166_subtree	Y126330	chrY	2891795	C>T	transition(deamination-prone)	1	0	1	0	nocall_damage_prone_1read	unknown	G-Z6494
 L166_subtree	Y38112	chrY	13029000	T>C	transition	6	2	4	0	mixed	unknown	G-Z6494
 L166_subtree	Z12230	chrY	20867823	G>A	transition(deamination-prone)	8	8	0	0	ancestral	G2a2a1a2a1a	G-Z6494&E-Y610327
 L166_subtree	Z31442	chrY	7940540	C>A	transversion	13	13	0	0	ancestral	G2a2a1a2a1a1b1~	G-Z6285

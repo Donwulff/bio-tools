@@ -78,6 +78,38 @@ def mutation_class(anc: str, der: str) -> str:
     return "transversion"
 
 
+def site_call(dp: int, a: int, d: int, mclass: str) -> str:
+    """Pre-registered call rules. Must stay identical to y_sites_pileup.py.
+
+    Read counts alone are not a call. A single read is one molecule, and at aDNA
+    depths a single deamination-prone C>T/G>A read is the expected artifact
+    rather than evidence -- documented in this repo for CGG017682, whose entire
+    apparent G-panel signal was single-read transitions.
+
+    The asymmetry that matters most: one ancestral read is `low_power`, never
+    `ancestral`. Calling it ancestral converts "we could not tell" into "we
+    tested and it was negative", which is the exact confusion the accompanying
+    pre-registration exists to prevent.
+    """
+    if dp == 0:
+        return "no_coverage"
+    if d >= 2 and a == 0:
+        return "DERIVED"
+    if d == 1 and a == 0:
+        if mclass == "transversion":
+            return "DERIVED_1read_transversion"
+        if mclass == "transition(deamination-prone)":
+            return "nocall_damage_prone_1read"
+        return "nocall_1read_transition"
+    if a >= 2 and d == 0:
+        return "ancestral"
+    if a == 1 and d == 0:
+        return "low_power_1read_ancestral"
+    if a and d:
+        return "mixed"
+    return "other_allele"
+
+
 def load_markers(index_path: str, wanted: set[str]) -> dict[str, dict]:
     found: dict[str, dict] = {}
     opener = gzip.open if index_path.endswith(".gz") else open
@@ -211,20 +243,12 @@ def main() -> int:
         a = cnt.get(m["anc"], 0)
         d = cnt.get(m["der"], 0)
         other = sum(v for k, v in cnt.items() if k not in (m["anc"], m["der"]))
-        if dp == 0:
-            call = "no_coverage"
-        elif d > 0 and a == 0:
-            call = "DERIVED"
-        elif a > 0 and d == 0:
-            call = "ancestral"
-        elif d > 0 and a > 0:
-            call = "mixed"
-        else:
-            call = "other_allele"
+        mclass = mutation_class(m["anc"], m["der"])
+        call = site_call(dp, a, d, mclass)
         tally[call] += 1
         print("\t".join([
             args.label, name, m["chrom"], str(m["pos"]),
-            f"{m['anc']}>{m['der']}", mutation_class(m["anc"], m["der"]),
+            f"{m['anc']}>{m['der']}", mclass,
             str(dp), str(a), str(d), str(other), call,
             m["isogg"], m["yfull_node"],
         ]), file=out)
