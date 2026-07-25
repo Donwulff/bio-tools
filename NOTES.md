@@ -613,6 +613,38 @@ Both files are from the 2026-02-23 refresh — roughly five months stale as of t
 new SNP names (`FT*`, `BY*`, `MF*`) with YBrowse continuously, so `annotate/fetch_ybrowse_markers.sh`
 should be re-run before any future claim that a variant is uncatalogued.
 
+**`GQ>=30` On chrY Is A Small-Model Artefact (2026-07-26)**
+The DeepVariant A/B outputs were located at `~/iceman.vcf` (small model on) and
+`~/iceman-nosmall.vcf.gz` (off), both DeepVariant 1.10.0, 33,546 chrY records each. Note
+`iceman.vcf` and `iceman.gvcf` are **gzip/BGZF despite the extension** — `cat` yields binary.
+
+Hom-alt chrY SNVs, all `PASS` in both branches:
+
+| branch | GQ median | GQ **max** | sites at `GQ>=30` |
+|---|---|---|---|
+| small model on | 17 | **58** | **438** |
+| small model off | 17 | **25** | **0** |
+
+**Without the small model, GQ never exceeds 25 on this data.** `GQ>=30` is therefore not a neutral
+quality bar; it is unreachable unless the small-model path ran. The medians are identical, so the
+difference is entirely in the confident tail — consistent with a fast heuristic path emitting
+high confidence on "easy" sites, which is exactly the behaviour whose validity on damaged aDNA is
+in question.
+
+This identifies the provenance of the existing analysis: the filter `PASS, GT=1/1, DP>=5, GQ>=30`
+returns **exactly 438** on the small-model branch, matching the count recorded above, and **0** on
+the other. So `~/iceman.vcf` is the file the earlier chrY work used.
+
+**Scope of the caveat.** It touches the novel-variant discovery and the 438-site `CGG017683`
+comparison. It does **not** touch the `G-L166` result, which comes from `y_markers_pileup.py`
+reading the BAM directly — read counts and MAPQ, no genotyper and no GQ anywhere in the chain.
+The headline finding is VCF-independent and unaffected.
+
+Only **7 of the 21** novel candidates appear in the 438 set, because several sit at DP 4 and the
+novel scan evidently used a looser filter than the shared-variant analysis. The exact filter that
+produced the 21 is still not recovered — the reason `annotate/y_novel_scan.py` should derive
+candidates from the BAM rather than from a VCF, where the quality scale is model-dependent.
+
 **THE COMPILER HEDGED; THE PRESENTATION LAYER DROPPED IT (2026-07-26)**
 The single most important thing in this whole thread. In `all-ancient-dna.txt`, of the 22 samples
 under `Culture_Grouping = "Horgen culture"` called `G-L166(*)` in `Y-Haplotree-Variant`, **21 carry
