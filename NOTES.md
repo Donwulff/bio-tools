@@ -613,6 +613,54 @@ Both files are from the 2026-02-23 refresh — roughly five months stale as of t
 new SNP names (`FT*`, `BY*`, `MF*`) with YBrowse continuously, so `annotate/fetch_ybrowse_markers.sh`
 should be re-run before any future claim that a variant is uncatalogued.
 
+**The Horgen Claim Checked Against Furtwängler 2020 Suppl. Tables 1 and 5 (2026-07-25)**
+Read from the *corrected* Supplementary Information
+(`static-content.springer.com/esm/art%3A10.1038%2Fs41467-020-15560-x/MediaObjects/41467_2020_15560_MOESM1_ESM.pdf`),
+not from a search summary. Three of the circulating claim's premises fail against its own source.
+
+**1. `PF3239` is not Horgen-specific — Aesch has more of it than Oberbipp.** Individuals assigned
+terminal `PF3239` across the whole study, by site:
+
+| site | n | culture label in the table |
+|---|---|---|
+| Aesch (CH) | **10** | *(none given)* |
+| Oberbipp Horgen (CH) | 7 | Horgen |
+| Muttenz (CH) | 2 | *(none given)* |
+| Niederried Ursisbalm (CH) | 1 | *(none given)* |
+| **total** | **20** | |
+
+The claim that this lineage is not dominant in cultures contemporary with the Iceman "except for
+the Horgen Culture" is contradicted by the single dataset it rests on. Only Oberbipp carries the
+string "Horgen" in the site column at all.
+
+**2. The study's only `L166` is not a Horgen sample.** `L166` occurs exactly once in the entire
+supplement: `SX10`, `G2a2a1a2a1a`, the unborn/newborn baby of `SX8`, at **Rapperswil
+Zürichstrasse** — a different site with no Horgen label. The seven Oberbipp males are `PF3239`.
+So the one genuine ancient `L166` in this dataset is precisely the sample the claim does not cite.
+
+**3. The Oberbipp males are a kin group, so they are not seven independent observations.**
+Supplementary Table 5 (PMR / READ / lcMLkin) lists first- and second-degree pairs among them,
+including `MX187`–`MX212` (first degree, both in our test set) and `MX187`–`MX209` (second
+degree). Male–male first-degree pairs are father–son or full brothers and therefore carry the
+same Y chromosome by descent. "7 of 10 carry the clade" is closer to "one patrilineage, sampled
+repeatedly"; the paper's own text describes kinship over three generations in the paternal line.
+
+**4. …and that same table shows the published terminal labels are coverage floors.** Table 5
+carries a `same Y HG` column whose values include **`same clade`**, used for related pairs whose
+published terminal labels differ. Among Oberbipp: `MX150` (`L91`, `G2a2a1a2`) is first-degree with
+`MX187` (`PF3239`, `G2a2a1a2a1`); `MX183` (`Z6488`) is first-degree with `MX211` (`PF3239`);
+`MX209` (`PF3239`) is first-degree with `MX219` (`PF3147`, `G2a2a`). These men must share a Y
+chromosome, so a label difference of one to three nodes between them cannot be phylogenetic — it
+is depth. **The Y column of Table 1 must not be read as terminal placement**, which is the same
+error this project documents for the Iceman, appearing here inside the source publication's own
+data.
+
+The consequence cuts both ways and is worth stating plainly: point 4 is direct published support
+for the *premise* of H1 — the `PF3239` stop is coverage-limited, so these men could be `L166`.
+The circulating claim could therefore be accidentally correct while every premise it states is
+wrong. That is exactly what the read-level test is for. Note also that point 4 applies equally to
+Aesch's ten, so "Horgen is special" fails under H1 as well as under H2.
+
 **y_markers_pileup.py Did Not Implement The Registered Call Rules (2026-07-25)**
 Found by running the first Swiss sample through it. `y_markers_pileup.py` called any site with
 `der > 0, anc == 0` **DERIVED** and any site with `anc > 0, der == 0` **ancestral**, with no depth

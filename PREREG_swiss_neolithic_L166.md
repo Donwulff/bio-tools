@@ -228,9 +228,25 @@ Fixed in advance:
   homogeneous Y assignments, which is the expected signature of a patrilineal kin group. If they
   are patrilineally related their Y chromosomes are shared by descent, the effective sample size
   is smaller than seven, and "7 of 10 carry the clade" reduces to "one lineage sampled seven
-  times". Furtwängler et al. 2020 report kinship analysis; **this has not yet been read** and must
-  be checked before any count of individuals is quoted. Recorded 2026-07-25 as an open dependency,
-  not a finding.
+  times".
+
+  **Resolved 2026-07-25 from Supplementary Table 5 — they are related.** `MX187`–`MX212` are
+  first-degree and both are in this test set; `MX187`–`MX209` are second-degree. Further
+  first-degree links tie the set to Oberbipp males not sampled here (`MX150`–`MX187`,
+  `MX183`–`MX211`, `MX209`–`MX219`). Male–male first-degree pairs share a Y chromosome by
+  descent. **No result here may be quoted as an independent observation, and no proportion may be
+  computed over the seven.** Verdicts stay per-sample and are reported as what they are: calls on
+  a kin group.
+
+  A second consequence of that table matters more for interpretation. It carries a `same Y HG`
+  column whose values include `same clade`, used where related males carry *different* published
+  terminal labels — `MX150` (`L91`) with `MX187` (`PF3239`), `MX209` (`PF3239`) with `MX219`
+  (`PF3147`). Men who share a Y by descent cannot differ phylogenetically, so those one-to-three
+  node differences are depth, not branching. This is published evidence that the `PF3239` stop is
+  coverage-limited — support for the *premise* of H1, obtained before any read of this dataset was
+  called. It is **not** support for H1 itself: a floor being a floor says nothing about where the
+  true terminal lies, which is exactly what the marker sets test. Registered here so it cannot
+  later be presented as though the read-level data had supplied it.
 - **"Same clade" is not "relative", and the relatedness claim is out of reach here.** Sharing
   `L166` implies a common patrilineal ancestor at or above the `L166` node, potentially a
   millennium or more before the Iceman. He is `L166*` — ancestral at all 93 markers in the
