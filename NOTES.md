@@ -813,6 +813,13 @@ submitted BAMs meeting its own criteria — whereas haplotree.info draws on AADR
 Neither is a superset of the other, so "the only one on YFull" was never evidence of "the only
 one". Any future claim about how many ancient `L166` exist has to name the corpus it counted.
 
+*Correction (2026-07-26): the 7 above are the **unhedged** `G-L166` rows only. The compilation
+holds **28** samples called `G-L166(*)`, of which **21 are the hedged `G-L166*` form**. The
+`haplotree.info` query above searched the literal string `G-L166` and therefore never matched
+them. An earlier reading of this — that haplotree "puts zero Oberbipp samples at L166", so was not
+the source of the claim — was **wrong**; the Oberbipp males are present as `G-L166*`. The 7/21
+split is exactly the confirmed/provisional split described below.*
+
 **These are third-party assignments and are not evidence until tested at read level.** Two
 independent reasons for caution, both observed here rather than assumed:
 - Querying the same site for `G-PF3239` returns only **6** samples, of which just `MX182` and

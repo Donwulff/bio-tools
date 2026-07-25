@@ -214,6 +214,50 @@ Fixed in advance:
   denominator, stated as such; the 59.37 Mb full-contig figure understates real site coverage by
   ~4.7x.
 
+## Amendment, 2026-07-26 — registered with 6 of 9 samples mapped
+
+Two rules the original document left open. Both are fixed here **before** the remaining samples
+are genotyped and before any shared-novel test has been run against any Swiss sample. `MX182`,
+`MX210` and `MX211` have been genotyped at this point; no novel-site comparison has been made for
+any of them.
+
+**A. What a *positive* shared-novel result would mean.** The original registered the novel test as
+expected-to-fail and committed that a null "will not be reported as a negative finding". It never
+said what a hit would license. Registering it now:
+
+- The inference is valid in principle: the Iceman's novel variants lie *below* `L166` on his
+  lineage, so a sample sharing one shares an ancestor postdating the `L166` node and is therefore
+  `L166`-derived. A hit would support `L166` membership **without** requiring an `L166` read.
+- Because that route bypasses the defining markers, the bar is **higher**, not lower. A shared
+  novel variant counts only if **all** hold: (i) the site is a **transversion**; (ii) it passes
+  `site_qc` in **both** the Iceman and the Swiss sample; (iii) it is outside the declared no-go
+  regions; (iv) ≥2 independent reads in the Swiss sample, i.e. the one-transversion-read shortcut
+  does **not** apply to this test.
+- **Correlated artefact is the named threat.** Two samples aligned to the same reference can
+  acquire the same spurious derived allele from the same collapsed repeat. The Iceman was mapped
+  with `bwa mem` and these samples with `bwa aln`, which decorrelates some of it, but the
+  reference is shared. A single shared site is therefore reported as *suggestive*, never as
+  establishing a branch; two or more independent qualifying sites would be required for that.
+- Recurrence is a live concern, not a theoretical one: `L166` and `L167` themselves carry
+  multi-haplogroup YFull assignments (`G-L166&J-Y29712`, `G-L166&I-Y92994&A00`).
+
+**B. Expanding the Iceman-side novel panel is exploratory, not confirmatory.** The 8 usable
+candidates derive from a `DP>=5, GQ>=30` filter on the Iceman VCF, so sites at DP 1–4 never
+entered the pool. Relaxing that would enlarge the panel and raise the chance of a hit.
+
+The decision to consider it was prompted by seeing that Swiss coverage is thin. That makes it
+**post-hoc**, even though the expansion criterion itself is Iceman-side only. It is permitted on
+these terms:
+
+- The expansion rule is fixed here in advance: **Iceman DP≥2, transversions only, `site_qc`
+  passing, outside no-go regions, absent from the GFF3 catalogue.** DP≥1 is excluded — a single
+  read is one molecule on the Iceman side too, which the decision rules above already say.
+- The rule is applied to the Iceman BAM **blind to any Swiss genotype**.
+- Results from the original 8-site panel and from the expanded panel are reported **separately
+  and always**, never pooled into a single count.
+- The expanded analysis is labelled **exploratory**. It can generate a hypothesis; it cannot
+  confirm one, and no headline claim may rest on it alone.
+
 ## Declared limitations
 
 - **No pooled or cross-sample test is registered, and none will be run to rescue power.**
