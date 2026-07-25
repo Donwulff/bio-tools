@@ -1,0 +1,14 @@
+# Published path for these samples: P15 > M3308 > PF3147 > PF3148 > PF3177
+#                                   > L91 > Z6488 > PF3239
+# PF3239 is the positive control: Furtwaengler 2020 Suppl. Table 1 reports these
+# individuals derived here. Independent recovery validates the whole chain.
+P15
+M3308
+PF3147
+PF3148
+PF3177
+L91
+Z6488
+PF3239
+Z6043
+P287

@@ -162,9 +162,19 @@ they are genotyped by position with `annotate/y_sites_pileup.py` at identical th
 tool also emits the mandatory `pct_mq0` / `n_mq60` audit columns and encodes the decision rules
 below directly, so a call cannot be made by a different standard than the one registered here.
 
-Mapping is performed by `mapping/map_se_adna.sh` and staging by
-`annotate/fetch_ena_runs.sh`, so both are reproducible from the repository rather than from
-transcribed shell history.
+Mapping is performed by `mapping/map_se_adna.sh`, driven across the sample set by
+`mapping/map_se_batch.sh`, and staging by `annotate/fetch_ena_runs.sh`. The marker and site
+inputs are committed under `markers/`. Every input to this analysis is therefore in the
+repository rather than in transcribed shell history.
+
+**Tool validation, performed before any Swiss read was mapped.** `annotate/y_sites_pileup.py`
+was run against the Iceman BAM at all 21 sites in `markers/iceman_novel_candidates_all21.tsv`
+and reproduced `results/iceman_y_novel_branch_candidates.tsv` — **21/21 verdicts**, including
+the exact REJECT/MARGINAL classification. Output kept as
+`results/iceman_y_novel_candidates_regen.tsv`. Two discrepancies against the older hand-built
+table were found, both errors in that table rather than in the tool, and are recorded in
+`NOTES.md`. Had the tool not reproduced those numbers, that would itself have been the finding
+and this analysis would not have proceeded.
 
 ## Decision rules
 
@@ -180,9 +190,17 @@ Fixed in advance:
   G-panel signal was single-read transitions.
 - **MAPQ audit is mandatory.** `pct_mq0` and `n_mq60` are reported per site. Depth alone does
   not qualify a site; 10 of 21 Iceman novel candidates were rejected on MAPQ at unremarkable
-  depths, including two of three transversions previously presented as strongest.
+  depths, including two of three transversions previously presented as strongest. The threshold
+  is **`pct_mq0` ≥ 30% → `REJECT_mapq`**, with `n_mq60 == 0` and single-strand support as
+  `MARGINAL`. This cut was fixed during the Iceman analysis — before any read of this dataset
+  existed in the working directory — where usable sites topped out at 14% MQ0 and rejected ones
+  began at 39%; any cut inside that gap yields the identical split, and 30% is the round number
+  in it. It is now encoded in `annotate/y_sites_pileup.py` rather than applied by hand.
 - **Known no-go regions** are flagged, not silently included: chrY:11.1–11.7 Mb,
-  chrY:56.69–56.88 Mb, ~26.6 Mb.
+  chrY:56.69–56.88 Mb, ~26.6 Mb. These are emitted in a separate `region` column and are
+  advisory: they do not by themselves reject a site, but no claim rests on a flagged site alone.
+  Note that two of the eight "usable" Iceman candidates (`11414525`, `11667647`) fall inside the
+  11.1–11.7 Mb window and were not flagged as such by the earlier hand-built table.
 - **Output is per-SNP derived/ancestral/nocall.** No terminal haplogroup string is assigned to
   any sample. Assigning one is the error class this project exists to document.
 - **Coverage is always reported with its denominator.** chrY depth on the ~12.57 Mb callable/MSY

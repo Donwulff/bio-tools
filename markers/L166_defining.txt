@@ -1,0 +1,11 @@
+# G-L166 defining set (9 distinct sites). Primary test.
+# Transversions carry the evidential weight; transitions are deamination-prone.
+FGC5696
+Z6208
+Z6219
+Z6287
+S19530
+FGC5721
+Z6516
+L166
+L167

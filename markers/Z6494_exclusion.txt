@@ -1,0 +1,5 @@
+# G-Z6494 defining set (3 distinct sites). Iceman is ancestral at all three.
+# A Swiss sample derived here is off his branch in the other direction.
+FGC5687
+Z6215
+Z6494

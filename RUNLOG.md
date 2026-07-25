@@ -373,6 +373,54 @@ Saved artifacts:
 Still upstream of `L166` (`PF3239` = `G2a2a1a2a1`, `L166` = `G2a2a1a2a1a`). Open: what `G-L166` splits
 into on FTDNA's tree.
 
+## Swiss Neolithic L166 Test (2026-07-25)
+
+Pre-registered in `PREREG_swiss_neolithic_L166.md` before any read of this dataset was examined.
+Tests whether the Oberbipp/Rapperswil Horgen-context males published as terminal `PF3239` are in
+fact derived at `L166` — i.e. whether the "7 of 10 are Ötzi's clade" claim circulating online is
+a real result or an aggregator relabelling one node too deep.
+
+Staging (9 runs, 607 MB, MD5-verified against ENA):
+```bash
+annotate/fetch_ena_runs.sh PRJEB36959 /mnt/AncientDNA/SwissLN-2020 \
+  '^(MX182|MX187|MX209|MX210|MX211|MX212|MX213|SX8|SX10)$'
+```
+
+**Gate: tool validation before any Swiss read was mapped** (5.6 s, 21 sites):
+```bash
+BAM=<analysis_dir>/dedup_out50/iceman.oetzi.UDG_merge_combined.mapped_rmdup.pair.prim_rmdup.sort_rmdup.coord.bam
+annotate/y_sites_pileup.py --bam "$BAM" --ref mapping/index/hg38p14DH3630O.fa \
+  --sites markers/iceman_novel_candidates_all21.tsv --sample Iceman \
+  > results/iceman_y_novel_candidates_regen.tsv
+```
+Reproduces `results/iceman_y_novel_branch_candidates.tsv` at **21/21 verdicts**, REJECT/MARGINAL
+classification included. Five cells differed; all five were errors in the older hand-built table
+and have been corrected in it. See `NOTES.md` for the specifics. The prereg commits to this gate
+being blocking: a failure to reproduce would have been the finding, and nothing downstream would
+have run.
+
+Mapping (sequential, `-t 8`; bwa aln peak RSS ~4 GB, so one job at a time):
+```bash
+REF=$PWD/mapping/index/hg38p14DH3630O.fa \
+  mapping/map_se_batch.sh /mnt/AncientDNA/SwissLN-2020 8
+```
+56 bp single-end 1240k capture, so `bwa aln`/`samse` at nf-core/eager 2.5.0 defaults
+(`-n 0.01 -k 2 -l 1024`) rather than `bwa mem`. Same reference as the Iceman run. Dedup via
+`samtools markdup -r` is mandatory here — the decision rules count independent reads.
+
+Genotyping, once BAMs exist (marker sets committed under `markers/`):
+```bash
+for m in L166_defining Z6494_exclusion backbone_control; do
+  annotate/y_markers_pileup.py --bam "$BAM" --ref "$REF" \
+    --marker-file "markers/${m}.txt" --label "$m" --out "results/swiss_${m}.tsv"
+done
+annotate/y_sites_pileup.py --bam "$BAM" --ref "$REF" \
+  --sites markers/iceman_novel_candidates_usable8.tsv --sample "$SAMPLE"
+```
+`backbone_control.txt` carries the positive control: Furtwängler 2020 reports these individuals
+derived at `PF3239`, so independent recovery validates the whole chain before any `L166` call is
+believed.
+
 ## Open Questions
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).
 - Decide whether alt/decoy calls are retained only as technical appendix or excluded from variant interpretation entirely.

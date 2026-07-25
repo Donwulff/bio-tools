@@ -26,6 +26,45 @@ INDEL = re.compile(r"[+-](\d+)")
 DEAMINATION = {("C", "T"), ("G", "A")}
 TRANSITIONS = {("A", "G"), ("G", "A"), ("C", "T"), ("T", "C")}
 
+# Site usability, kept separate from the allele call so that filtering a site
+# never destroys the evidence that was filtered. `call` answers "which allele do
+# the reads support"; `site_qc` answers "should this site be believed at all".
+#
+# The 30% MQ0 threshold was fixed during the Iceman analysis, before any read of
+# any later dataset was examined. In that set the usable sites topped out at 14%
+# MQ0 and the rejected ones started at 39%, so any cut in that gap reproduces the
+# same 11-usable / 10-rejected split; 30% is the round number inside it.
+MAX_PCT_MQ0 = 30.0
+
+# Regions where collapsed repeats produce well-covered but untrustworthy pileups.
+# Advisory only, reported in its own column: the prereg requires these be
+# "flagged, not silently included", and a site here can still be real.
+NOGO_REGIONS = [
+    ("chrY", 11_100_000, 11_700_000, "11.1-11.7Mb"),
+    ("chrY", 26_600_000, 26_700_000, "~26.6Mb"),
+    ("chrY", 56_690_000, 56_880_000, "56.69-56.88Mb_Yq_het/PAR2"),
+]
+
+
+def region_flag(chrom: str, pos: int) -> str:
+    for c, lo, hi, name in NOGO_REGIONS:
+        if chrom == c and lo <= pos <= hi:
+            return f"nogo({name})"
+    return "ok"
+
+
+def site_qc(pct_mq0: float | None, n_mq60: int, fwd: int, rev: int) -> str:
+    """Pre-registered site filter. REJECT outranks the MARGINAL flags."""
+    if pct_mq0 is None:
+        return "nocall_noreads"
+    if pct_mq0 >= MAX_PCT_MQ0:
+        return f"REJECT_mapq({pct_mq0:.0f}%_MQ0)"
+    if n_mq60 == 0:
+        return "MARGINAL_no_MQ60_reads"
+    if fwd == 0 or rev == 0:
+        return "MARGINAL_single_strand"
+    return "pass"
+
 
 def parse_bases(s: str, ref: str) -> Counter:
     """Count called bases in an mpileup base string, tracking strand."""
@@ -101,7 +140,8 @@ def main() -> int:
     a = ap.parse_args()
 
     cols = ["sample", "chrom", "pos", "anc", "der", "mut_class", "dp", "n_anc",
-            "n_der", "n_other", "fwd", "rev", "n_reads", "pct_mq0", "n_mq60", "call"]
+            "n_der", "n_other", "fwd", "rev", "n_reads", "pct_mq0", "n_mq60",
+            "call", "site_qc", "region"]
     print("\t".join(cols))
 
     for ln in open(a.sites):
@@ -143,10 +183,12 @@ def main() -> int:
         else:
             call = "nocall"
 
-        pct_mq0 = f"{100.0*n_mq0/n_reads:.0f}%" if n_reads else "NA"
+        pct = 100.0 * n_mq0 / n_reads if n_reads else None
+        pct_mq0 = f"{pct:.0f}%" if pct is not None else "NA"
         print("\t".join(str(x) for x in [
             a.sample, chrom, pos, anc, der, mclass, dp, n_anc, n_der, n_other,
-            fwd, rev, n_reads, pct_mq0, n_mq60, call]))
+            fwd, rev, n_reads, pct_mq0, n_mq60, call,
+            site_qc(pct, n_mq60, fwd, rev), region_flag(chrom, pos)]))
     return 0
 
 
