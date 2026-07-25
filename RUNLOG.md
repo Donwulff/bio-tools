@@ -410,16 +410,29 @@ REF=$PWD/mapping/index/hg38p14DH3630O.fa \
 
 Genotyping, once BAMs exist (marker sets committed under `markers/`):
 ```bash
-for m in L166_defining Z6494_exclusion backbone_control; do
-  annotate/y_markers_pileup.py --bam "$BAM" --ref "$REF" \
-    --marker-file "markers/${m}.txt" --label "$m" --out "results/swiss_${m}.tsv"
-done
-annotate/y_sites_pileup.py --bam "$BAM" --ref "$REF" \
-  --sites markers/iceman_novel_candidates_usable8.tsv --sample "$SAMPLE"
+REF=$PWD/mapping/index/hg38p14DH3630O.fa \
+  annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam results/swiss
 ```
+Runs every marker set and the novel-site list across every BAM, adding the sample column neither
+pileup tool emits on its own, and collates `swiss_coverage.tsv` with chrY DoC on the 12.57 Mb
+callable denominator.
+
 `backbone_control.txt` carries the positive control: Furtwängler 2020 reports these individuals
 derived at `PF3239`, so independent recovery validates the whole chain before any `L166` call is
 believed.
+
+**Driver validated against the Iceman BAM before any Swiss BAM existed.** Run through the same
+`y_genotype_batch.sh` with the BAM symlinked as `Iceman.rmdup.bam`, it reproduces the established
+result exactly:
+
+| set | markers | result |
+|---|---|---|
+| `L166_defining` | 9 | **9 DERIVED**, 0 ancestral reads at any (5 transversions, DP 2-10) |
+| `Z6494_exclusion` | 3 | **3 ancestral**, 0 derived reads at any (DP 3-10) |
+| `backbone_control` | 10 | **10 DERIVED**, 0 ancestral reads at any |
+
+That is the whole G-L166-terminal finding recovered end to end by committed tooling, so a Swiss
+sample's calls can be read against a chain that is known to work rather than one assumed to.
 
 ## Open Questions
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).

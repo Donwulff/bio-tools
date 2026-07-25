@@ -163,9 +163,10 @@ tool also emits the mandatory `pct_mq0` / `n_mq60` audit columns and encodes the
 below directly, so a call cannot be made by a different standard than the one registered here.
 
 Mapping is performed by `mapping/map_se_adna.sh`, driven across the sample set by
-`mapping/map_se_batch.sh`, and staging by `annotate/fetch_ena_runs.sh`. The marker and site
-inputs are committed under `markers/`. Every input to this analysis is therefore in the
-repository rather than in transcribed shell history.
+`mapping/map_se_batch.sh`, and staging by `annotate/fetch_ena_runs.sh`. Genotyping across all
+samples and marker sets is driven by `annotate/y_genotype_batch.sh`. The marker and site inputs
+are committed under `markers/`. Every input to this analysis is therefore in the repository
+rather than in transcribed shell history.
 
 **Tool validation, performed before any Swiss read was mapped.** `annotate/y_sites_pileup.py`
 was run against the Iceman BAM at all 21 sites in `markers/iceman_novel_candidates_all21.tsv`
@@ -175,6 +176,12 @@ the exact REJECT/MARGINAL classification. Output kept as
 table were found, both errors in that table rather than in the tool, and are recorded in
 `NOTES.md`. Had the tool not reproduced those numbers, that would itself have been the finding
 and this analysis would not have proceeded.
+
+`annotate/y_genotype_batch.sh` was validated the same way and on the same schedule, against the
+Iceman BAM: 9/9 `L166_defining` DERIVED with zero ancestral reads, 3/3 `Z6494_exclusion`
+ancestral with zero derived reads, 10/10 `backbone_control` DERIVED. The entire published
+G-L166-terminal finding is therefore recovered end to end by the committed tooling before this
+dataset is touched, so a Swiss call is read against a chain known to work.
 
 ## Decision rules
 
