@@ -613,6 +613,51 @@ Both files are from the 2026-02-23 refresh — roughly five months stale as of t
 new SNP names (`FT*`, `BY*`, `MF*`) with YBrowse continuously, so `annotate/fetch_ybrowse_markers.sh`
 should be re-run before any future claim that a variant is uncatalogued.
 
+**SOURCE OF THE "7 OF 10 ARE G-L166" CLAIM IDENTIFIED (2026-07-25)**
+It is the **"All Ancient DNA" compilation** at `haplogroup.info` — distributed via
+`indo-european.eu/ancient-dna/`, and the backend of `haplotree.info` (same `Y-Haplotree-Variant`
+column name). 16,972 rows; retrieved `haplogroup.info/all-ancient-dna.txt` 2026-07-25.
+
+Unlike its web front-ends it *does* cite per-sample sources. The chain:
+
+1. `Source = FurtwaenglerNatCommun2020` — same paper we have been reading.
+2. The Y calls are **not the paper's**. The compilation re-derives them; the page states
+   haplogroup inference by **Yleaf v2** plus "analyses of BAM files by hobbyists and online
+   informal reports of research papers in preparation". Each row credits a
+   `Responsible-SNP` — for the whole Swiss series, **Milan Rajevac**.
+3. That re-derivation relabels **6 of the 7** published-`PF3239` Oberbipp males as **`G-L166*`**
+   (`MX187`, `MX209`, `MX210`, `MX211`, `MX212`, `MX213`). Only `MX182` stays `PF3239` — and its
+   `NRY` count is **2**, against 38,316 for `MX210`. `MX183`, published `Z6488`, is moved *deeper*
+   to `PF3239`.
+4. It assigns `Culture_Grouping = "Horgen culture"` to **Aesch, Oberbipp, Muttenz and Rapperswil
+   alike** — three of which the publication does not label Horgen at all.
+
+Querying that grouping reproduces the claim's shape exactly: **49 samples, 29 with a Y call, of
+which 22 are `G-L166(*)`** — including 12 of 14 at Aesch. Restricted to Oberbipp it is 6 of 10 in
+the current file; the 2022 snapshot on `indo-european.eu` is the likely origin of "7 of 10", and
+`SX10` (`G-L166`, Rapperswil) is a candidate seventh under this grouping.
+
+So the count is real, the culture grouping is the compilation's, and the `L166` label is a
+hobbyist re-call. The publication says `PF3239`. Nothing was fabricated; a re-derived label was
+read as if it were the published one — the same conflation this project documents for the Iceman,
+one layer further out.
+
+**The compilation's own kinship note undercuts the population reading.** Verbatim from `MX211`:
+
+> Switzerland, Oberbipp Horgen **Family A (9 members)** (MX150-MX187 have a father-son
+> relationship (order unknown). MX187-MX212 have a father-son relationship (order unknown). …
+> MX183-MX211 are brothers … MX209 (who is a 1st degree relative of MX219)
+
+Five of the seven relabelled men (`MX182`, `MX187`, `MX209`, `MX211`, `MX212`) sit inside one
+named nine-member family; only `MX210` and `MX213` fall outside it. Even taking the `L166` calls at
+face value, this is largely one patriline, not a population.
+
+**And our read-level test disagrees with it on the one sample tested so far.** The compilation
+calls `MX210` `G-L166*`. Our mapping of the raw FASTQ finds it **ancestral at `L166` (3/3 reads)
+and `L167` (2/2)**, both transversions at 0% MQ0 — while derived at `Z6219` (4/4). That is
+recorded below as `CONFLICT`, not as a refutation, and it is one sample of nine. But it is the
+first direct read-level check of a `G-L166*` call from this compilation, and it did not confirm it.
+
 **`L166` And `L167` Are Recurrent Sites, And MX210 Conflicts (2026-07-25) — interim, 5 of 9 mapped**
 The marker index carries multi-haplogroup YFull assignments for the two SNPs the node is named for:
 
