@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - `annotate/`: VCF annotation, Y-chromosome marker analysis, and cross-assembly liftover tools. Legacy scripts (`annotate_y.sh`, `genos_annotate.sh`, `y_haplo_from_vcf.sh`) coexist with the current canonical Python engine (`y_haplo_from_markers.py`, `y_path_rank.py`, `y_clade_consistency.py`, `compare_marker_status_sets.py`) and driver scripts for reproducible Iceman comparisons and modern dual-liftover hs1↔hg38 experiments. Also includes fetch/sanitize helpers for YBrowse markers and Picard liftover chain/reference preparation.
 - `mapping/`: Core BAM processing workflows and reference build scripts (`revert-bam.sh`, `BQSR.sh`, `GRCh38_bwa_index.sh`) plus large reference assets, additional alt-contig lists, patch FASTAs, and `index/` outputs. Contains `CLAUDE.md` (Claude-specific session notes, kept for the same reason as the root AGENTS.md).
-- `DeDup/`: Reference copy of the third-party DeDup (Gradle/Java) tool for PCR duplicate removal on merged reads in aDNA/EAGER data. The entire source tree is ignored (see `.gitignore`); only the pre-built jar and build notes are referenced for workflows. Does not belong in this repo long-term.
+- `DeDup/`: Reference copy of the third-party DeDup (Gradle/Java) tool for PCR duplicate removal on merged reads in aDNA/EAGER data. The entire source tree is ignored (see `.gitignore`); this repo only references build notes and (optionally) a local jar. Does not belong in this repo long-term. See the Donwulff/DeDup fork for the maintained source + Gradle wrapper.
 - `util/`: Helper utilities and environment setup (`build_env.sh`, Perl helpers such as `bindex.pl` and `cigar-hist.pl`, Python tools such as `eager_repair_bam.py`, `is_stats.py`, and `samtools_if.sh`). Running the build populates large `util/src/` trees containing full source + build artifacts for samtools, bcftools, bwa, htslib, bedtools, etc.
 - `resources/`: Fetched public reference data such as YBrowse marker sets (`snps_hg38.vcf.gz` + `.gff3`), liftover chains, and staged reference FASTAs (populated by scripts like `fetch_ybrowse_markers.sh`, `prepare_y_refs.sh`, `fetch_liftover_chains.sh`). Can be redirected via config.
 - `notebooks/`: Jupyter analysis templates (e.g. `otzi_reanalysis_template.ipynb`).
@@ -16,7 +16,7 @@ Scripts are standalone and typically run from their own (sub)directory. Large/ge
 - `cd mapping && ./GRCh38_bwa_index.sh`: Build reference genome indices (writes large outputs to `mapping/index/`). Supports hg38 patches and CHM13/hs1.
 - `./mapping/revert-bam.sh input.bam [optional_gigabytes_of_memory]`: Main pipeline to create uBAM, align, mark duplicates, and sort.
 - `./mapping/BQSR.sh sample.sorted.bam [optional_gigabytes_of_memory]`: Run BQSR on a sorted BAM.
-- DeDup (aDNA dedup for EAGER data): Pre-built jar or obtain from a maintained fork (with build wrapper + patches). See NOTES.md for build notes and history. The source tree is ignored here and does not belong in this repository. A fork with proper build support is planned separately.
+- DeDup (aDNA dedup for EAGER data): Use pre-built jar, bioconda, or build from the maintained fork (https://github.com/Donwulff/DeDup — includes Gradle wrapper and fixes). See NOTES.md. The source tree is ignored here.
 
 See also `TODO.md` for pending improvements to build scripts.
 
