@@ -434,6 +434,20 @@ result exactly:
 That is the whole G-L166-terminal finding recovered end to end by committed tooling, so a Swiss
 sample's calls can be read against a chain that is known to work rather than one assumed to.
 
+Verdict:
+```bash
+annotate/y_prereg_verdict.py --dir results/swiss
+```
+Applies the registered H1/H2/H0 rule per sample. Non-informative calls cannot produce H2 — only
+≥2 ancestral reads at a site can — so an uncovered sample lands on H0 by construction rather than
+by the reader's restraint. Checked against both known answers: Iceman → `H1_derived`, MX182 →
+`H0_no_power`.
+
+**Running `y_markers_pileup.py` on the first Swiss sample exposed that it did not implement the
+registered call rules at all** — no depth threshold, no damage rule, so it reported `L166` as
+*ancestral* off a single DP-1 read. Fixed in `1010ac0`; see `NOTES.md`. No Iceman conclusion
+moves. This is the reason the validation gate is run against a known answer before new data.
+
 ## Open Questions
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).
 - Decide whether alt/decoy calls are retained only as technical appendix or excluded from variant interpretation entirely.
