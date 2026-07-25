@@ -648,6 +648,25 @@ independent reasons for caution, both observed here rather than assumed:
 Aggregator coverage is therefore partial and its labels drift downward — the same failure mode
 this project documents for the Iceman. Treat the table above as a to-test list, not a result.
 
+**Provenance of these assignments: haplotree.info does not state one.** Checked `index.php` and
+the sample listing on 2026-07-25; neither carries a citation, curator, or methodology statement,
+and the version string "All Ancient DNA v. 2.07.26" matches no upstream compilation's scheme. The
+recoverable trail is the sample IDs: `I#####` are Reich Lab accessions and therefore in AADR;
+`MX###`/`SX##`/`TU876` are Furtwängler 2020 / Tübingen; `UNTA58_68Sk1` is Unterer Talweg 58–62,
+Augsburg (Lech Valley); `NOE001` and `E09538` follow other schemes and are not yet traced.
+
+The canonical route is the **AADR** (v66.0, 2026-04-13; 19,119 sequences / 17,634 individuals),
+whose `.anno` file carries per-sample metadata extracted from the reporting papers, including the
+publication. That gives sample → paper → ENA/SRA → reads, which is the same chain used for the
+Swiss samples here and the only one that supports re-deriving a call.
+
+**Caution specific to `I5118`:** it also appears on DNAGENICS asserting `G-L166` — the aggregator
+already documented above as presenting `MX211` (published `PF3239`) as `G-L166`, crediting
+PMID 33135465 (a pathogen target-enrichment methods paper) and describing its whole method as
+"We use the latest phylotree for YDNA haplogroup classification and data". Two aggregators agreeing
+is not independent confirmation when neither shows its evidence and one may be ingesting the other.
+`I5118`'s source publication has **not** been identified; do not infer it from the ID prefix.
+
 **The Horgen Claim Checked Against Furtwängler 2020 Suppl. Tables 1 and 5 (2026-07-25)**
 Read from the *corrected* Supplementary Information
 (`static-content.springer.com/esm/art%3A10.1038%2Fs41467-020-15560-x/MediaObjects/41467_2020_15560_MOESM1_ESM.pdf`),
