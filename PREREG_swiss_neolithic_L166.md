@@ -216,6 +216,17 @@ Fixed in advance:
 
 ## Declared limitations
 
+- **The decision rules are asymmetric in sensitivity, and at this dataset's depth that biases
+  which hypothesis is reachable.** A single transversion read calls DERIVED; an ancestral call
+  needs ≥2 reads. So at DP 1 — which the first mapped samples show is the modal informative
+  depth here, `MX182` at 0.0389x and `MX187` at 0.0545x chrY — H1 is detectable where H2 is not.
+  If the truth is H1, thin coverage will still show it; if the truth is H2, thin coverage yields
+  H0. **H0 must therefore not be read as leaning toward H2**, even though that is the direction
+  the missing calls will appear to point. The asymmetry is deliberate and is not being changed:
+  it exists because a single ancestral read is indistinguishable from a site that simply failed,
+  whereas a transversion is damage-immune. Recorded here, before the results, so that it cannot
+  later be mistaken for a post-hoc explanation of a null. Registered 2026-07-25 with two of nine
+  samples mapped and no L166-defining site yet called in any of them.
 - 56 bp single-end capture; no insert-size model, no mate rescue.
 - `bwa aln` is not ALT-aware, so `bwa-postalt.js` is not applied and the 23 MB `.alt` companion
   to the reference goes unused. Accepted for chrY marker genotyping, where MAPQ filtering does
