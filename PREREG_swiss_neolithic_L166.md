@@ -216,6 +216,29 @@ Fixed in advance:
 
 ## Declared limitations
 
+- **No pooled or cross-sample test is registered, and none will be run to rescue power.**
+  Combining reads across the seven Oberbipp males to ask "are they L166" assumes they share a
+  branch, which is the hypothesis under test. Pooling can support exactly one weaker claim —
+  *is L166-derived present anywhere in the assemblage* — which a single clean derived
+  transversion read in any one individual would establish. It cannot yield a per-individual
+  assignment, a proportion, or a "dominated by" statement, and the circulating claim ("7 of 10")
+  is per-individual, so only per-individual calls address it. If the per-sample tests come back
+  H0, the answer is H0; pooling is not a fallback.
+- **The seven may not be seven independent observations.** They are a collective cist burial with
+  homogeneous Y assignments, which is the expected signature of a patrilineal kin group. If they
+  are patrilineally related their Y chromosomes are shared by descent, the effective sample size
+  is smaller than seven, and "7 of 10 carry the clade" reduces to "one lineage sampled seven
+  times". Furtwängler et al. 2020 report kinship analysis; **this has not yet been read** and must
+  be checked before any count of individuals is quoted. Recorded 2026-07-25 as an open dependency,
+  not a finding.
+- **"Same clade" is not "relative", and the relatedness claim is out of reach here.** Sharing
+  `L166` implies a common patrilineal ancestor at or above the `L166` node, potentially a
+  millennium or more before the Iceman. He is `L166*` — ancestral at all 93 markers in the
+  subtree — so an L166-derived Oberbipp male could sit on any of the eight known sub-branches,
+  i.e. a branch he is demonstrably not on. The test that would actually evidence recent shared
+  ancestry is the shared-novel-variant test, already registered above as expected to yield 0–1
+  informative sites. This analysis can therefore speak to clade membership and cannot speak to
+  relatedness, and no result from it should be phrased as the latter.
 - **The decision rules are asymmetric in sensitivity, and at this dataset's depth that biases
   which hypothesis is reachable.** A single transversion read calls DERIVED; an ancestral call
   needs ≥2 reads. So at DP 1 — which the first mapped samples show is the modal informative
