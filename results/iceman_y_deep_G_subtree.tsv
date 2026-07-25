@@ -1,0 +1,57 @@
+isogg	marker	pos	anc>der	depth	anc_n	der_n	other	call	note
+G2a2a1a2a1a1b2~	Z6181	3041550	G>T	5	5	0	0	ancestral	
+G2a2a1a2a1a1b1~	Z31438	3042336	C>G	5	5	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6182	6778917	T>C	10	10	0	0	ancestral	
+G2a2a1a2a1a1b1~	Z31439	7008431	T>G	4	4	0	0	ancestral	
+G2a2a1a2a1a1b1~	Z31440	7029561	C>T	3	3	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1b2~	Z6179	7415351	A>G	6	6	0	0	ancestral	
+G2a2a1a2a1a1b1~	Z31442	7940540	C>A	13	13	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6216	11994446	C>A	5	5	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6210	12214034	C>T	13	13	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1a1~	FGC5710	12276112	A>G	6	6	0	0	ancestral	
+G2a2a1a2a1a1a1~	FGC5711	12492054	G>C	4	4	0	0	ancestral	
+G2a2a1a2a1a	Z6207	12682674	C>G	11	11	0	0	ancestral	
+G2a2a1a2a1a1a	Z6211	12882988	T>C	11	11	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6497	12920779	G>C	5	5	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6498	13170612	G>A	4	4	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1b2~	Z6222	13351391	T>C	7	7	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6500	13351458	G>A	7	7	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1b2~	Z6217	13403847	T>C	10	10	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6218	13453043	G>C	8	8	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6501	13603192	C>A	6	6	0	0	ancestral	
+G2a2a1a2a1a1b~	Z6208	13776249	G>A	9	0	9	0	DERIVED	deamination-prone
+G2a2a1a2a1a	Z6219	13782251	C>T	7	0	7	0	DERIVED	deamination-prone
+G2a2a1a2a1a1b2~	Z6212	14229311	T>C	5	5	0	0	ancestral	
+G2a2a1a2a1a	Z6287	14368999	C>T	10	0	10	0	DERIVED	deamination-prone
+G2a2a1a2a1a1b2~	Z6214	15195398	T>G	10	10	0	0	ancestral	
+G2a2a1a2a1a,not_listed	S19530,Z6213	15208473	T>C	10	0	10	0	DERIVED	
+G2a2a1a2a1a1b2~	Z6502	15369300	A>G	12	12	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6503	15371828	G>A	12	12	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1b2b~	Z6794	15742657	T>A	5	5	0	0	ancestral	
+G2a2a1a2a1a1b2b~	Z6791	15797893	A>G	12	12	0	0	ancestral	
+G2a2a1a2a1a1b2b~	Z6795	16758595	G>C	3	3	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6515	16949477	G>A	11	11	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1	Z6494,FGC5674	17131187	G>T	10	10	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6504	17194992	G>A	7	7	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1b2~	Z6789	17308130	C>T	6	6	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1b2~	Z6506	17383444	T>C	6	6	0	0	ancestral	
+G2a2a1a2a1a,unknown	Z6516,FGC5675	19013205	T>A	9	0	9	0	DERIVED	
+G2a2a1a2a1a	Z5675	19111614	A>C	6	6	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6507	19162508	A>G	4	4	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6508	19574442	A>G	9	9	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6509	19682144	G>A	6	6	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1b2~	Z6510	19755846	T>G	12	12	0	0	ancestral	
+G2a2a1a2a1a1b2b~	Z6790	20367351	T>A	12	12	0	0	ancestral	
+G2a2a1a2a1a1a1~	FGC5736	20479697	C>T	3	3	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1b2~	Z6517	20605124	T>C	8	8	0	0	ancestral	
+G2a2a1a2a1a1a1~	FGC5737	20850252	A>T	11	11	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6512	20855429	T>C	7	7	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6513	20855439	G>T	5	5	0	0	ancestral	
+G2a2a1a2a1a	FGC8006,Z12230	20867823	G>A	8	8	0	0	ancestral	deamination-prone
+G2a2a1a2a1a1b2~	Z6514	20924567	T>C	10	10	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6518	20939730	A>T	4	4	0	0	ancestral	
+G2a2a1a2a1a1a1~	FGC5739	20970666	A>T	6	6	0	0	ancestral	
+G2a2a1a2a1a1b2~	Z6519	21049898	T>A	2	0	2	0	DERIVED	
+G2a2a1a2a1a2~	F3547	21636886	C>T	4	4	0	0	ancestral	deamination-prone
+G2a2a1a2a1a	L166	21843737	C>A	3	0	3	0	DERIVED	
+G2a2a1a2a1a	L167	21843756	T>A	2	0	2	0	DERIVED	

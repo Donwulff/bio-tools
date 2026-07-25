@@ -1,0 +1,37 @@
+block	marker	chrom	pos	anc>der	mutation_class	depth	anc_reads	der_reads	other_reads	call	isogg	yfull_node
+G-PF3239	PF3238	chrY	15144551	G>A	transition(deamination-prone)	5	0	5	0	DERIVED	G2a2a1a2a	G-Z6484
+G-PF3239	PF3239	chrY	15205748	C>T	transition(deamination-prone)	10	0	10	0	DERIVED	G2a2a1a2a1	G-PF3239
+G-PF3239	FGC5662	chrY	16719019	G>A	transition(deamination-prone)	5	0	5	0	DERIVED	unknown	G-PF3239&I-Y64364&J-Z6477
+G-PF3239	FGC5664	chrY	5827266	C>A	transversion	2	0	2	0	DERIVED	unknown	G-PF3239
+G-PF3239	FGC5665	chrY	15862748	A>G	transition	5	0	5	0	DERIVED	G2a2a1a2a1	G-PF3239
+G-PF3239	FGC5666	chrY	16293146	C>T	transition(deamination-prone)	15	0	15	0	DERIVED	G2a2a1a2a1	G-PF3239
+G-PF3239	FGC5667	chrY	19307007	T>C	transition	6	0	6	0	DERIVED	unknown	G-PF3239
+G-PF3239	FGC5676	chrY	19640416	C>A	transversion	9	0	9	0	DERIVED	G2a2a1b1	G-PF3239
+G-PF3239	FGC5681	chrY	3607051	A>C	transversion	2	0	2	0	DERIVED	G2a2a1b1	G-PF3239
+G-PF3239	PF3231	chrY	7496063	G>A	transition(deamination-prone)	7	0	7	0	DERIVED	not listed	G-PF3239
+G-PF3239	PF3247	chrY	21835633	G>A	transition(deamination-prone)	5	0	5	0	DERIVED	not listed	G-PF3239&A-BY202338
+G-PF3239	S11565	chrY	8627391	C>T	transition(deamination-prone)	9	0	9	0	DERIVED	not listed	G-PF3239
+G-PF3239	Z6126	chrY	6178339	G>C	transversion	10	0	10	0	DERIVED	G2a2a1b1	G-PF3239
+G-PF3239	Z6129	chrY	6879749	C>T	transition(deamination-prone)	2	0	2	0	DERIVED	G2a2a1b1	G-PF3239
+G-PF3239	Z6130	chrY	6917639	A>G	transition	7	0	7	0	DERIVED	G2a2a1a2a1	G-PF3239
+G-PF3239	Z6198	chrY	7953406	T>C	transition	9	0	9	0	DERIVED	G (not listed)	G-PF3239
+G-PF3239	Z6277	chrY	11694196	C>T	transition(deamination-prone)	8	0	7	1	DERIVED	G2a2a1a2a1	G-PF3239
+G-PF3239	Z6282	chrY	13282458	A>G	transition	7	0	7	0	DERIVED	G2a2a1a2a1~	G-PF3239
+G-PF3239	Z6283	chrY	13336536	C>T	transition(deamination-prone)	14	0	14	0	DERIVED	G2a2a1b1	G-PF3239
+G-PF3239	Z6309	chrY	11265625	A>T	transversion	17	9	8	0	mixed	G (not listed)	G-PF3239
+G-PF3239	Z6312	chrY	11436604	G>A	transition(deamination-prone)	6	2	4	0	mixed	G2a2a1a2a1	G-PF3239
+G-PF3239	Z6483	chrY	20305947	A>G	transition	7	0	7	0	DERIVED	G (not listed)	G-PF3239&E-Y183098
+G-PF3239	Z6486	chrY	21171812	G>A	transition(deamination-prone)	10	0	10	0	DERIVED	G2a2a1b1	G-PF3239
+G-PF3239	Z6492	chrY	19399747	G>T	transversion	11	0	11	0	DERIVED	G2a2a1a2a	G-PF3239
+G-FGC2315	FGC2315	chrY	7679120	T>C	transition	6	6	0	0	ancestral	G2a2a1a2a2	not
+G-Z6488	Z6488	chrY	22225244	T>C	transition	3	0	3	0	DERIVED	G2a2a1a2a	G-Z6484
+G-Z6488	FGC2271	chrY	20907600	G>A	transition(deamination-prone)	6	0	6	0	DERIVED	unknown	G-Z6484
+G-Z6488	PF3237	chrY	14905951	G>A	transition(deamination-prone)	4	0	4	0	DERIVED	G2a2a1a2a	G-Z6484
+G-PF3238	PF3238	chrY	15144551	G>A	transition(deamination-prone)	5	0	5	0	DERIVED	G2a2a1a2a	G-Z6484
+G-PF3238	FGC2274	chrY	5094513	G>A	transition(deamination-prone)	1	0	1	0	DERIVED	unknown	G-Z6484
+G-PF3238	Y232445	chrY	11361597	C>T	transition(deamination-prone)	9	0	9	0	DERIVED	unknown	G-Z6484
+G-PF3238	Z6118	chrY	3824595	T>C	transition	2	0	2	0	DERIVED	G (not listed)	G-Z6484
+G-PF3238	Z6119	chrY	3824608	A>G	transition	3	0	3	0	DERIVED	G (not listed)	G-Z6484
+G-Z6128	Z6128	chrY	6777446	A>C	transversion	10	0	10	0	DERIVED	G2a2a1a2 (not listed)	G-Z6128
+G-Z6128	S17295	chrY	13456915	C>T	transition(deamination-prone)	6	0	6	0	DERIVED	not listed	G-Z6284
+G-FT156872	FT156872	chrY	10005156	G>A	transition(deamination-prone)	8	8	0	0	ancestral	G	G-Y182739

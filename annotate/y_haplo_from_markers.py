@@ -144,6 +144,27 @@ def parse_gt(gt: str) -> Tuple[str, Optional[int]]:
         return "ambiguous", None
 
 
+def is_unplaceable_label(isogg: str) -> bool:
+    """True when the ISOGG field carries no usable clade position.
+
+    ISOGG never ranked large parts of the tree, and YBrowse records that as
+    "unknown" / "not listed" / "<hg> (not listed)". Anything selected *by* ISOGG
+    label is therefore blind to these markers, even though FTDNA's Block Tree and
+    YFull place many of them on real subclades. Surfacing them separately keeps
+    that pool visible instead of silently absent.
+    """
+    if not isogg:
+        return True
+    label = isogg.strip().strip('"')
+    if not label or label == ".":
+        return True
+    # multi-name markers carry comma-joined labels; unplaceable only if all are
+    parts = [p.strip() for p in label.split(",") if p.strip()]
+    if not parts:
+        return True
+    return all("not listed" in p or "not_listed" in p or p == "unknown" for p in parts)
+
+
 def classify_marker(marker: MarkerRow, sample: Optional[SampleRow]) -> Tuple[str, str]:
     # returns (source, status)
     if sample is None:
@@ -424,6 +445,7 @@ def main() -> int:
     out_prefix = args.out_prefix
     marker_status_tsv = Path(f"{out_prefix}.marker_status.tsv")
     derived_tsv = Path(f"{out_prefix}.derived.tsv")
+    unplaceable_tsv = Path(f"{out_prefix}.unplaceable_derived.tsv")
     summary_txt = Path(f"{out_prefix}.summary.txt")
 
     m_iter = marker_rows(marker_path, chrom=args.chrom)
@@ -443,8 +465,17 @@ def main() -> int:
     isogg_counts: Dict[str, int] = {}
     deepest: Dict[str, int] = {}
     max_depth = 0
+    counts["derived_unplaceable"] = 0
 
-    with marker_status_tsv.open("w", encoding="utf-8") as m_out, derived_tsv.open("w", encoding="utf-8") as d_out:
+    with marker_status_tsv.open("w", encoding="utf-8") as m_out, derived_tsv.open(
+        "w", encoding="utf-8"
+    ) as d_out, unplaceable_tsv.open("w", encoding="utf-8") as u_out:
+        u_out.write(
+            "\t".join(
+                ["chrom", "pos", "id", "ref", "alt", "aa", "hg", "isogg", "gt", "gq", "dp", "source", "status"]
+            )
+            + "\n"
+        )
         for m in m_iter:
             counts["total_markers"] += 1
             picked = sample_for_pos(m.pos, variants_by_pos, block_starts, blocks)
@@ -509,6 +540,29 @@ def main() -> int:
                 )
                 counts["derived"] += 0  # already counted above; keep no-op for clarity
 
+                if is_unplaceable_label(m.isogg):
+                    counts["derived_unplaceable"] += 1
+                    u_out.write(
+                        "\t".join(
+                            [
+                                m.chrom,
+                                str(m.pos),
+                                m.vid,
+                                m.ref,
+                                m.alt,
+                                m.aa,
+                                m.hg,
+                                m.isogg,
+                                gt,
+                                gq,
+                                dp,
+                                source,
+                                status,
+                            ]
+                        )
+                        + "\n"
+                    )
+
                 isogg = m.isogg.strip('"') if m.isogg and m.isogg != "." else "(missing)"
                 isogg_counts[isogg] = isogg_counts.get(isogg, 0) + 1
                 hg = m.hg.strip('"')
@@ -530,6 +584,12 @@ def main() -> int:
         out.write("Counts:\n")
         for k in ["total_markers", "resolved_nonmiss", "derived", "ancestral", "nocall", "ambiguous", "other"]:
             out.write(f"  {k}: {counts.get(k, 0)}\n")
+        out.write(
+            f"  derived_unplaceable: {counts.get('derived_unplaceable', 0)}"
+            "  (derived, but ISOGG label is unknown/not-listed --"
+            f" see {unplaceable_tsv.name}; test these against FTDNA/YFull blocks"
+            " with annotate/y_markers_pileup.py)\n"
+        )
         out.write("\nDeepest HG candidates (derived rows only):\n")
         if max_depth == 0:
             out.write("  (none)\n")
@@ -543,7 +603,10 @@ def main() -> int:
 
     if temp_dir is not None:
         temp_dir.cleanup()
-    print(f"Done. marker_status={marker_status_tsv} derived={derived_tsv} summary={summary_txt}")
+    print(
+        f"Done. marker_status={marker_status_tsv} derived={derived_tsv} "
+        f"unplaceable_derived={unplaceable_tsv} summary={summary_txt}"
+    )
     return 0
 
 

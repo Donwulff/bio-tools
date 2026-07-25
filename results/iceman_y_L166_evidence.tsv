@@ -1,0 +1,20 @@
+node	role	marker	chrY_pos_hg38	anc>der	depth	anc_reads	der_reads	call	mutation_class
+upstream	backbone	Z6043	12504169	A>C	9	0	9	DERIVED	transversion
+upstream	backbone	PF3239	15205748	C>T	10	0	10	DERIVED	transition (deamination-prone)
+upstream	backbone	L91,S285,PF3246	19483669	G>C	7	0	7	DERIVED	transversion
+upstream	backbone	P287,PF3140	19910211	G>T	9	0	9	DERIVED	transversion
+G-L166	defining	FGC5696	8525805	C>A	5	0	5	DERIVED	transversion
+G-L166	defining	Z6208	13776249	G>A	9	0	9	DERIVED	transition (deamination-prone)
+G-L166	defining	Z6219	13782251	C>T	7	0	7	DERIVED	transition (deamination-prone)
+G-L166	defining	Z6287	14368999	C>T	10	0	10	DERIVED	transition (deamination-prone)
+G-L166	defining	S19530,Z6213	15208473	T>C	10	0	10	DERIVED	transition
+G-L166	defining	FGC5721	16280455	T>G	8	0	8	DERIVED	transversion
+G-L166	defining	Z6516,FGC5675	19013205	T>A	9	0	9	DERIVED	transversion
+G-L166	defining	L166	21843737	C>A	3	0	3	DERIVED	transversion
+G-L166	defining	L167	21843756	T>A	2	0	2	DERIVED	transversion
+G-Z6494	defining	FGC5687	6019771	A>C	3	3	0	ancestral	transversion
+G-Z6494	defining	Z6215	11965520	T>C	4	4	0	ancestral	transition
+G-Z6494	defining	Z6494,FGC5674	17131187	G>T	10	10	0	ancestral	transversion
+G-Z6494_sub	defining	FT84409	4073364	T>C	2	2	0	ancestral	transition
+G-Z6494_sub	defining	Z6211	12882988	T>C	11	11	0	ancestral	transition
+G-Z6494_sub	defining	FGC5722,Z6495	16840019	A>G	10	10	0	ancestral	transition

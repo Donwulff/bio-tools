@@ -12,6 +12,7 @@ Cell Genomics 2023 short article (Sep 13, 2023): "High-coverage genome of the Ty
 **Data Policy**
 - Ancient/public sample results are in-scope for repository docs and commits.
 - Modern/private sample IDs and per-sample outputs are out-of-scope for committed docs; keep them in external analysis directories and use placeholders in tracked notes.
+- Naming gotcha: `.gitignore` has a broad `*private*` guard for personal analysis outputs. In Y phylogenetics "private variant/branch" is standard terminology, so a legitimately committable file can be silently ignored. `results/iceman_y_private_branch_candidates.tsv` was invisible to git for this reason; renamed to `..._novel_branch_candidates.tsv`. Prefer "novel" in filenames and leave the guard alone.
 
 **Findings**
 - EAGER/AdapterRemoval BAMs can be merged and mate-stripped. MarkDuplicates will treat singletons as single-end and can over-mark duplicates in repetitive regions.
@@ -97,17 +98,18 @@ Recommended reusable flow (see also `util/eager_repair_bam.py` and `mapping/eage
 5. Keep both the "standard pipeline" output and the DeDup branch for comparison.
 
 **Building DeDup (third-party Gradle/Java tool)**
-The vendored copy in this tree is for reference only (full source ignored via `.gitignore`). It contains a pre-built jar in `build/libs/`.
+The copy under `DeDup/` here is only for reference (the entire tree is ignored via `.gitignore` in this repo).
 
-Historical build notes (from analysis sessions):
-- No Gradle wrapper (`gradlew`) was present.
-- System `gradle` (e.g. from apt) is often too old (4.x) for the project.
-- Direct `gradle shadowJar` or `gradle jar` hits compatibility errors (`java {}` DSL block, `archiveClassifier`, `runtimeClasspath`, etc.).
-- Workaround used: generate wrapper (`gradle wrapper --gradle-version 7.6.4` or similar) + apply compatibility patches to `build.gradle`.
-- A local patch exists in the reference tree for Gradle 4.x/8 compatibility (comments out new DSL, falls back to old `classifier`, etc.).
-- Practical options: use the pre-built jar, build from a maintained fork that includes the wrapper + patches, or use bioconda (`conda install -c bioconda dedup`).
+To build:
+- Clone the maintained fork: `git clone https://github.com/Donwulff/DeDup.git`
+- `cd DeDup && ./gradlew jar`
+- The fat jar lands in `build/libs/DeDup-0.12.9.jar`
 
-A fork with the compatibility patches, Gradle wrapper, and build tools will be maintained separately (outside this repository). Do not keep the full DeDup source tree here.
+Requires a JDK 8+ (with javac). On some Linux setups ensure the `-jdk` package (not just JRE) is installed for the desired Java version.
+
+Other options: bioconda (`conda install -c bioconda dedup`) or download a pre-built jar from the fork's releases.
+
+See the fork's README for usage. The wrapper + build.gradle fixes live in the fork (not vendored long-term here).
 
 **eager_repair_bam Usage**
 Tags:
@@ -198,7 +200,9 @@ samtools view -c -e 'XQ!="D" && (flag&0x400)' file.bam
   - `L166` derived (`GT=1/1`, `GQ=14`, `DP=3`)
   - `Z6208` derived (`GT=1/1`, `GQ=39`, `DP=9`)
 - Current interpretation:
-  - Illumina branch is consistent with the published `G2a` direction and supports a downstream `Z6208*` placement.
+  - Illumina branch is consistent with the published `G2a` direction and confirms `Z6208` derived.
+  - Terminal placement was later resolved at read level as `G-L166*`, **not** a node downstream of `Z6208`
+    — see "Terminal Y Placement from Read-Level Evidence" below. `Z6208` is an L166-level SNP.
   - SOLiD branch is not sufficient alone for robust terminal placement with the current marker set.
 - DeepVariant small-model on/off comparison on Iceman:
   - all-sites shared GT differences are non-zero (`~0.76%`), but PASS-only shared GT differences are low (`~0.017%`).
@@ -250,6 +254,408 @@ samtools view -c -e 'XQ!="D" && (flag&0x400)' file.bam
 - Some marker tables carry coarse clade labels (e.g. `I1`) even when marker IDs are specific (e.g. `Y47125`).
 - Without ID-aware labeling, path outputs can show specific SNP labels as `score=0` even when the marker is derived in status tables.
 - Current ranking adds synthetic `<top-clade>-<marker_id>` labels for these rows (example: `I-Y47125`), and dual-liftover runs now emit compact `top_paths.tsv` summaries.
+
+**Terminal Y Placement from Read-Level Evidence (2026-07-25)**
+Direct pileup on the final aDNA BAM (`...pair.prim_rmdup.sort_rmdup.coord.bam`), not caller output,
+resolves the terminal node. Filters: `-q 25 -Q 20 --no-BAQ`, hg38.
+
+- Every G-L166 defining SNP tested is derived, with zero ancestral reads:
+  `L166`, `L167`, `Z6516/FGC5675`, `FGC5696`, `FGC5721`, `Z6208`, `Z6219`, `Z6287`, `S19530/Z6213`.
+  Five of these are transversions, so the assignment does not depend on deamination-prone sites.
+- Every defining SNP of `G-Z6494` (the only child of `G-L166` in the current YFull tree) is ancestral,
+  with zero derived reads: `Z6494/FGC5674` (DP 10, all MQ 60 / BQ 38), `FGC5687`, `Z6215`.
+  Its subclades are ancestral too (`Z6211` DP 11, `Z6495/FGC5722` DP 10, `FT84409`).
+- All ~25 markers under the provisional ISOGG `G2a2a1a2a1a1b1/b2/b2b` labels are ancestral at DP 3-13.
+- Conclusion: the sample is **G-L166\*** (ISOGG-style `G2a2a1a2a1a*`).
+- Evidence tables: `results/iceman_y_L166_evidence.tsv`, `results/iceman_y_deep_G_subtree.tsv`.
+
+**Z6208 Placement Discrepancy vs Published Label (2026-07-25)**
+- Nature Communications 2025 (`s41467-025-61601-8`) reports `G2a2a1a2a1a1b (G-Z6208*)`.
+- That label follows the ISOGG *provisional* placement of `Z6208` (`ISOGG=G2a2a1a2a1a1b~`, note the `~`),
+  which nests it inside `G2a2a1a2a1a1` = `G-Z6494`.
+- Read-level data contradicts that nesting: `Z6208` is derived (DP 9) while `Z6494` is ancestral (DP 10).
+  A sample cannot be inside `G-Z6494` and ancestral for its defining SNP.
+- YBrowse's own YFull annotation agrees with the data: `snps_hg38.gff3` gives `Z6208` `yfull_node=G-L166`,
+  i.e. `Z6208` is an L166-level SNP, not a downstream one.
+- Practical rule: treat ISOGG labels carrying `~` as unranked; prefer `yfull_node` for placement.
+
+**YBrowse ISOGG Label Reliability (2026-07-25)**
+- The `ISOGG=` field in `snps_hg38.vcf.gz` is stale for parts of the G branch and produces false subclade signal.
+- Observed mislabels: `FGC5696`, `FGC5721`, `FGC5687`, `Z6215` all carry `ISOGG=G2a2a1b1a` but are
+  `G-L166` / `G-Z6494` defining SNPs per YFull. This is what created the spurious `G2a2a1b1a`
+  derived cluster in label-based ranking.
+- Do not rank on the ISOGG string alone. Resolve candidate nodes against a current tree, then test
+  that node's defining SNP set explicitly.
+
+**Can We Go Deeper Than G-L166\*? (2026-07-25)**
+Going below `G-L166` requires a second individual sharing novel derived SNPs. Status of that search:
+
+- **Sample lists on the YFull node pages could not be read reliably.** Two automated fetches of the same
+  `yfull.com/tree/G-L166/` page returned conflicting sample-to-node assignments (one put
+  `YF016547`/`ERS257168`/`YF096592` on `L166*`; the other put only `CGG017683` there and moved the rest
+  under `G-Z6494`). The page is JS-rendered and tree indentation does not survive markdown conversion.
+  **Verify node membership manually in a browser before relying on it.**
+- What is consistent across reads: `G-L166*` is non-empty, and `G-Z6494` plus subclades hold ~15 samples.
+- `CGG017683` (UKR) appears in this part of the tree. The `CGG` prefix is the Copenhagen GeoGenetics
+  identifier scheme (Lundbeck Foundation ancient-genome panel, Allentoft et al. 2024 dense Ukraine
+  sampling), so it is very likely an **ancient** sample — the highest-value comparison target found so
+  far, because that data is public. Identity not yet confirmed; not resolvable via search.
+- If YFull has built no subclade among the `L166*` samples, that implies they share no novel SNPs with
+  each other. It does not rule out one of them sharing a branch with the Iceman, since YFull lacks him.
+- Panel-based test is negative. Of 363 derived markers with DP>=4 and zero ancestral reads, every one
+  resolves to the backbone `G > G-Y238 > G-P287 > G-P15 > G-PF3147 > G-PF3148 > G-PF3239 > G-L166`.
+  Nothing derived below `G-L166`.
+- The 82 derived markers with `yfull_node=not` are all *named backbone* SNPs (`M201`, `L31`, `L149`,
+  `PF3149/3156/3237/3240`, …), not private variants. 50 of them carry `ref=Paolo Francalacci (2011)`,
+  which is a nomenclature coincidence — Sardinia is G2a-rich so Francalacci named much of the G
+  backbone — not evidence of shared descent.
+- `ERS257168` is a weak candidate regardless: Francalacci's 1204 Sardinians are **2x low-pass**
+  (only 4 at 17x). YFull's older tree (v14.04, 2018, `yfull.com/sardinians/`) placed it at `G-Z6494`;
+  the current tree has it at `G-L166*`. Demotion toward the parent node is the expected signature of
+  missing coverage at defining SNPs, so its `L166*` placement may be a coverage artifact rather than a
+  real branch.
+- The genuine high-coverage `L166*` samples are `YF016547` and `YF096592`, whose variant data is
+  YFull-private. Testing them would need their novel-SNP lists.
+
+Conclusion: `G-L166*` is the floor with currently public data. A deeper node needs a high-coverage
+`G-L166*` genome to compare against.
+
+Caveat added 2026-07-25: the "363 derived markers" test above is **label-driven** and therefore blind to
+derived markers whose YBrowse ISOGG field is `unknown`/`not_listed` — 252 of them exist. See
+"Blind Spot Exposed: Derived Markers With Uninformative Labels" below. The conclusion still holds for
+markers ISOGG can place, but the unlabelled pool has not been resolved against a modern tree.
+
+**CGG017683 (Goth, Ukraine) Tested Directly — Negative (2026-07-25)**
+The ancient sample on the YFull `G-L166` page resolves to public data, and was tested read-level.
+
+- Identity: `CGG017683`, Ukraine, ~550 CE (300-800 CE), Migration Period, Gothic cultural context,
+  mtDNA `V1a10`.
+- Data: ENA sample `SAMEA117822726`, run `ERR14752008`, study `PRJEB87274`
+  ("Tracing the Spread of Germanic Languages using Ancient Genomics", Centre for GeoGenetics,
+  712 ancient genomes). **First public 2025-04-08** — earlier searches predate release.
+- Submitted BAM is GRCh37/hs37d5-aligned (`1..22,X,Y,MT`) and ships with a `.bai`, so
+  `samtools view -b <https-url> Y` streams the chrY slice without downloading all 27.3M reads.
+- **Coverage is the limiting factor**: 54,685 chrY reads, 2,413,071 bases = **0.041x on chrY**.
+  P(any read at a given site) = 4%. All reads pre-filtered to MQ>=25.
+- Marker test (56 deep-G markers lifted hg38->hg19): 11 covered, all single-read. Derived at
+  `S19530/Z6213` (an L166-level SNP, consistent with the YFull assignment) and at `Z6504`
+  (single deamination-prone read where the Iceman is ancestral at DP 7 — treat as damage).
+- Shared-variant test: of the Iceman's 438 high-quality chrY derived sites (PASS, `GT=1/1`,
+  DP>=5, GQ>=30), 55 are covered in `CGG017683` and 51 share the allele — but **all 51 are
+  catalogued YBrowse markers**, i.e. upstream/L166-level SNPs both carry by common ancestry.
+  **Zero novel shared variants.**
+- The Iceman has only ~20 novel (uncatalogued) HQ chrY sites (17 by the VCF panel, 20 by the fuller
+  GFF3 index). `CGG017683` covers 2 of them,
+  and is **ancestral at both** (`hg38 7899558`, `hg38 11414525`).
+- Verdict: no shared sub-L166 branch detected. Direction of evidence is right but power is very low
+  (2 informative sites, 1 read each). This does not refute a shared branch, it fails to find one.
+
+**chrY DoC Denominator Gotcha (2026-07-25)**
+`CGG017683` reports **0.192x** chrY in the study but **0.041x** if computed over the full 59.37 Mb contig.
+Both are the same 2,413,071 mapped bases; the study divides by a ~12.57 Mb callable/MSY denominator
+(2413071 / 12.57e6 = 0.192). Y heterochromatin has no reads, so the full-contig figure understates real
+site coverage by ~4.7x. **Always state the denominator.** Empirical hit rates confirm the callable
+figure: 19.6% of G-branch markers and 12.8% of the Iceman's variant sites were covered, consistent with
+`1 - e^-0.192 = 17.5%`, not 4%.
+
+**PRJEB87274 Sibling Samples Screened — All Dead Ends (2026-07-25)**
+Same Crimean site, same study as `CGG017683`. Screened via remote indexed chrY fetch + hg38->hg19
+liftover + pileup (~2 min per sample, no bulk download):
+
+| sample | total bases | chrY DoC (12.57 Mb) | verdict |
+|---|---|---|---|
+| `CGG017681` | 6.12 Gbp | 0.008x | **female** — 2,251 chrY reads despite 5x the data |
+| `CGG017682` | 3.51 Gbp | **0.623x** | male, good depth, but **not this lineage** |
+| `CGG017683` | 1.18 Gbp | 0.192x | only G-L166 one, too shallow to test |
+
+`CGG017682` is ancestral at `L166`, `L167`, `L91`, `PF3148`, `Z6043` — reliable transversion/clean calls.
+Its apparent derived G-panel hits are **all single-read `C>T`/`G>A`**, i.e. deamination artifacts; `U1` is
+ancestral at 2 reads. Useful validation that the damage down-weighting in `y_path_rank.py` targets a real
+failure mode.
+
+**Method Positive Control (2026-07-25)**
+The paper assigns `CGG017682` to `M173 > L146 > M459 > M417 > PF6162 > S202 > Z94 > Z2124 > S4576 >
+Y57 > YP1269` (R1a-Z2124). Re-derived independently here from the public BAM via remote indexed fetch +
+hg38->hg19 liftover + pileup: 5 of 11 path markers covered, **4 of 4 informative ones DERIVED** —
+`L146/M420` (T>A transversion, 2 reads), `M459`, `Z94`, and terminal `YP1269`. `M173` uncovered.
+This validates the whole remote-screen chain against a published answer, and confirms that the sample's
+apparent "derived G" hits were deamination artifacts: it is R1a, not G.
+
+**PRJEB87274 Search Closed (2026-07-25)**
+Per the study supplement, `CGG017683` is the **only G2a2a individual among all 712 genomes**. There is no
+second candidate in this dataset, so a systematic BAM screen is unnecessary — the one G2a2a sample has
+already been tested and is depth-limited at 0.192x. Search within this study is exhausted.
+
+**Independent Support for the L166-Terminal Correction**
+The study assigns `CGG017683` the path
+`P15 > M3308 > PF3147 > PF3148 > PF3177 > L91 > Z6488 > PF3239 > L166`.
+Two things follow:
+- The Iceman is **derived at all nine**, with **zero ancestral reads at any of them**:
+  `P15` DP16, `M3308` DP10, `PF3147` DP2, `PF3148` DP8, `PF3177` DP11, `L91` DP7,
+  `Z6488` (chrY:22225244) DP3, `PF3239` DP10, `L166` DP3. The two individuals traverse an identical
+  path and terminate on the same node.
+- The Copenhagen pipeline **terminates that sample at `L166`** — it does not invoke `Z6208` and does not
+  place the sample inside `Z6494`. A current aDNA pipeline handling a G-L166 genome stops exactly where
+  our read-level analysis says the Iceman stops, which is independent support for reading the published
+  `G2a2a1a2a1a1b (G-Z6208*)` label as an inherited ISOGG provisional artifact.
+
+**Where a Branch-Mate Might Actually Be Found**
+`G-L166` is an Anatolian-farmer-derived lineage, so Neolithic Europe is a far better hunting ground than
+a Migration Period Germanic dataset. Candidate pools:
+- AADR (Allen Ancient DNA Resource) — curated compendium with Y calls.
+- aYChr-DB — ~1,797 ancient Y-chromosome samples.
+- Published Neolithic G2a series (LBK, Anatolian farmers, Iberian/French/Balkan Neolithic), which are
+  G2a-rich by comparison.
+Requirement: enough chrY depth to cover the 8 usable candidates in
+`results/iceman_y_novel_branch_candidates.tsv` (1 of them a transversion; superseded list, see
+"Novel-Branch Candidates Re-derived With MAPQ Filtering"). At `CGG017683`-level 0.192x the expected
+yield is ~1-2 informative sites, so target samples above ~1x chrY.
+
+**FTDNA Block Tree Cross-Check (2026-07-25)**
+FTDNA's Block Tree groups phylogenetically-equivalent SNPs into blocks, and its blocks around `Z6488`
+are *finer* than ISOGG's, which lumps all of them at `G2a2a1a2a`. Two blocks were tested at read level:
+
+| FTDNA block | marker | chrY hg38 | anc>der | DP | anc | der | call |
+|---|---|---|---|---|---|---|---|
+| `G-Z6488` | Z6488/FGC7739 | 22225244 | T>C | 3 | 0 | 3 | DERIVED |
+| `G-Z6488` | FGC2271/Z6484/S25082 | 20907600 | G>A | 6 | 0 | 6 | DERIVED |
+| `G-Z6488` | PF3237 | 14905951 | G>A | 4 | 0 | 4 | DERIVED |
+| `G-PF3238` | PF3238 | 15144551 | G>A | 5 | 0 | 5 | DERIVED |
+| `G-PF3238` | FGC2274 | 5094513 | G>A | 1 | 0 | 1 | DERIVED (weak) |
+| `G-PF3238` | Y232445 | 11361597 | C>T | 9 | 0 | 9 | DERIVED |
+| `G-PF3238` | Z6118 | 3824595 | T>C | 2 | 0 | 2 | DERIVED |
+| `G-PF3238` | Z6119 | 3824608 | A>G | 3 | 0 | 3 | DERIVED |
+
+8/8 derived, 0 ancestral reads anywhere. The Iceman passes cleanly through both FTDNA blocks. This does
+**not** by itself go deeper than `G-L166` — `PF3238`/`PF3239` are consecutive PF numbers and the block
+most likely sits *between* `G-Z6488` and `G-L166` (ISOGG `G2a2a1a2a1`). Confirming that requires reading
+the parent/child order off FTDNA's Block Tree directly; the site is not machine-accessible from here.
+
+Note `Z6118`/`Z6119` are 13 bp apart and can share a read — treat them as one observation, not two.
+
+**Blind Spot Exposed: Derived Markers With Uninformative Labels (2026-07-25)**
+The `G-PF3238` block markers carry YBrowse `ISOGG="unknown"` / `"G_(not_listed)"`, so **both** prior
+searches missed them:
+- the G-subtree pileup selected markers by ISOGG `G*` label — these have no usable label;
+- the private-branch scan kept only variants absent from the panel — these are *in* the panel.
+
+Systematic re-count over the 835 derived panel markers passing GQ>=20/DP>=3: **125 carry an
+uninformative ISOGG label on *every* alias**, 107 of them at sane depth (DP 4-20). Written to
+`results/iceman_y_unlabelled_derived_markers.tsv` with hg38 + hg19 coordinates, DP, GQ, and the raw
+YBrowse `HG`/`ISOGG` strings.
+
+Count definition matters: a first pass flagged 252, but that counted any marker with *at least one*
+unplaceable alias. A marker like `Z6284,S17295` labelled `G_(not_listed),not_listed` is genuinely
+unplaceable; one labelled `G2a2a1a2a1,unknown` is not. The strict rule (all aliases unplaceable) gives
+125 and is what `is_unplaceable_label()` in `y_haplo_from_markers.py` implements.
+
+This is the pool in which a below-`L166` marker would hide, and FTDNA's Block Tree / YFull are exactly
+the resources that place such markers. Depth filter matters: the top of the list by DP
+(`A2472` DP 906, `BY49567` DP 264, `BY31542` DP 113, `A2500` DP 103) is the same collapsed-repeat
+artifact class documented under "Marker-Level Artifacts in Repetitive chrY" — reject anything far above
+the ~8x chrY mean. Positional clusters at ~11.5 Mb and ~26.6 Mb are likewise suspect.
+
+**Tooling Added to Close the Blind Spot (2026-07-25)**
+- `annotate/build_marker_index.sh` — collapses the 796 MB / 3.1M-line YBrowse GFF3 into
+  `resources/marker_index.tsv.gz` (name, chrom, pos, anc, der, isogg, ycc, yfull_node, ref, comment).
+  Takes ~2 min to build. This is the actual root cause of the label-driven habit: without a name index,
+  every by-name lookup was a full scan of an 800 MB file, so selecting by ISOGG label was the only
+  practical option.
+- `annotate/y_markers_pileup.py` — takes marker *names* (`--markers` or `--marker-file`), resolves them
+  through the index, and reports ancestral/derived read counts straight from the BAM with **no label
+  filtering**. Reports `not_in_catalogue` explicitly rather than silently dropping. A block of SNP names
+  pasted from FTDNA's Block Tree can now be tested in seconds:
+  ```
+  annotate/y_markers_pileup.py --bam "$BAM" --ref "$REF" \
+      --marker-file block.txt --label G-PF3239 --out results/block.tsv
+  ```
+  It extracts reads by BED first (see the ops gotcha in RUNLOG) so a 24-marker block runs in ~6 s.
+- `y_haplo_from_markers.py` now emits a fourth output `<prefix>.unplaceable_derived.tsv` and a
+  `derived_unplaceable` summary count, so this pool can never again be invisible in a normal run.
+
+Regression check: re-running every hand-built pileup from this session through
+`y_markers_pileup.py` reproduced all depths and calls exactly. Consolidated in
+`results/iceman_y_ftdna_block_evidence.tsv`.
+
+**FTDNA Block Walk: G-PF3239 vs G-FGC2315 (2026-07-25)**
+All 24 names in FTDNA's `G-PF3239` block resolved in the catalogue — **22 DERIVED, 0 ancestral**, plus
+two `mixed` sites that are clearly paralogous (`Z6309` chrY:11265625, 9 anc / 8 der at DP 17 on a
+haploid chromosome; `Z6312` chrY:11436604, 2/4). Five of the derived calls are transversions
+(`FGC5664`, `FGC5676`, `FGC5681`, `Z6126`, `Z6492`), so the block is damage-independent.
+
+The sibling block is excluded: `FGC2315` (chrY:7679120, T>C) is **6/6 ancestral**.
+
+Independent sanity check from ISOGG's own numbering: `PF3239` is `G2a2a1a2a1` and `FGC2315` is
+`G2a2a1a2a2` — siblings. The Iceman is derived on the `...a1` side and ancestral on the `...a2` side,
+exactly as the FTDNA split predicts.
+
+Six markers in this block carry ISOGG `G2a2a1b1` (`FGC5676`, `FGC5681`, `Z6126`, `Z6129`, `Z6283`,
+`Z6486`) while their `yfull_node` is `G-PF3239` — another instance of ISOGG label staleness. **Prefer
+`yfull_node` over `isogg_haplogroup` when the two disagree.**
+
+**Still upstream of L166.** `PF3239` = ISOGG `G2a2a1a2a1`; `L166` = `G2a2a1a2a1a`, i.e. the next level
+down. So the walk `G-Z6488 > G-PF3238 > G-Z6128 > G-PF3239` is still descending *toward* `L166`, not
+past it. The split that matters is whatever `G-L166` itself divides into.
+
+**Catalogue-Wide YFull Node Census (2026-07-25) — supersedes the label-driven test**
+With `resources/marker_index.tsv.gz` in place it is cheap to ask the inverse question directly: over
+*every* marker the Iceman is derived at (834 HQ positions), which YFull nodes do they belong to? This
+replaces the earlier ISOGG-label test, which could only see markers ISOGG had ranked.
+
+Every G-node represented, by marker count:
+`G-PF3147` 34, `G-Y238` 31, `G-P15` 26, `G-PF3239` 23, `G-P287` 17, `G-PF3148` 12, **`G-L166` 12**,
+`G-Z6484` 4, `G-PF3233` 3, `G-L1259` 2, `G-Z6284` 1, `G-Z6128` 1, `G-L91` 1, `G-PF3177` 1.
+
+All are on the backbone at or above `G-L166`. **Nothing below it.** Two apparent exceptions were chased
+down and both are join artifacts, not deeper nodes:
+- `G-Z12221` (`FGC2306`, chrY:6777446, A>T) shares a position with `Z6128` (A>C). The Iceman carries C,
+  so he is `Z6128`-derived and *not* `FGC2306`-derived. Multiallelic site; a position-keyed join
+  attributes it wrongly.
+- `G-Y171774` (chrY:15732901, C>A) — chrY:15732901 carries **four** markers with differing alleles.
+  The Iceman's C>G matches `MF792575`, whose ISOGG is `O` and whose `yfull_node` is `not`, i.e. a
+  recurrent mutation in an unrelated lineage. Not informative for G.
+
+Lesson: when joining variants to the catalogue **by position, always match the allele too**, and expect
+multiple markers per position with conflicting anc/der.
+
+**Third-Allele Sites (a third blind spot, checked and closed)**
+Sites where the Iceman carries an allele that is neither the catalogued ancestral nor any catalogued
+derived allele are invisible to both prior scans — the novel-variant scan skips them (position *is*
+catalogued) and the marker scan skips them (allele does not match). Catalogue-wide there are **6**.
+
+First-pass filtering found 50, but 44 were the familiar **hg38-chrY-reference-carries-derived-alleles**
+artifact: the Iceman shows as "variant" at `M269`, `P312`, `U152`, `M173`, `M9` etc. purely by being
+ancestral where the reference is derived. Filter against the catalogued **ancestral** allele as well as
+the derived one, or this swamps the result.
+
+Of the 6 real ones: 3 sit at chrY:56.70-56.75 Mb and 1 at 26.66 Mb (known collapsed-repeat zones,
+reject); chrY:10829384 A>T is rejected on mapping quality (4 reads at MAPQ 0, nothing above MAPQ 40 --
+same failure mode as `Z6519`); chrY:20327833 G>T survives at DP 5 with 4 reads MAPQ 60, a transversion,
+but **all 5 reads are forward-strand**, so treat as marginal. Added to the novel-branch candidate set
+with that caveat.
+
+**Conclusion:** `G-L166*` is the floor *within the catalogue*. Every catalogued marker, placeable or
+not, has been tested. What the census cannot speak to is markers the catalogue does not contain — see
+next section.
+
+**Catalogue Refresh + Exhaustive G-L166 Subtree Test (2026-07-25) — the definitive negative**
+Refreshed YBrowse from upstream (`snps_hg38.gff3`, 2026-07-24, 817,252,415 bytes vs the local
+2026-02-23 copy at 796,023,961). The rebuilt index has **3,206,354 rows, +84,355 on February**.
+
+Three results, all negative and all worth having:
+1. **None of the 11 surviving novel-branch candidate positions has acquired an SNP name.** The
+   uncatalogued set is byte-identical against the fresh catalogue: still the same 20 positions.
+2. **The `G-L166` subtree has not changed at all** in five months — same nodes, same marker counts.
+3. **The Iceman is ancestral across the entire subtree.** All 93 markers under `G-L166` were tested
+   (nodes `G-Z6494`, `G-Z6036`, `G-Z6211`, `G-Z6212`, `G-Z6214`, `G-Z6285`, `G-FGC5697`,
+   `G-CTS12768`): **88 ancestral, 2 no-coverage, 0 credible derived.**
+
+The three non-ancestral calls are all artifacts:
+- `FT172194` / `Y126330` are the *same position* (chrY:2891795), DP 1, C>T deamination-prone, and
+  3 of 4 reads there are MAPQ 0. A single damage-pattern read on bad mapping.
+- `Y38112` (chrY:13029000) is `mixed` at 2 anc / 4 der with 3 of 11 reads MAPQ 0 — paralogous.
+
+Many of the ancestral calls are transversions at DP 7-16, so this is not a coverage-limited result.
+
+**This is what the FTDNA Block Tree walk was reaching for, obtained from the catalogue instead.**
+`G-L166` does have children — eight of them, all well populated with modern testers — and the Iceman
+belongs to none. `G-L166*` is therefore a genuine terminal placement, not an artifact of missing data
+or missing annotation.
+
+**FTDNA G-PF3147 Project Page Tested (2026-07-25)**
+A saved FTDNA public *group project* page for `G-PF3147` / `G-L166` was tested against the Iceman.
+25 member rows, 3,788 distinct SNP names, 18 distinct terminal haplogroups (all `G-BY*`).
+
+Result: **all 18 terminal SNPs are ancestral in the Iceman** — several at good depth and on
+transversions (`BY220097` DP 17 A>T, `BY202787` DP 16, `BY66658` DP 13, `BY106602` DP 12 G>T,
+`BY111300` DP 12 G>C). Across all 3,788 names there is **not one derived call carrying a G-lineage
+node off his known backbone**. The 1,733 derived hits are backbone or `A0-T`-level markers that every
+non-A00 human carries.
+
+**The page is filtered to G-L166-positive members only** (`G-PF3147` is the project; `G-L166` is the
+filter). So this is not a scattered G2a sample — it is 25 confirmed `L166+` men spread across 18
+terminal branches, and the Iceman is ancestral at all 18. Corroborating detail: members show `Z6211+`
+and `FGC5697+`, both `L166` children from the subtree test, and their terminal nodes (`G-Y97527`,
+`G-Y140820`, `G-BY123198`, `G-Y53493`, `G-Y154380`, `G-Y256820`, …) are *finer* than anything
+YBrowse's `yfull_node` field records. Do not read the `Confirmed SNPs` column as the filter — it
+spells out `L166` for only 5 of 25 rows and is selective display.
+
+This is the best-powered living-carrier test available: every sampled branch of `G-L166` that has
+modern representatives, and the Iceman is on none of them. Caveat: public project entries only, so it
+is a subset of FTDNA's L166 testers.
+
+Saved: `results/iceman_y_ftdna_project_terminals.tsv` (SNP names + the Iceman's own calls only).
+
+**Handling note — the source page must not be committed.** These pages carry `Kit Number`,
+`Last Name`, and `Paternal Ancestor Name` columns for living project members. The file was moved to
+`<private_refs_dir>` (outside the repo) and `.gitignore` now guards `*.html`, `*.htm`,
+`FamilyTreeDNA*`, `YFull*`. Only aggregate SNP names and the Iceman's own genotypes are in-repo, which
+is consistent with the Data Policy above. Note the repo had **no** prior guard for saved web pages —
+the file was untracked but committable.
+
+**Catalogue Completeness: the VCF and GFF3 Disagree (2026-07-25)**
+`resources/snps_hg38.vcf.gz` (2,920,250 records) and `resources/snps_hg38.gff3` (3,121,999 rows,
+2,738,775 distinct chrY positions) are **not the same marker set**. The earlier novel-variant scan ran
+against the VCF and called 17 positions novel; re-running against the GFF3-derived index gives a
+different set of **20**. Ten of the original 17 (the chrY:56.69-56.88 Mb block) are in fact catalogued
+in the GFF3, while 13 positions absent from the VCF had never been evaluated at all.
+
+Treat the GFF3 as authoritative; the VCF has been through `sanitize_marker_vcf.sh` and is lossy.
+Anything claiming a variant is "novel" must say which catalogue it was checked against.
+
+Both files are from the 2026-02-23 refresh — roughly five months stale as of this work. FTDNA registers
+new SNP names (`FT*`, `BY*`, `MF*`) with YBrowse continuously, so `annotate/fetch_ybrowse_markers.sh`
+should be re-run before any future claim that a variant is uncatalogued.
+
+**Novel-Branch Candidates Re-derived With MAPQ Filtering (2026-07-25) — supersedes earlier list**
+The previous candidate list filtered on depth only. Adding mapping quality changes it substantially:
+**10 of 21 candidates fail at 39-88% MAPQ-0 reads**, including two of the three transversions that had
+been presented as the strongest damage-immune evidence (`chrY:11176570` at 70% MQ0, `chrY:11578588` at
+77%). `chrY:20327833`, added earlier the same day as "marginal", is also rejected at 44%.
+
+Depth alone cannot catch this: these sites have unremarkable DP (4-12) and only reveal themselves in the
+MAPQ distribution. The chrY:11.1-11.7 Mb window is particularly bad and should be treated as a
+no-go zone alongside 56.69-56.88 Mb and ~26.6 Mb.
+
+Surviving set in `results/iceman_y_novel_branch_candidates.tsv` — **8 usable, 3 marginal**:
+- Best single site: `chrY:7885869 T>A`, a transversion at DP 9, both strands, **0% MAPQ-0 and 10/10
+  reads at MQ60**. This is the strongest private-variant candidate in the dataset.
+- Also clean: `7899558 A>G`, `8808031 C>T`, `10964462 T>C`, `11667647 T>C`, `19647870 C>T`,
+  `11414525 T>C` (7% MQ0), `10768171 G>A` (12% MQ0).
+- Marginal: `10990649` and `10996925` (no MQ60 reads at all), `13414189 C>G` (transversion, clean
+  mapping, but 5/5 reads reverse-strand).
+
+Only one high-confidence transversion now survives, not three. Columns record `pct_mq0`, `n_mq60`, and
+forward/reverse read counts so this is auditable rather than a bare verdict.
+
+`CGG017683` was re-tested at the surviving sites and covers 3 of them (`7899558`, `11414525`,
+`19647870`) — **ancestral at all three**. The negative result from the earlier comparison holds and is
+now based on 5 informative sites rather than 2.
+
+**Remapping Note (correction)**
+Full FASTQ is available for these samples (`ERR14752008.fastq.gz` etc.), so a proper remap to hg38 through
+`mapping/revert-bam.sh` is possible with **no** reference bias — the bias objection only applies to
+re-aligning an already-Y-filtered slice. Remapping is therefore legitimate here, and would additionally
+recover reads lost to the depositors' `MQ>=25` pre-filter. It just does not help `CGG017683`, where the
+limit is 0.192x depth rather than alignment quality.
+
+**Iceman Novel-Branch Candidate SNPs (superseded — see the MAPQ-filtered re-derivation below)**
+Kept for the reasoning; the numbers here are stale.
+- First pass (VCF panel, depth filter only): 17 novel sites, 10 rejected as collapsed-repeat pileups at
+  `chrY:56.69-56.88 Mb` (Yq heterochromatin / PAR2 boundary, DP 28-269 vs a ~8x chrY mean),
+  leaving 7 usable of which 3 were called transversions.
+- Both figures changed on re-derivation: the GFF3 index gives a different novel set than the VCF panel,
+  and adding a MAPQ filter rejects two of those three transversions. Current numbers live in
+  "Novel-Branch Candidates Re-derived With MAPQ Filtering".
+- The intent stands: this is the target list for defining a subclade below `G-L166` if a branch-mate
+  ever appears.
+
+**Marker-Level Artifacts in Repetitive chrY (2026-07-25)**
+- `Z6519` (chrY:21049898) scores derived in the callset but is an artifact:
+  at `-q 0` the site is 9 reads, 7 ancestral — and all 7 ancestral reads are MQ 0.
+  Only the 2 derived reads survive a MAPQ filter, so the site flips with the filter setting.
+- Every other marker sharing its label (`G2a2a1a2a1a1b2~`, ~24 markers) is ancestral at DP 4-13.
+- Check MQ distribution at any single-marker "deep branch" hit before believing it.
 
 **VCF vs gVCF Path-Rank Note**
 - gVCF can slightly change path ranking compared with VCF because explicit non-variant blocks reduce `nocall` counts at marker positions.

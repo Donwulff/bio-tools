@@ -177,3 +177,10 @@ sample_*.tsv
 *_realigned.*
 *_deduped.*
 
+
+# Third-party genealogy/project pages (FTDNA, YFull, etc.) — contain kit numbers,
+# surnames and paternal-ancestor details of living people. Keep in <private_refs_dir>.
+*.html
+*.htm
+FamilyTreeDNA*
+YFull*

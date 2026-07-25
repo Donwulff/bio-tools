@@ -253,6 +253,126 @@ annotate/y_path_rank.py \
 Interpretation note:
 - A candidate that appears only in gVCF top-path output can be caused by one or a few `nocall -> ancestral` state changes from non-variant blocks. Treat low-score gVCF-only additions as weak ranking shifts unless supported by additional derived markers.
 
+## Terminal Y Placement Run (2026-07-25)
+
+Goal: resolve the terminal node rather than confirm a published label. Uses read-level pileup
+on the final BAM as primary evidence; caller output only as cross-check.
+
+### Inputs
+- BAM: `<analysis_dir>/dedup_out50/iceman.oetzi.UDG_merge_combined.mapped_rmdup.pair.prim_rmdup.sort_rmdup.coord.bam`
+  (chrY: 5,642,643 mapped reads)
+- Reference: `mapping/index/hg38p14DH3630O.fa`
+- Markers: `resources/snps_hg38.vcf.gz` (YBrowse, 2,920,250 rows)
+- Cross-check callsets: `<output_dir>/iceman.vcf` (small model on), `<output_dir>/iceman-nosmall.vcf.gz`
+
+### Commands
+```bash
+# chrY slice of the callset
+bcftools view -t chrY <output_dir>/iceman.vcf -Oz -o iceman.chrY.vcf.gz
+bcftools index -t iceman.chrY.vcf.gz      # 33,546 chrY records
+
+# marker states from the callset
+annotate/y_haplo_from_markers.py -i iceman.chrY.vcf.gz \
+  --markers resources/snps_hg38.vcf.gz -o iceman_vcf \
+  --site-filter-mode deepvariant --min-gq 20 --min-dp 3
+
+# G-branch marker positions -> reads -> pileup (54,823 positions)
+awk -F'\t' '{gsub(/"/,"",$8); gsub(/"/,"",$7);
+  if ($8 ~ /^G/ || $7 ~ /^G[-2]/) print $1"\t"($2-1)"\t"$2}' \
+  iceman_vcf.marker_status.tsv | sort -k2,2n > gall.bed
+samtools view -b -M -L gall.bed "$BAM" -o gall.reads.bam && samtools index gall.reads.bam
+samtools mpileup -f "$REF" -l gall.pos -r chrY -q 25 -Q 20 -d 1000 --no-BAQ gall.reads.bam \
+  > gall.mpileup.txt
+```
+
+Ops notes:
+- `samtools mpileup -a` with `-r chrY` walks all 57 Mb regardless of `-l`; it does not subset. Drop `-a`.
+- `bcftools mpileup` on this BAM splits into 36 samples by `@RG` `SM`. Pass `--ignore-RG` or use
+  `samtools mpileup` when a single merged pileup is wanted.
+- Extracting reads for the marker BED first (`samtools view -M -L`) makes the pileup ~12 s instead of minutes.
+
+### Results
+Panel-wide over 52,632 covered G-branch markers: `ancestral 51,569`, `DERIVED 450`, `mixed 436`,
+`other 146`, `no_coverage 2,222`.
+
+Node-defining SNP sets (YFull tree, checked 2026-07-25):
+
+| node | SNPs tested | result |
+|---|---|---|
+| backbone | `P287/PF3140`, `L91/S285/PF3246`, `PF3239`, `Z6043` | all derived, 0 ancestral reads |
+| `G-L166` | `L166`, `L167`, `Z6516/FGC5675`, `FGC5696`, `FGC5721`, `Z6208`, `Z6219`, `Z6287`, `S19530/Z6213` | all derived, 0 ancestral reads (5 transversions) |
+| `G-Z6494` | `Z6494/FGC5674` (DP 10), `FGC5687` (DP 3), `Z6215` (DP 4) | all ancestral, 0 derived reads |
+| `G-Z6494` subclades | `Z6211` (DP 11), `Z6495/FGC5722` (DP 10), `FT84409` (DP 2) | all ancestral |
+
+Caller cross-check at the five G-L166 SNPs present as variants — identical in both DeepVariant runs
+(`PASS`, `GT=1/1`): `8525805`, `13776249`, `16280455`, `19013205`, `21843737`.
+
+gVCF cross-check (`bcftools view -t chrY <output_dir>/iceman.gvcf`, 192,020 chrY records):
+- G-L166 SNPs: same five `PASS` / `GT=1/1` rows.
+- G-Z6494 branch SNPs (`FGC5687`, `Z6215`, `Z6211`, `Z6494`): all fall inside non-variant blocks with
+  `GT=0/0`, `GQ=50`. DeepVariant calls them homozygous reference, not no-call — so "ancestral" here is a
+  positive call, not absence of data.
+- Note `MIN_DP` on those rows (2) is the block minimum over a 500-1000 bp span, not the depth at the
+  marker. Site depth comes from the pileup (e.g. `Z6494` DP 10). Use the pileup for per-marker depth.
+
+**Assignment: `G-L166*` (ISOGG-style `G2a2a1a2a1a*`).**
+`G-Z6494` is the only child of `G-L166` in the current YFull tree, and the sample is ancestral for
+all three of its defining SNPs. The published `G2a2a1a2a1a1b (G-Z6208*)` label follows ISOGG's
+provisional (`~`) placement of `Z6208`, which the read data contradicts. See NOTES.md.
+
+Saved artifacts:
+- `results/iceman_y_L166_evidence.tsv`
+- `results/iceman_y_deep_G_subtree.tsv`
+
+## FTDNA Block Tree Walk (2026-07-25)
+
+Purpose: test blocks copied from FTDNA's Block Tree at read level, since ISOGG does not rank most of
+these markers and the label-driven path could not reach them.
+
+One-time index build (~2 min, 796 MB GFF3 -> 3,121,999 rows):
+```bash
+annotate/build_marker_index.sh          # -> resources/marker_index.tsv.gz
+```
+
+Per-block test (~6 s for 24 markers):
+```bash
+BAM=<analysis_dir>/dedup_out50/iceman.oetzi.UDG_merge_combined.mapped_rmdup.pair.prim_rmdup.sort_rmdup.coord.bam
+REF=mapping/index/hg38p14DH3630O.fa
+annotate/y_markers_pileup.py --bam "$BAM" --ref "$REF" \
+  --marker-file block_pf3239.txt --label G-PF3239 --out results/block.tsv
+```
+Defaults: `-q 25 -Q 20 -d 1000 --no-BAQ`, 300 bp read-extraction flank. Markers absent from the
+catalogue are reported as `not_in_catalogue`, not dropped.
+
+Blocks tested (all reproduce the earlier hand-built pileups exactly):
+
+| block | markers | derived | ancestral | mixed | verdict |
+|---|---|---|---|---|---|
+| `G-Z6488` | 3 | 3 | 0 | 0 | on path |
+| `G-PF3238` | 5 | 5 | 0 | 0 | on path |
+| `G-Z6128` | 2 | 2 | 0 | 0 | on path |
+| `G-FT156872` | 1 | 0 | 1 | 0 | **excluded** (sibling) |
+| `G-PF3239` | 24 | 22 | 0 | 2 | on path |
+| `G-FGC2315` | 1 | 0 | 1 | 0 | **excluded** (sibling) |
+
+Two `mixed` calls in `G-PF3239` are paralogous, not real heterozygosity: `Z6309` chrY:11265625 at
+9 anc / 8 der on DP 17, `Z6312` chrY:11436604 at 2/4. Haploid chromosome — treat balanced sites as
+collapsed-repeat artifacts.
+
+Also re-ran the marker script to pick up the new `unplaceable_derived` output (49 s):
+```bash
+annotate/y_haplo_from_markers.py -i iceman.chrY.vcf.gz --markers resources/snps_hg38.vcf.gz \
+  -o recheck --site-filter-mode deepvariant --min-gq 20 --min-dp 3
+# total_markers: 2920250 / derived: 1569 / derived_unplaceable: 125
+```
+
+Saved artifacts:
+- `results/iceman_y_ftdna_block_evidence.tsv`
+- `results/iceman_y_unlabelled_derived_markers.tsv`
+
+Still upstream of `L166` (`PF3239` = `G2a2a1a2a1`, `L166` = `G2a2a1a2a1a`). Open: what `G-L166` splits
+into on FTDNA's tree.
+
 ## Open Questions
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).
 - Decide whether alt/decoy calls are retained only as technical appendix or excluded from variant interpretation entirely.
