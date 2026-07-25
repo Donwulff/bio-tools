@@ -108,6 +108,18 @@ def main() -> int:
                    if r.get("sample") == s and r.get("marker") == "PF3239"), "absent")
         v, basis = verdict(tl)
 
+        # Registered: "A sample that fails this control is excluded from
+        # interpretation." Failing means contradicting the published backbone --
+        # an ancestral call where the publication reports derived. An uncovered
+        # control is not a failure, it is no information, and is reported as
+        # such rather than used to discard the sample.
+        if tb["anc"]:
+            v = "EXCLUDED_control_fail"
+            basis = (f"ancestral at {tb['anc']} backbone marker(s) where the "
+                     f"publication reports derived; not interpretable")
+        elif tb["der"] == 0:
+            basis += "; backbone control uncovered, chain unverified for this sample"
+
         # The exclusion set is reported but never converts an H0 into a verdict:
         # being off the Iceman's branch in the other direction is a separate
         # claim from being ancestral at L166.
