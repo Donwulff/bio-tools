@@ -613,6 +613,41 @@ Both files are from the 2026-02-23 refresh — roughly five months stale as of t
 new SNP names (`FT*`, `BY*`, `MF*`) with YBrowse continuously, so `annotate/fetch_ybrowse_markers.sh`
 should be re-run before any future claim that a variant is uncatalogued.
 
+**DeepVariant Writes No Provenance, So The Filename Carried All Of It (2026-07-26)**
+The complete non-boilerplate header of both A/B outputs is:
+
+```
+##fileformat=VCFv4.2
+##DeepVariant_version=1.10.0
+```
+
+Version and nothing else — no command line, no `--ref`, no `--reads`, no `--disable_small_model`.
+**The two branches are indistinguishable at the header level.** The filename was carrying the
+entire provenance, and the filenames did not survive:
+
+| RUNLOG says | on disk | index | written |
+|---|---|---|---|
+| `iceman_sm_on.vcf.gz` | `~/iceman.vcf` (BGZF content, `.vcf` name) | none | Feb 18 |
+| `iceman_sm_off.vcf.gz` | `~/iceman-nosmall.vcf.gz` | `.tbi` | Feb 21 |
+
+Neither recorded name survived, and the Feb 18 pair carries compressed content under a bare
+`.vcf`/`.gvcf` extension, so `cat`/`grep` return binary. Identification was only possible
+**forensically, from the data** — `PASS,GT=1/1,DP>=5,GQ>=30` returning exactly 438 on one branch
+and 0 on the other, and chrY `GQ` max 58 vs 25. That is a reconstruction, not a provenance trail,
+and it worked only because a distinguishing statistic happened to exist. Had the two branches had
+similar GQ ranges these files would now be permanently unidentifiable.
+
+**Design conclusion: content sniffing is necessary but not sufficient; use hash-as-identity.**
+A tool that does not record its own parameters cannot be made self-describing after the fact, so
+the wrapper must do it: emit a sidecar manifest per run carrying the exact command, container
+digest, input checksums, output `sha256` and timestamp. An inventory tool then matches files to
+manifests **by checksum, not by name**, after which renaming is harmless — the hash is the
+identity and the name is only a label.
+
+For legacy files with no manifest, record the *distinguishing statistic* alongside the
+identification so it is re-derivable rather than a one-off deduction. For these two that is
+chrY hom-alt `GQ` max: **58 = small model on, 25 = off**.
+
 **`GQ>=30` On chrY Is A Small-Model Artefact (2026-07-26)**
 The DeepVariant A/B outputs were located at `~/iceman.vcf` (small model on) and
 `~/iceman-nosmall.vcf.gz` (off), both DeepVariant 1.10.0, 33,546 chrY records each. Note
