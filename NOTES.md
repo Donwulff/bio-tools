@@ -345,10 +345,15 @@ The ancient sample on the YFull `G-L166` page resolves to public data, and was t
   catalogued YBrowse markers**, i.e. upstream/L166-level SNPs both carry by common ancestry.
   **Zero novel shared variants.**
 - The Iceman has only ~20 novel (uncatalogued) HQ chrY sites (17 by the VCF panel, 20 by the fuller
-  GFF3 index). `CGG017683` covers 2 of them,
-  and is **ancestral at both** (`hg38 7899558`, `hg38 11414525`).
+  GFF3 index). `CGG017683` covers **3** of them and is **ancestral at all three**
+  (`hg38 7899558`, `hg38 11414525`, `hg38 19647870`).
 - Verdict: no shared sub-L166 branch detected. Direction of evidence is right but power is very low
-  (2 informative sites, 1 read each). This does not refute a shared branch, it fails to find one.
+  (3 informative sites, 1 read each). This does not refute a shared branch, it fails to find one.
+
+  *(Updated 2026-07-25: this bullet pair originally said 2 sites / "ancestral at both", from the
+  pre-MAPQ candidate list. The MAPQ-filtered re-derivation later in this file re-tested `CGG017683`
+  against the surviving candidates and found 3 covered, ancestral at all 3. The verdict is unchanged
+  and the power is still very low; only the count moved. The later section is authoritative.)*
 
 **chrY DoC Denominator Gotcha (2026-07-25)**
 `CGG017683` reports **0.192x** chrY in the study but **0.041x** if computed over the full 59.37 Mb contig.
@@ -407,8 +412,9 @@ a Migration Period Germanic dataset. Candidate pools:
 - Published Neolithic G2a series (LBK, Anatolian farmers, Iberian/French/Balkan Neolithic), which are
   G2a-rich by comparison.
 Requirement: enough chrY depth to cover the 8 usable candidates in
-`results/iceman_y_novel_branch_candidates.tsv` (1 of them a transversion; superseded list, see
-"Novel-Branch Candidates Re-derived With MAPQ Filtering"). At `CGG017683`-level 0.192x the expected
+`results/iceman_y_novel_branch_candidates.tsv` — the MAPQ-filtered set described under
+"Novel-Branch Candidates Re-derived With MAPQ Filtering", of which only 1 is a transversion. The
+site list is committed as `markers/iceman_novel_candidates_usable8.tsv`. At `CGG017683`-level 0.192x the expected
 yield is ~1-2 informative sites, so target samples above ~1x chrY.
 
 **FTDNA Block Tree Cross-Check (2026-07-25)**
