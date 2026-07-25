@@ -613,6 +613,41 @@ Both files are from the 2026-02-23 refresh — roughly five months stale as of t
 new SNP names (`FT*`, `BY*`, `MF*`) with YBrowse continuously, so `annotate/fetch_ybrowse_markers.sh`
 should be re-run before any future claim that a variant is uncatalogued.
 
+**Ancient `G-L166` Candidate Pool From haplotree.info (2026-07-25)**
+`https://haplotree.info/maps/ancient_dna/slideshow_samples.php?searchcolumn=Y_Haplotree_Variant&searchfor=G-L166&ybp=500000,0`
+(dataset "All Ancient DNA v. 2.07.26"). **7 samples**, 0.05% of their corpus:
+
+| sample | ybp | site | culture |
+|---|---|---|---|
+| `I5118` | 5100 | Mezőcsát-Hörcsögös, Hungary | Hungary_Baden LCA, Viss group |
+| `TU876` (= `SX10`) | 4550 | Rapperswil Zürichstrasse, CH | Horgen *(their attribution)* |
+| `I14677` | 4329 | Serra Crabiles, Sardinia | Sardinia_Bell_Beaker |
+| `UNTA58_68Sk1` | 4302 | Haunstetten, Unterer Talweg 58–62, DE | Bell Beaker Lech Valley |
+| `I15942` | 4297 | Anghelu Ruju, Sardinia | Sardinia_Bell_Beaker |
+| `E09538` | 4287 | Unterer Talweg 58–62, Augsburg, DE | BK_Germany_BAV |
+| `I14678` | 4247 | Serra Crabiles, Sardinia | Sardinia_Bell_Beaker |
+
+This answers the "candidate pools" open question above with named samples. `I5118` at 5100 ybp is
+near-contemporary with the Iceman. `UNTA58_68Sk1` and `E09538` are the same site at nearly the same
+date and may be one individual under two aggregation IDs — check before counting them as two.
+
+**`CGG017683` is absent from this list.** It was reachable through YFull, which is where the
+impression that it was the only close ancient `L166` came from. YFull is *selective* — it ingests
+submitted BAMs meeting its own criteria — whereas haplotree.info draws on AADR-style compilations.
+Neither is a superset of the other, so "the only one on YFull" was never evidence of "the only
+one". Any future claim about how many ancient `L166` exist has to name the corpus it counted.
+
+**These are third-party assignments and are not evidence until tested at read level.** Two
+independent reasons for caution, both observed here rather than assumed:
+- Querying the same site for `G-PF3239` returns only **6** samples, of which just `MX182` and
+  `MX183` are from Oberbipp. The paper assigns **7** Oberbipp males `PF3239`, and assigns `MX183`
+  to `FGC7739/Z6488` — one node *shallower* than haplotree places it. So haplotree both under-covers
+  the published set and moves at least one sample deeper than its source.
+- Aesch and Muttenz, which carry 10 and 2 published `PF3239` individuals, do not appear at all.
+
+Aggregator coverage is therefore partial and its labels drift downward — the same failure mode
+this project documents for the Iceman. Treat the table above as a to-test list, not a result.
+
 **The Horgen Claim Checked Against Furtwängler 2020 Suppl. Tables 1 and 5 (2026-07-25)**
 Read from the *corrected* Supplementary Information
 (`static-content.springer.com/esm/art%3A10.1038%2Fs41467-020-15560-x/MediaObjects/41467_2020_15560_MOESM1_ESM.pdf`),
@@ -633,10 +668,20 @@ The claim that this lineage is not dominant in cultures contemporary with the Ic
 the Horgen Culture" is contradicted by the single dataset it rests on. Only Oberbipp carries the
 string "Horgen" in the site column at all.
 
-**2. The study's only `L166` is not a Horgen sample.** `L166` occurs exactly once in the entire
-supplement: `SX10`, `G2a2a1a2a1a`, the unborn/newborn baby of `SX8`, at **Rapperswil
-Zürichstrasse** — a different site with no Horgen label. The seven Oberbipp males are `PF3239`.
-So the one genuine ancient `L166` in this dataset is precisely the sample the claim does not cite.
+**2. The study's only `L166` is a different site from the seven, and the publication assigns it no
+culture.** `L166` occurs exactly once in the entire supplement: `SX10`, `G2a2a1a2a1a`, the
+unborn/newborn baby of `SX8`, at **Rapperswil Zürichstrasse**. The seven Oberbipp males are
+`PF3239`. So the one genuine ancient `L166` in this dataset is precisely the sample the claim does
+not cite.
+
+*Correction (2026-07-25, same day): an earlier version of this note said `SX10` "is not a Horgen
+sample". That overstated the evidence.* The paper describes Rapperswil only as a stone cist burial
+dated 2695–2481 BC and gives it **no cultural attribution anywhere** — the Horgen label appears in
+the site column for Oberbipp and for no other site. `haplotree.info` does attribute `SX10` to the
+Horgen culture. Whether Rapperswil is culturally Horgen is an archaeological question this
+publication does not answer, and the date sits at the Horgen/Corded Ware transition. The defensible
+statement is that the paper does not call it Horgen, not that it isn't. If the attribution holds,
+then a genuine Horgen `L166` does exist — one unborn infant, which is still not "7 of 10".
 
 **3. The Oberbipp males are a kin group, so they are not seven independent observations.**
 Supplementary Table 5 (PMR / READ / lcMLkin) lists first- and second-degree pairs among them,
