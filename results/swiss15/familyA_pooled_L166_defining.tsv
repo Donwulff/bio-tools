@@ -1,0 +1,10 @@
+pool	marker	chrom	pos	anc>der	mutation_class	n_contributors	pooled_dp	pooled_anc	pooled_der	pooled_other	pooled_call	admissible	contributions	region
+FamilyA	FGC5696	chrY	8525805	C>A	transversion	0	0	0	0	0	no_coverage	yes	.	ok
+FamilyA	Z6208	chrY	13776249	G>A	transition(deamination-prone)	0	0	0	0	0	no_coverage	yes	.	ok
+FamilyA	Z6219	chrY	13782251	C>T	transition(deamination-prone)	3	3	0	3	0	DERIVED	yes	MX187:0a/1d,MX211:0a/1d,MX212:0a/1d	ok
+FamilyA	Z6287	chrY	14368999	C>T	transition(deamination-prone)	1	1	1	0	0	low_power_1read_ancestral	yes	MX212:1a/0d	ok
+FamilyA	S19530	chrY	15208473	T>C	transition	0	0	0	0	0	no_coverage	yes	.	ok
+FamilyA	FGC5721	chrY	16280455	T>G	transversion	0	0	0	0	0	no_coverage	yes	.	ok
+FamilyA	Z6516	chrY	19013205	T>A	transversion	0	0	0	0	0	no_coverage	yes	.	ok
+FamilyA	L166	chrY	21843737	C>A	transversion	5	7	7	0	0	ancestral	yes	MX182:1a/0d,MX183:2a/0d,MX187:1a/0d,MX211:1a/0d,MX212:2a/0d	ok
+FamilyA	L167	chrY	21843756	T>A	transversion	3	3	3	0	0	ancestral	yes	MX183:1a/0d,MX187:1a/0d,MX211:1a/0d	ok

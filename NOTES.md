@@ -1153,3 +1153,69 @@ them, and no proportion may be computed over them. What it does say is that the 
 `G-L166*` relabelling is not supported at read level in any sample where the defining
 transversions are observed, and that the compiler's own `G2a2a1a2a1(a)` hedge was correct.
 
+
+**Extension To 15 Samples: Four Independent Lineages, Still Zero Derived Reads (2026-07-26)**
+Six further Oberbipp runs staged from `PRJNA608699` and genotyped under `PREREG` Amendment 2.
+Results in `results/swiss15/`; the 9-sample tables in `results/swiss/` are left untouched as the
+record of what was published from the first pass.
+
+*The kin structure is richer than the earlier note assumed.* `Kinship-Notes` in the compilation
+names **two** families at Oberbipp, not one: `MX213` is `Family B (3 members)`, not merely
+"outside Family A". `MX204`, `MX210` and `MX299` carry `n/a`. So the assemblage yields **four**
+Y-chromosome observations that are independent of each other:
+
+| lineage | evidence at `L166` | at `L167` |
+|---|---|---|
+| **Family A**, 9 members pooled | **ancestral 7/7 reads** (5 contributors) | **ancestral 3/3** (3) |
+| **Family B** (`MX213`) | ancestral 3/3 | ancestral 1/1 |
+| `MX210` (`n/a`) | ancestral 3/3 | ancestral 2/2 |
+| `MX204` (`n/a`) | ancestral 1/1 | ancestral 1/1 |
+
+**Across all 15 samples: 21 reads at the two `L166`-defining transversions, every one ancestral,
+zero derived.** All at 0% MQ0, all `site_qc pass`. Both sites are transversions, so deamination
+cannot manufacture the ancestral allele at either. Per-sample verdicts add `MX183` to the
+`H2_ancestral` list (`MX183`, `MX212`, `MX213`); `MX210` stays `CONFLICT`; no Oberbipp sample
+reaches `H1` at any depth.
+
+**The Family A pool behaved exactly as prediction E registered.** It sharpened the conflict rather
+than resolving it: `Z6219` derived 3/3, `L166` ancestral 7/7, and the five markers with zero
+coverage in every individual (`FGC5696`, `Z6208`, `S19530`, `FGC5721`, `Z6516`) stayed at zero
+even pooled. The pool's value is the positive control, which is now unambiguous for the patriline
+— `P15`, `M3308`, `PF3147`, `L91` (12 of 13 reads, transversion), `PF3239`, `Z6043`, `P287` all
+`DERIVED`, no ancestral read anywhere on the backbone. The published chain is recovered; the node
+below it is not. **This pool is one observation about one chromosome and may not be written as a
+proportion over the Oberbipp men.**
+
+**The `Z6219` localisation test returned H0, as pre-registered.** `MX204` was the one sample in
+the study that could have settled it — published `G2a2a1a2a` (`Z6488`), no kinship record, 0.0320x
+chrY. It has no reads at `PF3239`, so it fails the registered admissibility gate and is **not** an
+outgroup; it also has no reads at `Z6219`, so the question could not have been answered even had
+it qualified. `MX299` is empty throughout. **Whether `Z6219` is a mis-levelled catalogue entry or
+a genuine node between `Z6488` and `L166` remains open, and this dataset cannot close it.** The
+outgroup has to be a G2a male demonstrably ancestral at `PF3239`, and the Oberbipp assemblage does
+not contain one with usable chrY depth.
+
+*What `MX204` did contribute* was not what it was staged for: a fourth independent lineage,
+ancestral at both defining transversions. One read each is `low_power_1read_ancestral` under the
+standing rules — `H0`, not `H2`, and it is not counted as evidence — but it is recorded because
+the rule that excludes it is the same rule that would have excluded a convenient result.
+
+**`MX203` is almost certainly female.** 0.0001x on chrY, below the known-female control `SX8` at
+0.0009x, against 0.142 autosomal coverage — so the library is fine and the chrY is absent. It is
+the ninth `Family A` member by the published kinship note and is listed in
+`markers/family_a_members.txt` for completeness; it contributes no reads and is dropped by the
+pooling script on its own merits rather than by special-casing.
+
+**No shared novel variant.** Of the six added samples only `MX183` has any read at the 8-site
+Iceman novel panel — one read at `chrY:7885869`, and it is **ancestral**. The panel remains at
+zero informative sites, as registered.
+
+**Two documentation defects found and fixed while staging.** `fetch_ena_runs.sh` wrote
+`manifest.tsv` with `>`, so staging a second subset into the same directory would have erased the
+provenance record for the nine files already there; it now merges on `run_accession`. And the
+`RUNLOG` staging command named `PRJEB36959`, which ENA resolves to *"Partial sequence of 16S
+Leptospira borgpetersenii and Leptospira interrogans"* and which returns zero read runs — the
+study is `PRJNA608699`. It would have failed loudly rather than fetched wrong data, so no result
+is affected, but it did not reproduce. Related: the earlier session queried
+`haplogroup.info/all-ancient-dna.txt` without keeping a copy, so the claims resting on it were not
+re-runnable; a dated copy is now kept at `/mnt/AncientDNA/all-ancient-dna.2026-07-26.txt`.

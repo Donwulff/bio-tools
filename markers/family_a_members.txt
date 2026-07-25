@@ -1,0 +1,39 @@
+# Oberbipp Horgen "Family A" — membership for the pooled test registered in
+# PREREG_swiss_neolithic_L166.md Amendment 2, section D.
+#
+# Membership is taken verbatim from the `Kinship-Notes` field of
+# haplogroup.info/all-ancient-dna.txt (copy retained as
+# /mnt/AncientDNA/all-ancient-dna.2026-07-26.txt, retrieved 2026-07-26), which
+# reads:
+#
+#   "Switzerland, Oberbipp Horgen Family A (9 members) (MX150-MX187 have a
+#   father-son relationship (order unknown). MX187-MX212 have a father-son
+#   relationship (order unknown). As expected from this, MX212 and MX150 are 2nd
+#   or 3rd degree relatives. MX183-MX211 are brothers and are both 2nd or 3rd
+#   degree relative of MX150 and MX187. MX150 and MX187 are also both 2nd or 3rd
+#   degree relatives of MX212, MX182, MX219, and MX209, and MX187 is a 2nd or 3rd
+#   degree relative of MX203. MX182 is a 2nd or 3rd degree relative of MX212 and
+#   MX209 (who is a 1st degree relative of MX219))"
+#
+# Membership is NOT inferred from our own genotypes. That direction would make
+# the pool circular: the pooled call is only legitimate because these men are
+# independently documented to share a Y chromosome by descent.
+#
+# MX210 and MX213 are deliberately absent -- they are Oberbipp and published
+# G-L166*, but they are not members of this family, and pooling them in would be
+# exactly the cross-sample pooling the pre-registration refuses.
+#
+# MX203 is listed here for completeness of the published family. It maps at
+# 0.0001x on chrY -- below the known-female control SX8 (0.0009x) -- so it is
+# almost certainly female and contributes no reads. The pooling script drops
+# zero-coverage samples on their own merits; it is not special-cased.
+
+MX150
+MX182
+MX183
+MX187
+MX203
+MX209
+MX211
+MX212
+MX219

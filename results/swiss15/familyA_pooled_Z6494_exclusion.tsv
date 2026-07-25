@@ -1,0 +1,4 @@
+pool	marker	chrom	pos	anc>der	mutation_class	n_contributors	pooled_dp	pooled_anc	pooled_der	pooled_other	pooled_call	admissible	contributions	region
+FamilyA	FGC5687	chrY	6019771	A>C	transversion	0	0	0	0	0	no_coverage	yes	.	ok
+FamilyA	Z6215	chrY	11965520	T>C	transition	2	4	4	0	0	ancestral	yes	MX182:1a/0d,MX183:3a/0d	ok
+FamilyA	Z6494	chrY	17131187	G>T	transversion	0	0	0	0	0	no_coverage	yes	.	ok
