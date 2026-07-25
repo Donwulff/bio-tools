@@ -1,0 +1,10 @@
+sample	chrY_DoC_callable	control_PF3239	control_derived	control_ancestral	L166_der	L166_anc	L166_nocov	L166_lowpower	Z6494_der	Z6494_anc	verdict	basis
+MX182	0.0389x	no_coverage	2	0	0	0	8	1	0	0	H0_no_power	no informative call: 8 uncovered, 1 below threshold
+MX187	0.0545x	nocall_damage_prone_1read	2	0	0	0	6	3	0	0	H0_no_power	no informative call: 6 uncovered, 3 below threshold
+MX209	0.0295x	no_coverage	1	0	0	0	9	0	0	0	H0_no_power	no informative call: 9 uncovered, 0 below threshold
+MX210	0.1434x	no_coverage	4	0	1	2	6	0	0	0	CONFLICT	1 derived and 2 ancestral calls -- check paralogy
+MX211	0.0769x	no_coverage	3	0	0	0	6	3	0	0	H0_no_power	no informative call: 6 uncovered, 3 below threshold
+MX212	0.0561x	nocall_damage_prone_1read	2	0	0	1	6	2	0	0	H2_ancestral	1 ancestral call(s), 0 derived
+MX213	0.0416x	no_coverage	4	0	0	1	6	2	0	0	H2_ancestral	1 ancestral call(s), 0 derived
+SX10	0.0485x	no_coverage	2	0	1	0	8	0	0	0	H1_derived	1 derived call(s), 0 ancestral
+SX8	0.0009x	no_coverage	0	0	0	0	9	0	0	0	H0_no_power	no informative call: 9 uncovered, 0 below threshold; backbone control uncovered, chain unverified for this sample

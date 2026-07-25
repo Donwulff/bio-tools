@@ -1095,3 +1095,61 @@ Kept for the reasoning; the numbers here are stale.
 **VCF vs gVCF Path-Rank Note**
 - gVCF can slightly change path ranking compared with VCF because explicit non-variant blocks reduce `nocall` counts at marker positions.
 - Low-score candidates present only in gVCF top-path output should be treated as weak evidence unless they also gain additional derived-marker support.
+
+**SWISS NEOLITHIC L166 TEST — RESULT (2026-07-26)**
+All 9 samples mapped (`mapped=9 skipped=0 failed=0`), genotyped by
+`annotate/y_genotype_batch.sh`, verdicts by `annotate/y_prereg_verdict.py`.
+Tables: `results/swiss/`.
+
+| sample | chrY DoC | verdict |
+|---|---|---|
+| MX210 | 0.1434x | `CONFLICT` |
+| MX211 | 0.0769x | `H0_no_power` |
+| MX212 | 0.0561x | **`H2_ancestral`** |
+| MX187 | 0.0545x | `H0_no_power` |
+| SX10 | 0.0485x | `H1_derived` |
+| MX213 | 0.0416x | **`H2_ancestral`** |
+| MX182 | 0.0389x | `H0_no_power` |
+| MX209 | 0.0295x | `H0_no_power` |
+| SX8 (female control) | 0.0009x | `H0_no_power` |
+
+`SX8` at 0.0009x against 0.0295-0.1434x for the males is a clean negative control.
+
+**Only 3 of the 9 registered markers are reachable in this dataset.** `FGC5696`, `Z6208`,
+`S19530`, `FGC5721` and `Z6516` have **zero reads in all eight males** — systematic, not
+coverage variation. `Z6287` appears once. The registered 9-marker primary test is a 3-marker
+test in practice, and that was not foreseeable from depth.
+
+**The three reachable markers disagree systematically:**
+
+| marker | class | reads | derived | ancestral |
+|---|---|---|---|---|
+| `Z6219` | C>T transition | 10 (6 samples) | **10** | 0 |
+| `L166` | C>A transversion | 11 (6 samples) | 0 | **11** |
+| `L167` | T>A transversion | 5 (4 samples) | 0 | **5** |
+
+`Z6219` is derived in every sample covering it; `L166`/`L167` are ancestral in every sample
+covering them, *in the same samples*. `Z6219` is therefore **not diagnostic for `L166`** — it is
+derived at some node above it, or recurrent. This is a post-hoc observation, not a registered
+rule, and the verdicts above are reported as the registered rules produced them.
+
+Consequences:
+- `MX210`'s `CONFLICT` is entirely `Z6219` versus the two transversions. On the damage-immune
+  markers alone it is ancestral, 3/3 and 2/2.
+- **`SX10`'s `H1_derived` rests on `Z6219` alone** (DP 2, one read terminal), with *zero* reads at
+  `L166` and `L167`. The positive control therefore does not confirm that this panel detects
+  `L166` where it exists; it confirms that `Z6219` is derived in a sample published as `L166` —
+  and `Z6219` is equally derived in samples demonstrably ancestral at `L166`.
+
+**Damage cannot explain the ancestral calls.** Deamination runs C->T and G->A, so it cannot
+manufacture an ancestral `C` at the C>A site `L166`, nor an ancestral `T` at the T>A site `L167`.
+All 16 transversion reads are at 0% MQ0.
+
+**Bottom line: 16 damage-immune reads across 6 Oberbipp males, every one ancestral at the L166
+locus, zero derived reads anywhere.** Two samples reach the registered `H2_ancestral` threshold
+and a third (`MX210`) does so on the transversions alone. Under the registered rules this does
+not license a population-level statement — these men are a kin group, `Family A` covers 9 of
+them, and no proportion may be computed over them. What it does say is that the compilation's
+`G-L166*` relabelling is not supported at read level in any sample where the defining
+transversions are observed, and that the compiler's own `G2a2a1a2a1(a)` hedge was correct.
+
