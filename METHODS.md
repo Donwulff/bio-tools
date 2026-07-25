@@ -260,6 +260,38 @@ If original run used `--disable_small_model=false`, include:
 --small_model_cvo_records /work/dv_tmp/make_examples_call_variant_outputs.tfrecord@8.gz
 ```
 
+## Single-End aDNA from Raw FASTQ (no pre-filtered BAM)
+
+The pair-reconstruction workflow above exists to undo read merging in already-mapped,
+pre-filtered BAMs. It does not apply to raw single-end FASTQ obtained from SRA/ENA: there are
+no pairs to reconstruct and no `M_/F_/R_` prefixes to restore. `revert-bam.sh` and
+`eager_prep.sh` are skipped entirely for this input class.
+
+Entry points:
+- `annotate/fetch_ena_runs.sh <accession> <outdir> [alias_regex]` — writes a manifest and
+  stages runs with MD5 verification against ENA-published checksums; re-runnable.
+- `mapping/map_se_adna.sh <fastq.gz> <sample_id> [run_id] [threads]` — `bwa aln`/`samse`,
+  coordinate sort, `samtools markdup -r`, and a chrY coverage summary.
+
+Aligner choice: `bwa aln`/`samse`, **not** `bwa mem`. `bwa mem` is designed for reads >=70 bp
+and loses sensitivity below that; aDNA capture reads are typically 35-90 bp. Parameters follow
+nf-core/eager 2.5.0 defaults (`-n 0.01 -k 2 -l 1024`); `-l 1024` exceeds any realistic aDNA read
+length and therefore disables seeding, so the whole read including its damage-bearing termini
+participates in alignment.
+
+Two consequences to record whenever this path is used:
+- `bwa aln` is **not ALT-aware**. `bwa-postalt.js` is not applied and the reference's `.alt`
+  companion goes unused. Acceptable for Y marker genotyping, where MAPQ filtering does the
+  equivalent work, but it is a real difference from any `bwa mem` run on the same reference.
+- Deduplication is **mandatory**, not optional. Capture libraries are PCR-amplified, and any
+  rule that counts "independent reads" is void if duplicate copies of one molecule inflate
+  apparent support.
+
+Do not pursue identical alignment steps across incompatible library types for their own sake.
+Comparability between a paired-end shotgun dataset and a single-end capture dataset lives
+downstream of alignment — same reference, same marker set, same pileup thresholds — not in a
+shared script name.
+
 ## Y Haplogroup Marker Workflow (Current)
 For GRCh38-based Y haplogroup checks:
 1. Merge sample chrY calls with YBrowse hg38 marker VCF (`snps_hg38.vcf.gz`).
@@ -271,6 +303,18 @@ Implementation in repo:
 - `annotate/y_haplo_from_markers.py`
 - `annotate/y_clade_consistency.py`
 - `annotate/y_path_rank.py`
+- `annotate/y_markers_pileup.py` — pileup of *named* catalogue markers, resolved via
+  `resources/marker_index.tsv.gz`.
+- `annotate/y_sites_pileup.py` — pileup of bare coordinates, for sites that have no catalogue
+  name. Uncatalogued ("novel") candidate sites are exactly this case, so they cannot be queried
+  by the marker script. Emits `pct_mq0` and `n_mq60` alongside allele counts.
+
+### MAPQ auditing is not optional
+Depth alone cannot distinguish a real variant site from a collapsed-repeat pileup. Sites with
+entirely unremarkable depth (DP 4-12) have been rejected at 39-88% MAPQ-0 reads, including
+transversions that had previously been presented as the strongest damage-immune evidence
+available. Any claim about a chrY site must report the MAPQ distribution at that site, which is
+why `y_sites_pileup.py` emits those columns unconditionally rather than on request.
 
 DeepVariant-specific setting:
 - use `--site-filter-mode deepvariant` in `y_haplo_from_vcf.sh` (`FILTER=PASS || RefCall`).
