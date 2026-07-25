@@ -639,6 +639,37 @@ node is read as a confirmed one. Both times the evidence survives and the qualif
 Practical rule for this repository: **never cite `Y-Haplotree-Variant` without checking
 `ISOGG2019` for parentheses.**
 
+**Why the hedge is dropped: a documented naming policy selects the column that cannot carry it.**
+`github.com/Dimetrodon2026/Archaeogenetics` (README only, plus a "Links to G25 collections"
+folder; no code, no pipeline) states the convention used for the G25 collections: **YFull naming
+for haplogroup G**, FTDNA naming for most other lineages, theytree for some East Asian branches.
+
+In `all-ancient-dna.txt`, across the 29 Horgen-grouped males with a Y call:
+
+    parenthesised hedge present in ISOGG2019 : 21
+    parenthesised hedge present in YFull     :  0
+
+The hedge is not merely absent from `YFull` — it is *inexpressible* there. ISOGG longhand can
+write `G2a2a1a2a1(a)` = "PF3239, possibly L166". YFull shorthand asserts the node and qualifies
+only what lies below it. Converting ISOGG → YFull is lossy in exactly the dimension under dispute,
+and the policy is a perfectly defensible one that happens to land on the lossy side.
+
+**The asterisk then inverts the meaning.** Standard YFull/ISOGG convention: `*` marks a sample in
+a clade but in none of its known subclades — a *terminal* placement, which is precisely the
+Iceman's real status (`G-L166*`). In this file the relationship is reversed:
+
+| | ISOGG2019 | YFull |
+|---|---|---|
+| `SX10` — publication reports `L166` | `G2a2a1a2a1a` | `G-L166` |
+| the other 21 — provisional | `G2a2a1a2a1(a)` | `G-L166*` |
+
+The confirmed sample carries the bare name; the provisional ones carry the asterisk. A reader
+applying the standard convention therefore reads the file backwards, seeing `G-L166*` and
+understanding "confirmed terminal L166, like Ötzi" — which is the circulating claim verbatim.
+
+*This asterisk reading is an **inference** from the `SX10` contrast. No published legend for the
+file has been located. Do not present it as documented.*
+
 **On the "Dimetrodon → FTDNA/GenArchivist → AADR" provenance line** attached to the circulating
 graphs ("deduped per individual, dates verified in-window. 344 males / 11 groups"), reported by
 the user 2026-07-26; the post itself is unreadable here (x.com returns HTTP 402 unauthenticated):
