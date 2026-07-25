@@ -613,6 +613,66 @@ Both files are from the 2026-02-23 refresh — roughly five months stale as of t
 new SNP names (`FT*`, `BY*`, `MF*`) with YBrowse continuously, so `annotate/fetch_ybrowse_markers.sh`
 should be re-run before any future claim that a variant is uncatalogued.
 
+**`L166` And `L167` Are Recurrent Sites, And MX210 Conflicts (2026-07-25) — interim, 5 of 9 mapped**
+The marker index carries multi-haplogroup YFull assignments for the two SNPs the node is named for:
+
+| marker | chrY hg38 | class | isogg | yfull_node |
+|---|---|---|---|---|
+| `L166` | 21843737 | transversion | G2a2a1a2a1a | **`G-L166&J-Y29712`** |
+| `L167` | 21843756 | transversion | G2a2a1a2a1a | **`G-L166&I-Y92994&A00`** |
+| `Z6219` | 13782251 | transition | G2a2a1a2a1a | `G-L166` |
+
+`L166` and `L167` are therefore **recurrent** — the same positions define nodes in haplogroups J,
+I and A00. That is a catalogue-level caveat on the two markers carrying the node's name, and it
+was not previously recorded here. It does not weaken the Iceman result, which is derived at all
+nine including six non-recurrent ones, but it matters wherever those two carry a call alone.
+
+Note also the set is not internally consistent in ISOGG terms: `FGC5696` and `FGC5721` are
+`G2a2a1b1a`, a different path from `G2a2a1a2a1a`; `Z6208` is `G2a2a1a2a1a1b~`, one node deeper;
+`S19530` is `not listed`. All nine share `yfull=G-L166`. YFull groups where ISOGG scatters.
+
+**`MX210` (0.1434x, best of the set) returns CONFLICT**, and it is not obviously artefactual:
+- `Z6219` C>T: DP 4, **4 derived / 0 ancestral**, 0% MQ0, 4/4 at ceiling.
+- `L166` C>A transversion: DP 3, **3 ancestral / 0 derived**, 0% MQ0, 3/3 at ceiling.
+- `L167` T>A transversion: DP 2, **2 ancestral / 0 derived** — but its 2 reads are a *subset* of
+  L166's 3 (reads start at 21843678/68bp, 21843708/56bp, 21843721/48bp; only the latter two reach
+  21843756). So this is 3 independent molecules, not 5.
+- Six of nine sites uncovered. `PF3239`, the positive control, uncovered; `P15`, `M3308`, `L91`,
+  `Z6043` are derived, so the backbone is partly confirmed.
+
+Deamination was tested for and does not explain `Z6219`: of its 4 reads, 3 carry the T well
+inside the molecule (offsets 30, 28, 15 from the 5' end; 37, 15, 34 from the 3'), and only one
+sits within 5 bp of a terminus. Under UDG-half that is not a damage pattern.
+
+So the two damage-immune transversions say ancestral on 3 molecules, and one non-recurrent
+transition says derived on 4. **No call is being made from this.** `CONFLICT` is the registered
+verdict for a sample with derived and ancestral calls in the same set, and it stands until the
+remaining four samples are mapped and the other six sites have coverage somewhere.
+
+**The MAPQ-60 Test Is Meaningless For `bwa aln` Data (2026-07-25)**
+`bwa aln` caps MAPQ at **37**; `bwa mem` uses **60**. Measured, not assumed: of 30,825 chrY reads
+in `MX210`, 30,625 sit at exactly 37 and the file maximum is 37, while the Iceman `bwa mem` BAM
+reaches 60 in the same window.
+
+The `n_mq60 == 0 -> MARGINAL` rule in `site_qc()` was calibrated on the Iceman BAM and therefore
+evaluated to "no uniquely-mapping reads" for **every read of every site** in the Swiss capture
+data. It flagged 100% of sites, including ones at 0% MQ0 with full-ceiling mapping — a quality
+test no `bwa aln` alignment can ever pass. Nothing errored; sites silently failed a bar that did
+not apply to them.
+
+Fixed by detecting the aligner from `@PG` (`bwa samse`/`aln` -> 37, `bwa mem` -> 60) and counting
+reads at *that* ceiling. Columns `n_mq60` -> `mq_top` + `n_mq_top`, so the threshold in force is
+recorded per row rather than implied. Iceman re-validation is unchanged: ceiling detected as 60,
+**21/21 verdicts, 0 field mismatches**.
+
+Two related gaps closed at the same time:
+- `y_markers_pileup.py` emitted **no MAPQ columns at all**, although the prereg calls the audit
+  mandatory and it is the tool that runs the primary L166 test. It now emits the same audit.
+  (Strand counts stay unavailable there — its `parse_bases()` is strand-agnostic — so the
+  single-strand test is skipped rather than reported wrongly.)
+- Call rules, mutation classing, MAPQ handling and region flags now live in `annotate/ylib.py`
+  and are imported by both tools, because they had already drifted apart once.
+
 **Ancient `G-L166` Candidate Pool From haplotree.info (2026-07-25)**
 `https://haplotree.info/maps/ancient_dna/slideshow_samples.php?searchcolumn=Y_Haplotree_Variant&searchfor=G-L166&ybp=500000,0`
 (dataset "All Ancient DNA v. 2.07.26"). **7 samples**, 0.05% of their corpus:

@@ -34,9 +34,10 @@ import sys
 import tempfile
 from collections import Counter
 
+from ylib import (detect_mq_ceiling, mapq_audit, mutation_class, region_flag,
+                  site_call, site_qc)
+
 INDEL = re.compile(r"[+-](\d+)")
-TRANSITIONS = {("A", "G"), ("G", "A"), ("C", "T"), ("T", "C")}
-DEAMINATION = {("C", "T"), ("G", "A")}
 
 
 def parse_bases(s: str, ref: str) -> Counter:
@@ -68,46 +69,6 @@ def parse_bases(s: str, ref: str) -> Counter:
     return out
 
 
-def mutation_class(anc: str, der: str) -> str:
-    if len(anc) != 1 or len(der) != 1:
-        return "indel/other"
-    if (anc, der) in DEAMINATION:
-        return "transition(deamination-prone)"
-    if (anc, der) in TRANSITIONS:
-        return "transition"
-    return "transversion"
-
-
-def site_call(dp: int, a: int, d: int, mclass: str) -> str:
-    """Pre-registered call rules. Must stay identical to y_sites_pileup.py.
-
-    Read counts alone are not a call. A single read is one molecule, and at aDNA
-    depths a single deamination-prone C>T/G>A read is the expected artifact
-    rather than evidence -- documented in this repo for CGG017682, whose entire
-    apparent G-panel signal was single-read transitions.
-
-    The asymmetry that matters most: one ancestral read is `low_power`, never
-    `ancestral`. Calling it ancestral converts "we could not tell" into "we
-    tested and it was negative", which is the exact confusion the accompanying
-    pre-registration exists to prevent.
-    """
-    if dp == 0:
-        return "no_coverage"
-    if d >= 2 and a == 0:
-        return "DERIVED"
-    if d == 1 and a == 0:
-        if mclass == "transversion":
-            return "DERIVED_1read_transversion"
-        if mclass == "transition(deamination-prone)":
-            return "nocall_damage_prone_1read"
-        return "nocall_1read_transition"
-    if a >= 2 and d == 0:
-        return "ancestral"
-    if a == 1 and d == 0:
-        return "low_power_1read_ancestral"
-    if a and d:
-        return "mixed"
-    return "other_allele"
 
 
 def load_markers(index_path: str, wanted: set[str]) -> dict[str, dict]:
@@ -228,15 +189,18 @@ def main() -> int:
     out = sys.stdout if args.out == "-" else open(args.out, "w")
     cols = ["block", "marker", "chrom", "pos", "anc>der", "mutation_class",
             "depth", "anc_reads", "der_reads", "other_reads", "call",
+            "n_reads", "pct_mq0", "mq_top", "n_mq_top", "site_qc", "region",
             "isogg", "yfull_node"]
     print("\t".join(cols), file=out)
+
+    ceiling = detect_mq_ceiling(args.bam)
 
     tally: Counter = Counter()
     for name in ordered:
         m = markers.get(name)
         if m is None:
-            print("\t".join([args.label, name, ".", ".", ".", ".", "0", "0", "0", "0",
-                             "not_in_catalogue", ".", "."]), file=out)
+            print("\t".join([args.label, name] + ["."] * 4 + ["0"] * 4
+                            + ["not_in_catalogue"] + ["."] * 6 + [".", "."]), file=out)
             tally["not_in_catalogue"] += 1
             continue
         _ref, dp, cnt = pile.get((m["chrom"], m["pos"]), (".", 0, Counter()))
@@ -246,10 +210,22 @@ def main() -> int:
         mclass = mutation_class(m["anc"], m["der"])
         call = site_call(dp, a, d, mclass)
         tally[call] += 1
+
+        # The prereg makes the MAPQ audit mandatory, and depth cannot substitute
+        # for it: 10 of 21 Iceman novel candidates were rejected at 39-88% MQ0 on
+        # unremarkable depth. Computed from the raw alignments, so it sees the
+        # reads the -q 25 pileup discarded. Strand counts are unavailable here --
+        # parse_bases() in this script is strand-agnostic -- so the single-strand
+        # test is skipped by passing 1/1 rather than reported wrongly.
+        n_reads, n_mq0, n_top = mapq_audit(args.bam, m["chrom"], m["pos"], ceiling)
+        pct = 100.0 * n_mq0 / n_reads if n_reads else None
         print("\t".join([
             args.label, name, m["chrom"], str(m["pos"]),
             f"{m['anc']}>{m['der']}", mclass,
             str(dp), str(a), str(d), str(other), call,
+            str(n_reads), f"{pct:.0f}%" if pct is not None else "NA",
+            str(ceiling), str(n_top), site_qc(pct, n_top, 1, 1),
+            region_flag(m["chrom"], m["pos"]),
             m["isogg"], m["yfull_node"],
         ]), file=out)
 

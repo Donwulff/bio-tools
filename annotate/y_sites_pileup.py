@@ -22,48 +22,10 @@ import subprocess
 import sys
 from collections import Counter
 
+from ylib import (detect_mq_ceiling, mapq_audit, mutation_class, region_flag,
+                  site_call, site_qc)
+
 INDEL = re.compile(r"[+-](\d+)")
-DEAMINATION = {("C", "T"), ("G", "A")}
-TRANSITIONS = {("A", "G"), ("G", "A"), ("C", "T"), ("T", "C")}
-
-# Site usability, kept separate from the allele call so that filtering a site
-# never destroys the evidence that was filtered. `call` answers "which allele do
-# the reads support"; `site_qc` answers "should this site be believed at all".
-#
-# The 30% MQ0 threshold was fixed during the Iceman analysis, before any read of
-# any later dataset was examined. In that set the usable sites topped out at 14%
-# MQ0 and the rejected ones started at 39%, so any cut in that gap reproduces the
-# same 11-usable / 10-rejected split; 30% is the round number inside it.
-MAX_PCT_MQ0 = 30.0
-
-# Regions where collapsed repeats produce well-covered but untrustworthy pileups.
-# Advisory only, reported in its own column: the prereg requires these be
-# "flagged, not silently included", and a site here can still be real.
-NOGO_REGIONS = [
-    ("chrY", 11_100_000, 11_700_000, "11.1-11.7Mb"),
-    ("chrY", 26_600_000, 26_700_000, "~26.6Mb"),
-    ("chrY", 56_690_000, 56_880_000, "56.69-56.88Mb_Yq_het/PAR2"),
-]
-
-
-def region_flag(chrom: str, pos: int) -> str:
-    for c, lo, hi, name in NOGO_REGIONS:
-        if chrom == c and lo <= pos <= hi:
-            return f"nogo({name})"
-    return "ok"
-
-
-def site_qc(pct_mq0: float | None, n_mq60: int, fwd: int, rev: int) -> str:
-    """Pre-registered site filter. REJECT outranks the MARGINAL flags."""
-    if pct_mq0 is None:
-        return "nocall_noreads"
-    if pct_mq0 >= MAX_PCT_MQ0:
-        return f"REJECT_mapq({pct_mq0:.0f}%_MQ0)"
-    if n_mq60 == 0:
-        return "MARGINAL_no_MQ60_reads"
-    if fwd == 0 or rev == 0:
-        return "MARGINAL_single_strand"
-    return "pass"
 
 
 def parse_bases(s: str, ref: str) -> Counter:
@@ -93,26 +55,6 @@ def parse_bases(s: str, ref: str) -> Counter:
     return out
 
 
-def mapq_audit(bam: str, chrom: str, pos: int) -> tuple[int, int, int]:
-    """Return (n_reads, n_mq0, n_mq60) for reads overlapping pos, unfiltered."""
-    p = subprocess.run(["samtools", "view", bam, f"{chrom}:{pos}-{pos}"],
-                       capture_output=True, text=True, check=True)
-    n = n0 = n60 = 0
-    for ln in p.stdout.splitlines():
-        f = ln.split("\t")
-        if len(f) < 5:
-            continue
-        flag = int(f[1])
-        if flag & 0x900:       # skip secondary / supplementary
-            continue
-        mq = int(f[4])
-        n += 1
-        if mq == 0:
-            n0 += 1
-        if mq >= 60:
-            n60 += 1
-    return n, n0, n60
-
 
 def pileup(bam: str, ref: str, chrom: str, pos: int,
            min_mq: int, min_bq: int, max_depth: int):
@@ -139,9 +81,11 @@ def main() -> int:
     ap.add_argument("--max-depth", type=int, default=1000)
     a = ap.parse_args()
 
+    ceiling = detect_mq_ceiling(a.bam)
+
     cols = ["sample", "chrom", "pos", "anc", "der", "mut_class", "dp", "n_anc",
-            "n_der", "n_other", "fwd", "rev", "n_reads", "pct_mq0", "n_mq60",
-            "call", "site_qc", "region"]
+            "n_der", "n_other", "fwd", "rev", "n_reads", "pct_mq0", "mq_top",
+            "n_mq_top", "call", "site_qc", "region"]
     print("\t".join(cols))
 
     for ln in open(a.sites):
@@ -150,12 +94,14 @@ def main() -> int:
             continue
         f = ln.split("\t")
         chrom, pos, anc, der = f[0], int(f[1]), f[2].upper(), f[3].upper()
-        mclass = f[4] if len(f) > 4 else (
-            "transition" if (anc, der) in TRANSITIONS else "TRANSVERSION")
+        # Class is derived from the alleles, not trusted from the input file:
+        # the call rules turn on it, so it must not vary with how a site list
+        # happened to be written.
+        mclass = mutation_class(anc, der)
 
         _, dp, counts = pileup(a.bam, a.ref, chrom, pos,
                                a.min_mq, a.min_bq, a.max_depth)
-        n_reads, n_mq0, n_mq60 = mapq_audit(a.bam, chrom, pos)
+        n_reads, n_mq0, n_top = mapq_audit(a.bam, chrom, pos, ceiling)
 
         n_anc = counts[(anc, "+")] + counts[(anc, "-")]
         n_der = counts[(der, "+")] + counts[(der, "-")]
@@ -163,32 +109,13 @@ def main() -> int:
         fwd = sum(v for (b, s), v in counts.items() if s == "+")
         rev = sum(v for (b, s), v in counts.items() if s == "-")
 
-        # Pre-registered decision rules. A single transition read is never
-        # sufficient; single-read C>T/G>A is treated as deamination, not evidence.
-        damage_prone = (anc, der) in DEAMINATION
-        if dp == 0:
-            call = "nocall_nocoverage"
-        elif n_der >= 2 and n_anc == 0:
-            call = "DERIVED"
-        elif n_der == 1 and n_anc == 0 and not damage_prone and mclass == "TRANSVERSION":
-            call = "DERIVED_1read_transversion"
-        elif n_der == 1 and n_anc == 0 and damage_prone:
-            call = "nocall_damage_prone_1read"
-        elif n_anc >= 2 and n_der == 0:
-            call = "ancestral"
-        elif n_anc == 1 and n_der == 0:
-            call = "low_power_1read_ancestral"
-        elif n_anc and n_der:
-            call = "MIXED_check_paralogy"
-        else:
-            call = "nocall"
-
+        call = site_call(dp, n_anc, n_der, mclass)
         pct = 100.0 * n_mq0 / n_reads if n_reads else None
         pct_mq0 = f"{pct:.0f}%" if pct is not None else "NA"
         print("\t".join(str(x) for x in [
             a.sample, chrom, pos, anc, der, mclass, dp, n_anc, n_der, n_other,
-            fwd, rev, n_reads, pct_mq0, n_mq60, call,
-            site_qc(pct, n_mq60, fwd, rev), region_flag(chrom, pos)]))
+            fwd, rev, n_reads, pct_mq0, ceiling, n_top, call,
+            site_qc(pct, n_top, fwd, rev), region_flag(chrom, pos)]))
     return 0
 
 
