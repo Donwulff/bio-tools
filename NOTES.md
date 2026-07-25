@@ -613,6 +613,46 @@ Both files are from the 2026-02-23 refresh — roughly five months stale as of t
 new SNP names (`FT*`, `BY*`, `MF*`) with YBrowse continuously, so `annotate/fetch_ybrowse_markers.sh`
 should be re-run before any future claim that a variant is uncatalogued.
 
+**THE COMPILER HEDGED; THE PRESENTATION LAYER DROPPED IT (2026-07-26)**
+The single most important thing in this whole thread. In `all-ancient-dna.txt`, of the 22 samples
+under `Culture_Grouping = "Horgen culture"` called `G-L166(*)` in `Y-Haplotree-Variant`, **21 carry
+a parenthesised ISOGG node**:
+
+    ISOGG2019 = G2a2a1a2a1(a)      # G2a2a1a2a1 = PF3239, G2a2a1a2a1a = L166
+
+The parenthesis means *PF3239, possibly L166* — provisional. The **one** unhedged entry is
+`TU876` (`SX10`) at `G2a2a1a2a1a`, and that is precisely the sample Furtwängler 2020 genuinely
+reports as `L166`. The compiler distinguished the confirmed case from the 21 provisional ones,
+sample by sample, and got it right.
+
+`Y-Haplotree-Variant` then flattens both forms to `G-L166*` / `G-L166`. That is the column the web
+front-ends expose (`haplotree.info` searches on it) and the one downstream readers quote.
+
+**So the failure is not fabrication and not the compiler's.** The uncertainty was recorded and is
+still in the file; it is lost one column over, at the presentation layer. Every claim built on
+`Y-Haplotree-Variant` inherits 21 provisional calls as though they were 21 confirmed ones.
+
+This is the same structural error as the Iceman's `G-Z6208` label, arrived at from the opposite
+direction: there, a real terminal-derived SNP was read as a terminal placement; here, a hedged
+node is read as a confirmed one. Both times the evidence survives and the qualifier does not.
+
+Practical rule for this repository: **never cite `Y-Haplotree-Variant` without checking
+`ISOGG2019` for parentheses.**
+
+**On the "Dimetrodon → FTDNA/GenArchivist → AADR" provenance line** attached to the circulating
+graphs ("deduped per individual, dates verified in-window. 344 males / 11 groups"), reported by
+the user 2026-07-26; the post itself is unreadable here (x.com returns HTTP 402 unauthenticated):
+
+- The QC claims are **sample bookkeeping**, not haplogroup validation. Deduplicating individuals
+  and checking radiocarbon dates fall inside a culture's window are both real and worth doing, and
+  neither says anything about how `G-L166` was called for any skeleton.
+- `AADR` plausibly supplies samples, dates and individual identity — the auditable part.
+  `FTDNA/GenArchivist` is the layer supplying Y calls, and GenArchivist is exactly where the
+  "analyses of BAM files by hobbyists" named in `haplogroup.info`'s own methodology are posted.
+- **Not verified:** what Y-haplogroup resolution AADR's `.anno` actually carries. The AADR
+  Scientific Data paper does not document its Y columns, and the file has not been downloaded.
+  Do not assert that AADR cannot be the label source until that is checked.
+
 **SOURCE OF THE "7 OF 10 ARE G-L166" CLAIM IDENTIFIED (2026-07-25)**
 It is the **"All Ancient DNA" compilation** at `haplogroup.info` — distributed via
 `indo-european.eu/ancient-dna/`, and the backend of `haplotree.info` (same `Y-Haplotree-Variant`
