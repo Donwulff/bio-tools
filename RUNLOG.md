@@ -402,9 +402,18 @@ a real result or an aggregator relabelling one node too deep.
 
 Staging (9 runs, 607 MB, MD5-verified against ENA):
 ```bash
-annotate/fetch_ena_runs.sh PRJEB36959 /mnt/AncientDNA/SwissLN-2020 \
+annotate/fetch_ena_runs.sh PRJNA608699 /mnt/AncientDNA/SwissLN-2020 \
   '^(MX182|MX187|MX209|MX210|MX211|MX212|MX213|SX8|SX10)$'
 ```
+
+> **Correction, 2026-07-26.** This command was recorded with accession `PRJEB36959`, which is
+> **not** this study — ENA resolves it to *"Partial sequence of 16S Leptospira borgpetersenii and
+> Leptospira interrogans"*, and it returns zero read runs. The staged files' accessions
+> (`SRR111793xx`, preserved in `manifest.tsv`) belong to `PRJNA608699`, which is what the run
+> actually used. The command as published would have failed outright rather than fetched the wrong
+> data, so no result is affected — but it did not reproduce, which is the point of writing it
+> down. Second instance of documentation drift in this file; see the DeepVariant filename note
+> above. The staging directory's `manifest.tsv` is the authoritative record, not this block.
 
 **Gate: tool validation before any Swiss read was mapped** (5.6 s, 21 sites):
 ```bash
@@ -467,6 +476,46 @@ by the reader's restraint. Checked against both known answers: Iceman → `H1_de
 registered call rules at all** — no depth threshold, no damage rule, so it reported `L166` as
 *ancestral* off a single DP-1 read. Fixed in `1010ac0`; see `NOTES.md`. No Iceman conclusion
 moves. This is the reason the validation gate is run against a known answer before new data.
+
+### Extension to 15 samples (2026-07-26) — `Z6219` localisation and Family A pooling
+
+Registered first, in `PREREG_swiss_neolithic_L166.md` **Amendment 2**, sections C–E, written and
+committed before any of the added BAMs existed.
+
+Staging (6 runs, 132 MB, MD5-verified):
+```bash
+annotate/fetch_ena_runs.sh PRJNA608699 /mnt/AncientDNA/SwissLN-2020 \
+  '^(MX150|MX183|MX204|MX219|MX299)$'
+annotate/fetch_ena_runs.sh PRJNA608699 /mnt/AncientDNA/SwissLN-2020 '^MX203$'
+```
+`fetch_ena_runs.sh` was changed for this run: it previously wrote `manifest.tsv` with `>`, so
+staging a second subset into the same directory would have **erased the provenance of the nine
+files already there**. It now merges into the cumulative manifest, deduplicated on
+`run_accession`, and downloads only the newly requested rows. `manifest.tsv` now carries all 15.
+
+Reference table for who these are — from `haplogroup.info/all-ancient-dna.txt`, retrieved
+2026-07-26 and kept as `/mnt/AncientDNA/all-ancient-dna.2026-07-26.txt` (the earlier session read
+this file without saving a copy, so the queries behind the `NOTES.md` claims were not re-runnable;
+the dated filename is the fix):
+
+| sample | ISOGG2019 | YFull | autosomal | Family A? |
+|---|---|---|---|---|
+| `MX219` | `G2a2a` | `G-PF3147` | 0.048 | yes |
+| `MX150` | `G2a2a1a2` | `G-L91` | 0.200 | yes |
+| `MX204` | `G2a2a1a2a` | `G-Z6484` | 0.433 | **no (`n/a`)** |
+| `MX183` | `G2a2a1a2a1` | `G-PF3239` | 0.808 | yes |
+| `MX203` | *(none)* | *(none)* | 0.142 | yes (9th member) |
+| `MX299` | *(none)* | *(none)* | 0.068 | **no (`n/a`)** |
+
+Only `MX204` and `MX299` carry outgroup information; the other four are the same Y chromosome as
+samples already genotyped. `MX204` at 0.433x autosomal and published `Z6488` is the one sample in
+the study that can plausibly separate the two `Z6219` explanations.
+
+Mapping (resumable; skips the nine existing BAMs):
+```bash
+REF=$PWD/mapping/index/hg38p14DH3630O.fa \
+  mapping/map_se_batch.sh /mnt/AncientDNA/SwissLN-2020 8
+```
 
 ## Open Questions
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).

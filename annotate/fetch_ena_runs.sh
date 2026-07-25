@@ -35,14 +35,29 @@ command -v md5sum >/dev/null || { echo "missing dependency: md5sum" >&2; exit 1;
 mkdir -p "$OUT" || exit 1
 cd "$OUT" || exit 1
 
+req=$(mktemp) || exit 1
+trap 'rm -f "$req" manifest.tmp' EXIT
+
 echo "querying ENA for ${ACC} ..."
 curl -sSf "${API}?accession=${ACC}&result=read_run&fields=${FIELDS}&format=tsv&limit=0" \
-  | awk -F'\t' -v re="$FILTER" 'NR==1 || $2 ~ re' > manifest.tsv || {
+  | awk -F'\t' -v re="$FILTER" 'NR==1 || $2 ~ re' > "$req" || {
       echo "ENA query failed for ${ACC}" >&2; exit 1; }
 
-n=$(( $(wc -l < manifest.tsv) - 1 ))
+n=$(( $(wc -l < "$req") - 1 ))
 [ "$n" -gt 0 ] || { echo "no runs matched filter '${FILTER}' in ${ACC}" >&2; exit 1; }
-awk -F'\t' -v n="$n" 'NR>1{b+=$5} END{printf "%d runs, %.1f MB to stage\n", n, b/1048576}' manifest.tsv
+awk -F'\t' -v n="$n" 'NR>1{b+=$5} END{printf "%d runs, %.1f MB to stage\n", n, b/1048576}' "$req"
+
+# Merge into the cumulative manifest rather than overwriting it. Staging a
+# second subset of the same project with a different alias filter must not
+# erase the record of what was fetched the first time -- that record is the
+# provenance for every BAM already in this directory.
+if [ -s manifest.tsv ]; then
+  { head -1 manifest.tsv
+    { tail -n +2 manifest.tsv; tail -n +2 "$req"; } | sort -u -k1,1
+  } > manifest.tmp && mv manifest.tmp manifest.tsv
+else
+  cp "$req" manifest.tsv
+fi
 
 fail=0
 while IFS=$'\t' read -r run alias rc bc bytes md5 ftp; do
@@ -65,7 +80,7 @@ while IFS=$'\t' read -r run alias rc bc bytes md5 ftp; do
   else
     echo "BAD   $out expected=$md5 got=$got" >&2; fail=1
   fi
-done < manifest.tsv
+done < "$req"
 
 echo "---- staging complete, failures=${fail} ----"
 exit "$fail"

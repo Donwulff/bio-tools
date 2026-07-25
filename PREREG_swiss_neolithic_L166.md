@@ -258,9 +258,97 @@ these terms:
 - The expanded analysis is labelled **exploratory**. It can generate a hypothesis; it cannot
   confirm one, and no headline claim may rest on it alone.
 
+## Amendment 2, 2026-07-26 — registered before any of six added samples is genotyped
+
+The first pass returned a result the original document did not anticipate: across the six males
+with coverage there, `Z6219` was **derived 10/10 reads** while `L166` was **ancestral 11/11** and
+`L167` **ancestral 5/5**, in the same individuals. `Z6219` is one of the nine markers
+`markers/L166_defining.txt` treats as defining `G-L166`; the catalogue assigns it to
+`G2a2a1a2a1a` on a single 2013 attribution, with none of the multi-haplogroup flags `L166` and
+`L167` carry. A damage explanation was checked and rejected: 7 of the 10 `T`-carrying Swiss reads
+are read-interior, as are 6 of 7 in the Iceman.
+
+Two explanations remain, and the data collected so far cannot separate them, because **every
+individual genotyped is published `PF3239` or deeper**. `Z6219` derived in all of them localises
+it only to *at or above `PF3239`*.
+
+- **(i) Mis-levelled marker.** `Z6219` sits higher on the tree than `L166` and the catalogue
+  places it too deep. Nothing about the Oberbipp men changes.
+- **(ii) Real node.** `Z6219` marks a branch between `Z6488`/`PF3239` and `L166`. The Oberbipp
+  patriline would then sit one node below its published call — closer to the Iceman than the
+  publication states, and still not `L166`.
+
+Six further Oberbipp runs from the same study (`PRJNA608699`) have been staged and are being
+mapped. Nothing from them has been genotyped or inspected. The two tests below are fixed now.
+
+**C. `Z6219` localisation — confirmatory.**
+
+An outgroup for this test must be **ancestral at `PF3239`**. The published label cannot supply
+that: this document already records (Declared limitations, point on `same Y HG`) that the
+publication's Y column is a coverage floor. Admissibility is therefore decided from our own reads.
+
+- **Eligible samples: `MX204` and `MX299` only.** They are the only two of the six added runs with
+  `Kinship-Notes = n/a` in the compilation. `MX150`, `MX183`, `MX203` and `MX219` are named
+  members of Oberbipp Horgen Family A and are therefore the *same Y chromosome* as samples already
+  tested; they carry **zero** outgroup information and are excluded from this test by construction.
+  Recorded because an earlier informal proposal in this project wrongly named `MX150`, `MX183` and
+  `MX219` as outgroups on the strength of their shallower published labels.
+- **Admissibility gate:** the sample qualifies only if `PF3239` is called `ancestral` under the
+  standing rules (≥2 reads ancestral, 0 derived). A sample derived at `PF3239`, or with `PF3239`
+  uncalled, is **not** an outgroup and its `Z6219` genotype is not evidence either way. It is
+  reported, and reported as inadmissible.
+- **Decision rule, applied only to an admissible sample:**
+  - `Z6219` **DERIVED** → `Z6219` lies at or above `Z6488`; explanation (i). The catalogue
+    assignment to `G-L166` is wrong, `markers/L166_defining.txt` must drop it, and **no branch is
+    gained** for the Oberbipp men.
+  - `Z6219` **ancestral** → explanation (ii): a real node between `Z6488` and `L166`.
+  - anything else, including `Z6219` uncalled → **H0, no power.**
+- **The expected outcome is H0 and that is registered as the honest prior.** These samples run
+  ~0.03–0.15x on chrY. Recovering ≥2 reads at `PF3239` *and* any read at `Z6219` in the same
+  individual is unlikely. `MX299` additionally has no published Y call at all. H0 here will not be
+  reported as leaning toward either explanation.
+- One further constraint: neither explanation is settled by a single site. If (ii) survives, it is
+  a *hypothesis* about tree topology which this dataset cannot confirm on its own, and it will be
+  labelled as such.
+
+**D. Family A pooled genotyping — confirmatory, and narrowly scoped.**
+
+The Declared limitations below refuse pooling. That refusal is **not lifted**; its stated reason —
+"combining reads across the seven Oberbipp males assumes they share a branch, which is the
+hypothesis under test" — does not apply to a set already *documented* to share a Y chromosome.
+
+- **Pool = Family A only:** `MX150`, `MX182`, `MX183`, `MX187`, `MX203`, `MX209`, `MX211`,
+  `MX212`, `MX219`. Membership is taken from the compilation's `Kinship-Notes` field, not inferred
+  from genotypes. **`MX210` and `MX213` are not members and are excluded**; `SX8` and `SX10` are a
+  different site.
+- **Why this pooling is legitimate where the refused one is not:** male–male first-degree pairs are
+  father–son or full brothers, so Family A members carry one Y chromosome. Their reads are
+  replicate observations of that chromosome, and summing them is the correct estimator — not a
+  power rescue.
+- **Binding scope limit:** the pooled call answers *what is the Family A patriline's terminal
+  haplogroup*. It yields **exactly one** observation. It may never be written as "N of the
+  Oberbipp men", may not enter any proportion, and does not change the per-sample verdicts already
+  recorded, which stand as published.
+- **Rules:** identical `site_call` thresholds applied to summed anc/der counts. A pooled site is
+  admissible only if **every contributing sample passes `site_qc`** at that position; one
+  `REJECT_mapq` contributor voids the site. Per-sample contributions are reported alongside the
+  sum so the pooling can be undone by a reader.
+- **Primary targets:** the five `L166`-defining markers with **zero reads in all eight males**
+  (`FGC5696`, `Z6208`, `S19530`, `FGC5721`, `Z6516`), plus added depth at `L166` and `L167`.
+- `MX210`'s `CONFLICT` stands or falls on its own reads and is not touched by this test.
+
+**E. Prediction registered for D.** If the existing per-sample pattern is real, the pool will show
+`L166`/`L167` **ancestral** at higher depth and `Z6219` **derived**, i.e. it will sharpen the same
+conflict rather than resolve it. Resolution has to come from C. If instead the pool turns up a
+clean derived transversion at any of the five uncovered markers, that is evidence for H1 in the
+Family A patriline and would be reported as such — for one chromosome.
+
 ## Declared limitations
 
 - **No pooled or cross-sample test is registered, and none will be run to rescue power.**
+  *(Qualified 2026-07-26 by Amendment 2 section D, which registers a pooled test restricted to the
+  documented Family A patriline and capped at one observation. The prohibition below is otherwise
+  unchanged and still governs every cross-sample comparison outside that pool.)*
   Combining reads across the seven Oberbipp males to ask "are they L166" assumes they share a
   branch, which is the hypothesis under test. Pooling can support exactly one weaker claim —
   *is L166-derived present anywhere in the assemblage* — which a single clean derived
