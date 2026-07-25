@@ -72,6 +72,26 @@ Primary contig list used:
 REGIONS="chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM"
 ```
 
+> **Correction (2026-07-26): the two commands below were never executed as written.**
+> Reconstructed from `~/.bash_history` and the DeepVariant log directories, the runs that
+> actually produced the files on disk were:
+>
+> | branch | `--output_vcf` | `--disable_small_model` | `--regions` | logs |
+> |---|---|---|---|---|
+> | A | `/output/iceman.vcf` | `false` | *(none)* | `~/logs/` |
+> | B | `/output/iceman-nosmall.vcf.gz` | `true` | `"chr1 ..."` | `~/logs-nosmall/` |
+>
+> `iceman_sm_on.vcf.gz` / `iceman_sm_off.vcf.gz` never existed. Both runs used
+> `...sort_rmdup.coord.bam`. DeepVariant wrote BGZF into the bare `.vcf` name for branch A, which
+> is why `~/iceman.vcf` is compressed and unindexed while `~/iceman-nosmall.vcf.gz` has a `.tbi`.
+> A third invocation targeted `iceman.vcf` with `--disable_small_model=true`; it aborted
+> (`~/logs2/call_variants.log` is 0 bytes, timestamped ~2 h *after* `iceman.vcf` was written) and
+> did not overwrite it. Identity of the surviving files is confirmed independently by chrY hom-alt
+> `GQ` max (58 = small model on, 25 = off) and by the `438` count at `PASS,GT=1/1,DP>=5,GQ>=30`.
+>
+> The lesson is documentation drift, not renaming: what was committed here was the *intended*
+> command, and the executed one differed. Record commands by capturing them at run time.
+
 Branch A (`small_model` enabled):
 ```bash
 /snap/docker/3377/bin/docker run --rm --user "$(id -u):$(id -g)" \
