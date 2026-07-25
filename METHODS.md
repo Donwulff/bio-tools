@@ -287,6 +287,18 @@ Two consequences to record whenever this path is used:
   rule that counts "independent reads" is void if duplicate copies of one molecule inflate
   apparent support.
 
+`samtools markdup` is usually documented with a `collate` / `fixmate -m` / `sort` prerequisite,
+which is a **paired-end** requirement: `fixmate -m` exists to add mate-score tags. On single-end
+input `markdup` works directly off the coordinate-sorted BAM, and `map_se_adna.sh` calls it that
+way. Verified rather than assumed — six synthetic reads (three forward at one position, two
+reverse at the same position, one elsewhere) give `SINGLE: 6`, `DUPLICATE SINGLE: 3`,
+`WRITTEN: 3`, keeping one read per strand-position group. Note it is strand-aware: the forward
+and reverse reads sharing a start coordinate are correctly *not* duplicates of each other.
+
+It does emit `warning, unable to calculate estimated library size ... Read pairs 0`. That is
+cosmetic on this input class — `PAIRED: 0` is the expected state for single-end data, and the
+library-size estimator is a paired-end statistic. Do not read it as a dedup failure.
+
 Do not pursue identical alignment steps across incompatible library types for their own sake.
 Comparability between a paired-end shotgun dataset and a single-end capture dataset lives
 downstream of alignment — same reference, same marker set, same pileup thresholds — not in a
