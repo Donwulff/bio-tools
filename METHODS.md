@@ -80,6 +80,63 @@ For Iceman, oral decoys produced sparse, spiky hits after human-reference filter
 These reads are too few to affect human variant calling and are likely spillover from older reference mapping.
 Recommendation: omit oral decoys for this dataset unless explicitly studying microbial signal.
 
+### Supporting references (oral/eHOMD decoy rationale)
+The decoy practice itself is inherited from the general hs38d1/GRCh38DH convention; no
+publication was found that constructs and evaluates an *oral-specific* decoy set. The
+supporting literature establishes the problem and recommends the remedy rather than testing it:
+
+- Samson, C. A., Whitford, W., Snell, R. G., Jacobsen, J. C. & Lehnert, K. Contaminating DNA
+  in human saliva alters the detection of variants from whole genome sequencing.
+  Sci. Rep. 10, 19255 (2020). — establishes that non-human saliva DNA aligns to the human
+  reference under standard methodology and alters resulting genotypes.
+- Kumar, A. et al. Microbial contamination and composition of oral samples subjected to
+  clinical whole genome sequencing. Front. Genet. 14, 1081424 (2023). — characterises the
+  contamination and recommends adding prevalent oral microbial genomes as decoy. Note it
+  **recommends only**; its own analysis used plain GRCh38.p13 with non-human reads filtered out.
+- Chrisman, B. et al. The human "contaminome": bacterial, viral, and computational
+  contamination in whole genome sequences from 1000 families. Sci. Rep. (2022).
+  doi:10.1038/s41598-022-13269-z, PMC9198055. — **the important caveat for this repo.**
+  Y-chromosome fragments absent from GRCh38 commonly mismap to bacterial reference genomes
+  (only about half of chrY is in GRCh38, and it is repeat-rich), producing >100 bacterial
+  species falsely associated with sex. Constructs no decoy; recommends masking the
+  problematic k-mers instead.
+
+Consequence for Y work: with bacterial decoys present, genuine chrY reads from poorly
+catalogued regions have somewhere wrong to go, so decoys can *remove real signal*, not just
+noise. This is an independent, published account of the same artifact class documented in
+NOTES.md (MAPQ-0 pileups, the chrY:11.1-11.7 Mb no-go zone, collapsed repeats near 56.7 Mb),
+and it is a second reason to keep oral decoys off for the Iceman analysis.
+
+### Read pre-filtering vs decoy-in-reference
+An, Z., Cha, J. H., Lee, K. H. & Lee, I. Metagenome-assembled genomes enhance bacterial read
+decontamination and variant calling in oral samples. iScience (14 Oct 2025), PMC12616088 —
+reports that MAG-augmented catalogues (HROM, 72,641 genomes) beat eHOMD on 5 of 6 SNP metrics.
+Two caveats before reading that as a verdict on this pipeline:
+
+- **Different mechanism.** They use Kraken2 pre-alignment classification and discard reads
+  classified as bacterial; they are not adding decoys to the reference. They explicitly
+  position this against the decoy approach. Their eHOMD arm still improved over no
+  decontamination at all — the comparison is better-vs-good, not good-vs-harmful.
+- **Pre-filtering is the riskier design.** Discarding reads before alignment makes the
+  classifier the final arbiter, with no scoring contest and no surviving read to audit.
+  Where a bacterial genome is homologous to a human region, dropout can be allele-specific
+  and manufactures reference bias invisibly. Their filtering was for assembly quality
+  (completeness, contamination, chimerism), which is orthogonal to human-homology collisions.
+  The `-k101` collision filter in `mapping/GRCh38_bwa_index.sh` targets exactly that and has
+  no equivalent in their pipeline.
+
+Version note: their eHOMD arm filtered to 8,067 genomes, consistent with the V10.1+ generation
+(8,622 genomes, 2023-03-18) rather than the ~2,123-genome pre-10.1 releases. `VERSION_ORAL`
+defaults to 9.15, i.e. the smaller older generation — which is also why 10.01+ needs 64 GB.
+
+### Idea not pursued: eHOMD subset by hit count
+Selecting only the eHOMD genomes that actually attract reads would cut decoy size and memory
+substantially. Rejected as not worth it: determining which organisms are *universally* common
+would require mapping or BLASTing a large, internationally representative set of saliva-derived
+sequences, and the resulting subset would be a judgement call that needs revisiting per
+population and per eHOMD release. Using the whole collection with human-analogous sequences
+removed is simpler and has no selection bias to defend.
+
 ## Interpretation Boundaries
 Because the input is already human-filtered:
 - Absence of strong microbial signal does not prove absence in the original sample.

@@ -262,6 +262,8 @@ if [ "${VERSION_DECOY}" != "" ] && [ ! -e "${DECOY_BASE}_unmapped.alt" ]; then
 fi
 
 ## The Forsyth "expanded Human Oral Microbiome Database" https://www.homd.org
+## Rationale for oral decoys, and the chrY caveat: see "Metagenome Decoys" in METHODS.md.
+## Samson et al. Sci. Rep. 10, 19255 (2020); Kumar et al. Front. Genet. 14, 1081424 (2023).
 # Uses HLA_VER_DOT_PREFIX so results can be shared between A/H naming conventions
 ORAL_BASE=oral_microbiome_${VERSION_BASE}${VERSION_PATCH}${HLA_VER_DOT_PREFIX}_${VERSION_ORAL_CODE}_genomic
 if [ "${VERSION_ORAL}" != "" ] && [ ! -e "${ORAL_BASE}_unmapped.alt" ]; then
