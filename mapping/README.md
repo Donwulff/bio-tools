@@ -22,7 +22,34 @@ sequences to use as decoys/analysing saliva sequences. Decoy and HOMD
 sequences are filtered, leaving out sequences with longer than 100bp 
 exact matches to the patched human genome and HLA.
 
+### Memory requirements
+
+Memory scales with reference size, and the optional eHOMD oral-microbiome
+decoy set dominates it. See the `VERSION_ORAL` warning in
+`GRCh38_bwa_index.sh` for the authoritative figures: eHOMD 10.01 and later
+need up to 64 GB, while 9.15 (the default) fits in 32 GB.
+
+These figures are for `bwa mem`, and they apply both to building the index and
+to mapping against it — a reference you cannot index is also one you cannot
+align against on the same machine.
+
+eHOMD only matters when reads may contain oral flora: saliva-derived consumer
+genomes and most PGP genomes. It is irrelevant to ancient DNA work, which does
+not use it. Set `VERSION_ORAL=""` when oral decoying is not needed.
+
+Two consequences worth knowing:
+
+ * The generated intermediates committed here (`*.alt` files, filtered
+   decoy/HOMD sets) let a reference version be reused without re-running the
+   steps that produced them. For the larger eHOMD builds that is the difference
+   between needing a big-memory machine and not.
+ * `.alt` files are produced by aligning the patch and HLA sequences against the
+   masked no-alt primary assembly, so they require that index to exist first.
+   It is reused across HLA releases at the same patch level; a new patch level,
+   or a change to the GRC exclusions BED, forces a fresh one.
+
 TODO list:
+ * Evaluate bwa-mem2 as a drop-in for bwa mem, incl. index-build memory with eHOMD.
  * Oral microbiome classification support for the saliva sequences.
  * Make revert-bam.sh recognize unmapped bam from content and/or extension and skip unmapping.
  * See about workflow creating unmapped bam on the fly without needing to store it.
