@@ -154,3 +154,28 @@ allele; any recomputed call under the uniqueness criterion; the effect on any sa
   no filter of ours can recover them.
 - If adopted, no re-interpretation of any finding is authorised in the same commit as the re-run.
   Changed calls are recorded first; what they mean is a separate question asked afterwards.
+
+---
+
+## Outcome (2026-07-26): NOT ADOPTED
+
+Run the same day, after this document was committed. **U1 fails, U2 fails.** `MAPQ >= 25` stands
+unchanged and `uniqueness_audit()` continues to report without acting.
+
+- **U1 — fails.** 28 of 176 cells are asymmetric beyond 0.05 under MAPQ; **18** still are under the
+  uniqueness criterion. No marker's derived recovery got worse, so the repair points the right way,
+  but `L166` at 45 bp only moves 0.156 → 0.689 against a 0.05 threshold. Reduced, not repaired.
+- **U2 — fails, on the control named in §5.** `FGC5687` goes 0.000 → **0.250** at 60 bp and
+  0.160 → **0.890** at 100 bp, at a position with 23 and 5–6 off-target tile reads. Ancestral and
+  derived move together, so it is not an allele effect: it is admission of reads whose alternative
+  locus is real. 29 cells fail. Hard fail as registered, no override taken.
+- **U3 — not run.** Adoption required all three; two had already failed.
+- **Effect on this project's calls — deliberately not computed**, per the firewall in §5. See
+  `NOTES.md` for why that is the safer choice rather than an omission.
+
+The decisive observation, which was not predicted: uniqueness repairs the asymmetry **only at
+>= 60 bp**, and admits the paralogue **only at >= 60 bp**. There is no read length at which it is
+both safe and useful. Recorded as post-hoc.
+
+§7's "any fail" branch therefore applies in full: every `L166`/`Z6208` derived count in this
+repository remains a lower bound, and that caveat is now permanent rather than pending a repair.

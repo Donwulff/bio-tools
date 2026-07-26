@@ -230,7 +230,8 @@ def main() -> int:
     out = sys.stdout if a.out == "-" else open(a.out, "w")
     cols = ["marker", "chrom_src", "pos_src", "anc", "der", "allele", "read_len", "target",
             "n_reads", "n_mapped", "n_exact_correct_contig", "n_mq_ge_min",
-            "frac_recovered", "n_mq0", "n_offtarget", "modal_pos",
+            "frac_recovered", "n_unique", "frac_recovered_unique",
+            "n_mq0", "n_offtarget", "modal_pos",
             "modal_support", "target_ref_base", "ref_matches_anc",
             "top_offtarget"]
     print("\t".join(cols), file=out)
@@ -267,7 +268,7 @@ def main() -> int:
         for label, path in targets:
             rows = map_reads(fq, path, a.threads, a.aln_opts, work)
             agg = collections.defaultdict(lambda: {
-                "mapped": 0, "exact": 0, "mq": 0, "mq0": 0, "off": 0,
+                "mapped": 0, "exact": 0, "mq": 0, "uniq": 0, "mq0": 0, "off": 0,
                 "pos": collections.Counter(), "offc": collections.Counter()})
             for f in rows:
                 if len(f) < 6:
@@ -296,6 +297,17 @@ def main() -> int:
                 s_["pos"][spos + eff] += 1
                 if mapq >= a.min_mq:
                     s_["mq"] += 1
+                # Reported, not applied. `n_mq_ge_min` above is unchanged and
+                # remains the criterion every call in this repository uses; this
+                # counts what a uniqueness filter *would* have kept, so the two
+                # can be compared on tiles whose truth is known by construction.
+                # Adopting it is registered separately in
+                # PREREG_uniqueness_filter.md and is not done here.
+                xt = next((x[5:] for x in f[11:] if x.startswith("XT:A:")), None)
+                x0 = next((int(x[5:]) for x in f[11:] if x.startswith("X0:i:")),
+                          None)
+                if xt == "U" and x0 == 1:
+                    s_["uniq"] += 1
 
             for length in lengths:
                 for name, chrom, pos, anc, der in markers:
@@ -319,7 +331,9 @@ def main() -> int:
                     print("\t".join(str(x) for x in [
                         name, chrom, pos, anc, der, a.allele, length, label,
                         n, s_["mapped"], s_["exact"], s_["mq"],
-                        f"{s_['mq'] / n:.3f}", s_["mq0"], s_["off"],
+                        f"{s_['mq'] / n:.3f}",
+                        s_["uniq"], f"{s_['uniq'] / n:.3f}",
+                        s_["mq0"], s_["off"],
                         modal_pos or "NA", modal_sup, rb,
                         "yes" if rb == anc else ("no" if rb != "?" else "NA"),
                         top_off]), file=out)

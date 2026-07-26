@@ -119,4 +119,4 @@ allele he carries is the test.
 |---|---|---|---|
 | E1 | `FGC5671` in the Iceman | Would resolve whether the second `Z6219`-block SNP is real or a private Oberbipp variant. I want it derived. | **RUN 2026-07-26**, prediction held; F3 does not obtain |
 | E2 | `CGG017683` (Crimea), genotyped at the YFull `L166` positions | Asymmetric falsifier: could exclude the sample, could not support it. | **RUN 2026-07-26**, H0 — zero reads at every decisive position; closed as depth-limited |
-| E3 | Uniqueness filtering (`XT:A:U`, `X0=1`) replacing `MAPQ >= 25` | Known to change at least one published finding; requires re-run of every dataset | proposal only, per Amendment 2 |
+| E3 | Uniqueness filtering (`XT:A:U`, `X0=1`) replacing `MAPQ >= 25` | Changes a rule governing every call; promoted to its own document, `PREREG_uniqueness_filter.md` | **RUN 2026-07-26, NOT ADOPTED** — U1 and U2 both fail; it rescues the paralogue at `FGC5687` |

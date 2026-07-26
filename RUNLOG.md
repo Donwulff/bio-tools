@@ -918,3 +918,51 @@ samtools depth -a -q 0 -Q 0 -r Y:23989884-23989903 $SC/chrY.b37.bam   # 0
 Result: 3 of 20 covered (15.0% vs 17.5% expected at 0.192x), all single-read. `FGC5721` derived
 (registered `DERIVED_1read_transversion`, but uninformative — the Iceman is derived there too),
 `Z6134` and `S19530` single-read nocalls. `Z6219`/`L166`/`L167`/`Z6499` zero reads. **H0.**
+
+## E3 — uniqueness filter vs `MAPQ >= 25` (2026-07-26)
+
+Registered in `PREREG_uniqueness_filter.md` before running; **rejected**, findings in `NOTES.md`.
+
+`y_mappability.py` gained two **reported-only** columns, `n_unique` and `frac_recovered_unique`,
+counting what `XT:A:U && X0 == 1` would have kept. They sit behind the same correct-contig and
+exact-CIGAR gates as `n_mq_ge_min`, so the two criteria share a denominator. Existing columns are
+computed exactly as before; no call changes by running this. `results/mappability/y_marker_mappability.tsv`
+predates the new columns and was **not** regenerated — its values are unaffected and no claim needs it.
+
+```bash
+for al in anc der; do
+  annotate/y_mappability.py \
+    --markers markers/L166_defining.txt markers/Z6494_exclusion.txt markers/backbone_control.txt \
+    --source mapping/index/hg38p14DH3630O.fa \
+    --target working=mapping/index/hg38p14DH3630O.fa \
+    --target noalt=mapping/index/GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna \
+    --read-lengths 35,45,60,100 --threads 4 --allele $al \
+    --out results/mappability/e3_uniqueness_$al.tsv
+done
+```
+
+U1 and U2 applied exactly as registered — thresholds 0.05 and "must not exceed", both fixed before
+the run:
+
+```bash
+awk -F'\t' '
+ NR==FNR{ if(FNR==1){for(i=1;i<=NF;i++)c[$i]=i; next}
+          k=$c["marker"]"|"$c["read_len"]"|"$c["target"]
+          A_mq[k]=$c["frac_recovered"]; A_un[k]=$c["frac_recovered_unique"]
+          A_off[k]=$c["n_offtarget"]; next }
+ FNR==1{next}
+ { k=$c["marker"]"|"$c["read_len"]"|"$c["target"]
+   du=A_un[k]-$c["frac_recovered_unique"]; if(du<0)du=-du
+   if(du>0.05) u1++                                                  # U1
+   if($c["frac_recovered_unique"]<$c["frac_recovered"]) u1b++        # U1, derived worse
+   if(A_off[k]+0>0 && A_un[k]>A_mq[k]) u2++                          # U2, ancestral tile
+   if($c["n_offtarget"]+0>0 && $c["frac_recovered_unique"]>$c["frac_recovered"]) u2++
+ } END{print "U1 fails:",u1+0,"  U1 derived-worse:",u1b+0,"  U2 fails:",u2+0}
+' results/mappability/e3_uniqueness_anc.tsv results/mappability/e3_uniqueness_der.tsv
+```
+
+Result over 176 marker/length/target cells: **U1 fails 18** (28 were asymmetric under MAPQ, so the
+bias is reduced, not repaired; `L166` at 45 bp goes 0.156 → 0.689 against a 0.05 threshold),
+**U1 derived-worse 0**, **U2 fails 29** — including `FGC5687` at 60 bp (0.000 → 0.250) and 100 bp
+(0.160 → 0.890) with 23 and 5–6 off-target tile reads. Not adopted. U3 not run: the decision was
+already determined by U1 and U2.

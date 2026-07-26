@@ -2161,3 +2161,92 @@ were sequenced. Both were also `untested` in the Iceman on the MQ0 rule, for unr
 
 The other 20 lifted with the hs37d5 reference base matching the expected ancestral allele at
 **every one**, which is the check that would have caught a mis-lift.
+
+## E3: the uniqueness filter is rejected — it trades an ancestral bias for a paralogue (2026-07-26)
+
+Registered in `PREREG_uniqueness_filter.md` with the adoption criterion fixed before the measurement.
+**U1 fails and U2 fails. `MAPQ >= 25` stands.**
+
+Measured on simulated tiles cut from the reference — exact copies, no error, no damage — so any
+ancestral/derived difference is produced by the filter and nothing else. 22 markers × 4 read lengths
+× 2 references × 2 alleles.
+
+### U1 — the bias is reduced but not repaired
+
+Of 176 marker/length/target cells, **28** are asymmetric beyond 0.05 under `MAPQ >= 25`. Under the
+uniqueness criterion **18** still are. No marker's derived recovery got worse, so the direction of
+the repair is right; the magnitude is not.
+
+| marker | len | MAPQ anc/der | uniq anc/der |
+|---|---|---|---|
+| `L166` | 45 | 0.956 / **0.156** | 1.000 / **0.689** |
+| `L167` | 45 | 1.000 / 0.222 | 1.000 / 0.689 |
+| `Z6208` | 45 | 0.933 / **0.044** | 1.000 / 0.933 |
+| `Z6208` | 100 | 1.000 / 0.680 | 1.000 / 1.000 |
+
+`L166` at 45 bp reproduces Amendment 2's quoted 0.956 / 0.156 exactly, which is a reproducibility
+check on the whole measurement obtained for free. Uniqueness lifts derived recovery from 0.156 to
+0.689 — a real improvement, and still **six times** the registered 0.05 threshold. U1 fails.
+
+### U2 — and it rescues reads that belong somewhere else
+
+`FGC5687` was named in the registration as the control for exactly this, before the run:
+
+| marker | len | MAPQ | uniq | off-target reads |
+|---|---|---|---|---|
+| `FGC5687` | 35 | 0.000 | 0.000 | 26 / 27 |
+| `FGC5687` | 45 | 0.000 | 0.000 | 34 / 30 |
+| **`FGC5687`** | **60** | **0.000** | **0.250** | 23 / 23 |
+| **`FGC5687`** | **100** | **0.160** | **0.890** | 6 / 5 |
+
+At 100 bp the uniqueness criterion turns a marker with 0.160 recovery into one with 0.890, at a
+position where the whole-genome measurement puts a quarter of the tile on another contig. Ancestral
+and derived move together (0.890 / 0.890), so this is not an allele effect at all — it is a wholesale
+admission of reads whose alternative locus is real. 29 cells fail U2. **Hard fail, no override**, as
+registered.
+
+### The trade is exact, and that is what makes it fatal
+
+Uniqueness repairs the `L166`/`L167`/`Z6208`/`Z6494` asymmetry **only at 60 bp and above**, where all
+four go to 1.000 / 1.000. `FGC5687` admits the paralogue **only at 60 bp and above**. The read
+lengths at which the criterion fixes the bias are precisely the read lengths at which it stops
+distinguishing the locus from its homologue. There is no window where it is safe and useful.
+
+This is the same defect as the chrY-only reference finding, arriving by a different route. There, the
+paralogue was deleted from the *reference*, so reads had nowhere else to go and `pct_mq0` read 0%
+because the reference was deficient. Here the paralogue is deleted from the *acceptance rule*: `X0`
+counts best hits and ignores that a suboptimal hit exists, so `XT:A:U` reads clean at a position that
+cannot be called. Both make a read look unique by removing the thing it competes with, and both
+produce a confident call with clean QC. `FGC5687` is the marker that exposed the first defect and it
+is the marker that exposes this one.
+
+### Consequences
+
+**`MAPQ >= 25` remains in force unchanged.** `ylib.uniqueness_audit()` continues to report without
+acting. No call in this repository moves, and the tooling change is additive: `y_mappability.py`
+gained `n_unique` and `frac_recovered_unique` as reported columns, and every existing column
+computes exactly as before.
+
+**Amendment 2's consequence is now permanent, not provisional.** Every `L166`/`Z6208` derived count
+here is a **lower bound**, and no `no_coverage` at those positions is evidence of anything — and the
+obvious repair has now been tested and rejected, so that caveat cannot be retired by adopting it.
+
+**U3 was not run.** The registered rule is adoption iff all three hold; U1 and U2 both failed, so the
+decision was already determined and running the known-answer regression under a criterion that will
+not be used would have proved nothing.
+
+**The effect on this project's own calls was deliberately not computed.** The registration promised
+it would not enter the decision. With the criterion rejected, computing it would produce nothing but
+a table of what could be gained by adopting a filter that fails its safety control — which is the
+temptation the firewall exists to block. Not computing it is the safer choice and is recorded as a
+choice, not an omission.
+
+**`Z6219` is untouched either way.** It recovers 1.000 / 1.000 at 35, 45, 60 and 100 bp under both
+criteria, with zero off-target placements. The central evidence of `PREREG_Z6219_node.md` does not
+depend on this filter question at all — which is worth stating precisely because the outcome was not
+known when the measurement was registered.
+
+**What would actually be right** is a criterion that examines the *identity* of the suboptimal hit —
+whether the alternative locus is a real paralogue or a chance similarity — which `X0`/`X1` counts
+discard by construction. That is a different aligner's problem, not a threshold change, and nothing
+here authorises attempting it.
