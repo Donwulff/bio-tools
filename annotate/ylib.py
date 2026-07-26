@@ -85,6 +85,39 @@ def mapq_audit(bam: str, chrom: str, pos: int, ceiling: int) -> tuple[int, int, 
     return n, n0, ntop
 
 
+def uniqueness_audit(bam: str, chrom: str, pos: int,
+                     min_mq: int = 25) -> tuple[int, int]:
+    """(n_unique_below_mq, n_ambiguous_below_mq) for sub-threshold reads.
+
+    Separates the two reasons a read is discarded by the MAPQ cut, which the cut
+    itself conflates. bwa aln reports XT:A:U with X0=1 for a read placed at
+    exactly one locus; such a read can still fall below MAPQ 25 purely because a
+    *suboptimal* hit exists elsewhere and it carries a mismatch. Since a derived
+    read carries a mismatch by definition and an ancestral one does not, the cut
+    is allele-biased wherever X1 > 0 -- measured at L166 (derived recovery 0.156
+    vs ancestral 0.956 at 45 bp) and at Z6208, both of which recover fully at
+    100-150 bp, so no modern-data quality rating can flag it.
+
+    Reported, never acted on: this returns evidence for a human to read beside
+    the call, and changes no call. Switching the filter from MAPQ to uniqueness
+    is a separate proposal requiring its own registration.
+    """
+    p = subprocess.run(["samtools", "view", bam, f"{chrom}:{pos}-{pos}"],
+                       capture_output=True, text=True, check=True)
+    uniq = amb = 0
+    for ln in p.stdout.splitlines():
+        f = ln.split("\t")
+        if len(f) < 12 or int(f[1]) & 0x900 or int(f[4]) >= min_mq:
+            continue
+        xt = next((x[5:] for x in f[11:] if x.startswith("XT:A:")), None)
+        x0 = next((int(x[5:]) for x in f[11:] if x.startswith("X0:i:")), None)
+        if xt == "U" and x0 == 1:
+            uniq += 1
+        else:
+            amb += 1
+    return uniq, amb
+
+
 def site_call(dp: int, a: int, d: int, mclass: str) -> str:
     """Pre-registered allele call.
 

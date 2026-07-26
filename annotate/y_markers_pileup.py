@@ -35,6 +35,7 @@ import tempfile
 from collections import Counter
 
 from ylib import (detect_mq_ceiling, mapq_audit, mutation_class, region_flag,
+                  uniqueness_audit,
                   site_call, site_qc)
 
 INDEL = re.compile(r"[+-](\d+)")
@@ -147,6 +148,11 @@ def main() -> int:
     ap.add_argument("--label", default="", help="block/node label recorded in the output")
     ap.add_argument("--min-mq", type=int, default=25)
     ap.add_argument("--min-bq", type=int, default=20)
+    ap.add_argument("--report-uniqueness", action="store_true",
+                    help="add sub_mq_unique/sub_mq_ambiguous columns showing how "
+                         "many discarded reads were uniquely placed. Opt-in so "
+                         "that default output stays byte-identical to every "
+                         "table already committed under results/.")
     ap.add_argument("--flank", type=int, default=300,
                     help="bp of read-extraction padding around each marker")
     ap.add_argument("--max-depth", type=int, default=1000)
@@ -191,6 +197,8 @@ def main() -> int:
             "depth", "anc_reads", "der_reads", "other_reads", "call",
             "n_reads", "pct_mq0", "mq_top", "n_mq_top", "site_qc", "region",
             "isogg", "yfull_node"]
+    if args.report_uniqueness:
+        cols += ["sub_mq_unique", "sub_mq_ambiguous"]
     print("\t".join(cols), file=out)
 
     ceiling = detect_mq_ceiling(args.bam)
@@ -199,8 +207,11 @@ def main() -> int:
     for name in ordered:
         m = markers.get(name)
         if m is None:
-            print("\t".join([args.label, name] + ["."] * 4 + ["0"] * 4
-                            + ["not_in_catalogue"] + ["."] * 6 + [".", "."]), file=out)
+            row = ([args.label, name] + ["."] * 4 + ["0"] * 4
+                   + ["not_in_catalogue"] + ["."] * 6 + [".", "."])
+            if args.report_uniqueness:
+                row += [".", "."]
+            print("\t".join(row), file=out)
             tally["not_in_catalogue"] += 1
             continue
         _ref, dp, cnt = pile.get((m["chrom"], m["pos"]), (".", 0, Counter()))
@@ -219,7 +230,7 @@ def main() -> int:
         # test is skipped by passing 1/1 rather than reported wrongly.
         n_reads, n_mq0, n_top = mapq_audit(args.bam, m["chrom"], m["pos"], ceiling)
         pct = 100.0 * n_mq0 / n_reads if n_reads else None
-        print("\t".join([
+        row = [
             args.label, name, m["chrom"], str(m["pos"]),
             f"{m['anc']}>{m['der']}", mclass,
             str(dp), str(a), str(d), str(other), call,
@@ -227,7 +238,16 @@ def main() -> int:
             str(ceiling), str(n_top), site_qc(pct, n_top, 1, 1),
             region_flag(m["chrom"], m["pos"]),
             m["isogg"], m["yfull_node"],
-        ]), file=out)
+        ]
+        if args.report_uniqueness:
+            # Reported beside the call, never folded into it. A non-zero
+            # sub_mq_unique means reads were discarded that were placed at
+            # exactly one locus -- the allele-biased failure mode documented in
+            # NOTES 2026-07-26 -- and the reader is told rather than the call
+            # being quietly changed.
+            u, amb = uniqueness_audit(args.bam, m["chrom"], m["pos"], args.min_mq)
+            row += [str(u), str(amb)]
+        print("\t".join(row), file=out)
 
     if out is not sys.stdout:
         out.close()
