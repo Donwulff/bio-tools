@@ -82,17 +82,33 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir", required=True, help="output dir of y_genotype_batch.sh")
     ap.add_argument("--coverage", default=None)
+    ap.add_argument("--prefix", default=None,
+                    help="table filename prefix; matches PREFIX in "
+                         "y_genotype_batch.sh. Default: auto-detect, which "
+                         "keeps the legacy 'swiss' tables readable without "
+                         "having to remember what produced them.")
     a = ap.parse_args()
 
-    l166 = read_table(os.path.join(a.dir, "swiss_L166_defining.tsv"))
-    z6494 = read_table(os.path.join(a.dir, "swiss_Z6494_exclusion.tsv"))
-    back = read_table(os.path.join(a.dir, "swiss_backbone_control.tsv"))
+    prefix = a.prefix
+    if prefix is None:
+        for cand in ("y", "swiss"):
+            if os.path.exists(os.path.join(a.dir, f"{cand}_L166_defining.tsv")):
+                prefix = cand
+                break
+        else:
+            print(f"no *_L166_defining.tsv in {a.dir}; pass --prefix",
+                  file=sys.stderr)
+            return 1
+
+    l166 = read_table(os.path.join(a.dir, f"{prefix}_L166_defining.tsv"))
+    z6494 = read_table(os.path.join(a.dir, f"{prefix}_Z6494_exclusion.tsv"))
+    back = read_table(os.path.join(a.dir, f"{prefix}_backbone_control.tsv"))
     if not l166:
-        print(f"no swiss_L166_defining.tsv in {a.dir}", file=sys.stderr)
+        print(f"no {prefix}_L166_defining.tsv in {a.dir}", file=sys.stderr)
         return 1
 
     cov = {}
-    covpath = a.coverage or os.path.join(a.dir, "swiss_coverage.tsv")
+    covpath = a.coverage or os.path.join(a.dir, f"{prefix}_coverage.tsv")
     for r in read_table(covpath):
         cov[r["sample"]] = r.get("chrY_DoC_callable", "NA")
 

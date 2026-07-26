@@ -21,6 +21,19 @@
 #   REF      reference FASTA the BAMs were mapped to (required)
 #   SITES    site TSV for the by-coordinate pass
 #            (default: <marker_dir>/iceman_novel_candidates_usable8.tsv)
+#   PREFIX   output filename prefix (default: y)
+#   INDEX    marker coordinate index (default: resources/marker_index.tsv.gz)
+#
+# PREFIX exists because this prefix was once hardcoded to "swiss", which would
+# label Hungarian, Sardinian and Bavarian results as Swiss. The tables already
+# committed under results/swiss/ and results/swiss15/ were produced with that
+# hardcoded value and are reproduced by passing PREFIX=swiss explicitly.
+#
+# Not every .txt in the marker directory is a marker set -- markers/ also holds
+# membership lists such as family_a_members.txt, whose entries are sample IDs.
+# Globbing those in would genotype "MX150" as though it were a marker name, so
+# each candidate file is checked against the marker index first and skipped, out
+# loud, if none of its entries resolve.
 
 set -uo pipefail
 
@@ -30,14 +43,33 @@ MARKERDIR="${3:-markers}"
 
 REF="${REF:?set REF to the reference the BAMs were mapped to}"
 SITES="${SITES:-${MARKERDIR}/iceman_novel_candidates_usable8.tsv}"
+PREFIX="${PREFIX:-y}"
+INDEX="${INDEX:-resources/marker_index.tsv.gz}"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 shopt -s nullglob
 BAMS=("${BAMDIR}"/*.rmdup.bam)
 [ "${#BAMS[@]}" -gt 0 ] || { echo "no *.rmdup.bam in ${BAMDIR}" >&2; exit 1; }
-SETS=("${MARKERDIR}"/*.txt)
-[ "${#SETS[@]}" -gt 0 ] || { echo "no marker sets in ${MARKERDIR}" >&2; exit 1; }
+
+CAND=("${MARKERDIR}"/*.txt)
+[ "${#CAND[@]}" -gt 0 ] || { echo "no .txt files in ${MARKERDIR}" >&2; exit 1; }
+
+[ -s "$INDEX" ] || { echo "no marker index at ${INDEX}" >&2; exit 1; }
+KNOWN="$(mktemp)" || exit 1
+zcat -f "$INDEX" | tail -n +2 | cut -f1 | sort -u > "$KNOWN"
+
+SETS=()
+for f in "${CAND[@]}"; do
+  n=$(sed 's/#.*//' "$f" | tr -d ' \t' | grep -v '^$' | sort -u | comm -12 - "$KNOWN" | wc -l)
+  if [ "$n" -gt 0 ]; then
+    SETS+=("$f")
+  else
+    echo "SKIP  $(basename "$f"): no entries resolve as markers (not a marker set)" >&2
+  fi
+done
+rm -f "$KNOWN"
+[ "${#SETS[@]}" -gt 0 ] || { echo "no usable marker sets in ${MARKERDIR}" >&2; exit 1; }
 
 mkdir -p "$OUTDIR"
 TMP="$(mktemp -d)"
@@ -50,7 +82,7 @@ echo "sites: ${SITES}"
 # --- named marker sets -------------------------------------------------------
 for set_file in "${SETS[@]}"; do
   set_name="$(basename "$set_file" .txt)"
-  out="${OUTDIR}/swiss_${set_name}.tsv"
+  out="${OUTDIR}/${PREFIX}_${set_name}.tsv"
   : > "${TMP}/body"
   hdr=""
 
@@ -72,7 +104,7 @@ done
 
 # --- uncatalogued positions --------------------------------------------------
 if [ -s "$SITES" ]; then
-  out="${OUTDIR}/swiss_novel_sites.tsv"
+  out="${OUTDIR}/${PREFIX}_novel_sites.tsv"
   : > "${TMP}/body"
   hdr=""
   for bam in "${BAMS[@]}"; do
@@ -90,7 +122,7 @@ if [ -s "$SITES" ]; then
 fi
 
 # --- coverage, always with its denominator -----------------------------------
-COV="${OUTDIR}/swiss_coverage.tsv"
+COV="${OUTDIR}/${PREFIX}_coverage.tsv"
 {
   printf 'sample\tchrY_reads\tchrY_reads_mq25\tchrY_bases_mq25_bq20\tchrY_DoC_callable\n'
   for bam in "${BAMS[@]}"; do
