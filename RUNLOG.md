@@ -517,6 +517,77 @@ REF=$PWD/mapping/index/hg38p14DH3630O.fa \
   mapping/map_se_batch.sh /mnt/AncientDNA/SwissLN-2020 8
 ```
 
+### Unhedged `G-L166` set (2026-07-26)
+
+Pre-registered in `PREREG_unhedged_L166.md`, committed `e37b8ab` **before any read was staged**.
+Five individuals from three unrelated studies, all carrying the *unhedged* ISOGG longhand
+`G2a2a1a2a1a` with bare `G-L166` in the YFull and Y-Haplotree columns.
+
+The compilation returns seven such rows; two of them are one man. `UNTA58_68Sk1`
+(MittnikScience2019) and `E09538` (OlaldeNature2018) share radiocarbon lab number **MAMS-29075**
+(3870±30 BP), mtDNA `J1c` and coordinates, and the Mittnik ID decodes to the Olalde colloquial
+description ("Feature 68 Skeleton 1" = site UNTA58, feature 68, skeleton 1). `SX10` is the
+seventh and was already genotyped in `results/swiss15/`. **Any tally over that list is one high
+unless the duplicate is collapsed.**
+
+Panel membership was settled before staging, from the panel definition rather than from the data
+(`results/panel/1240k_marker_membership.tsv`):
+
+```bash
+annotate/panel_membership.py \
+  --panel /mnt/MyGenome/Genos/FuQ/51.2.2M.snp \
+  --markers markers/L166_defining.txt markers/Z6494_exclusion.txt markers/backbone_control.txt \
+  --chain /mnt/GenomicData/OpenSNP/puller/hg38ToHg19.over.chain \
+  --out results/panel/1240k_marker_membership.tsv
+```
+
+18 of 22 markers on-panel. `L166`, `L167`, `Z6219` and `PF3239` are deliberate targets; `Z6494`,
+`Z6208`, `Z6488` and `FGC5687` are not. Matching is by lifted position, not by name — name
+matching alone returns 5 of 22 and is **wrong**, because the panel carries synonyms (`P15` as
+`PF3112`, `M3308` as `L1259`, `L91` as `S285`, `P287` as `rs4116820`). All 18 positional hits
+agree on both alleles, which is what validates the liftover. Panel md5 `6389a9c8…`.
+
+Staging (10 runs, 1.3 GB, MD5-verified, three studies into one directory; the manifest merge
+added in the previous run is what makes that safe):
+```bash
+D=/mnt/AncientDNA/Unhedged-2026
+annotate/fetch_ena_runs.sh PRJEB23635 $D '^I5118$'
+annotate/fetch_ena_runs.sh PRJEB35980 $D '^(I15942|I14677|I14678)$'
+annotate/fetch_ena_runs.sh PRJEB34400 $D '^UNTA58_68Sk1$'
+```
+
+Study accessions were **verified by ENA query before use, not assumed**. Two plausible guesses
+made while locating these resolved to a *Medicago truncatula* rhizosphere GWAS (`PRJEB25849`) and
+a feline cardiomyopathy study (`PRJEB27187`). This is the same failure mode as the `PRJEB36959`
+correction above.
+
+| sample | study | runs | total bases | autosomal | site, date |
+|---|---|---|---|---|---|
+| `I5118` | `PRJEB23635` | `ERR2207344`, `ERR2207549` | 375.5 Mbp | 1.631 | Mezőcsát-Hörcsögös, HU; 3300–3000 BCE |
+| `I14678` | `PRJEB35980` | `ERR3800865`, `ERR3800866` | 848.8 Mbp | 3.867 | Serra Crabiles, Sardinia |
+| `I14677` | `PRJEB35980` | `ERR3800863`, `ERR3800864` | 717.2 Mbp | 3.204 | Serra Crabiles, Sardinia |
+| `I15942` | `PRJEB35980` | `ERR3800873`, `ERR3800874` | 315.0 Mbp | 0.957 | Anghelu Ruju, Sardinia |
+| `UNTA58_68Sk1` | `PRJEB34400` | `ERR3518170`, `ERR3518171` | 166.6 Mbp | 1.040 | Augsburg, Bavaria |
+
+`I14677` and `I14678` are from the same tomb at identical coordinates and count as **one**
+independent observation unless their reads show otherwise — see the prereg's Independence section.
+
+Mapping:
+```bash
+REF=$PWD/mapping/index/hg38p14DH3630O.fa \
+  mapping/map_se_batch.sh /mnt/AncientDNA/Unhedged-2026 8
+```
+
+**`mapping/map_se_batch.sh` and `mapping/map_se_adna.sh` were fixed before this run** (`09754a8`).
+Every sample here has two runs, and the batch driver keyed its work off individual FASTQs while
+naming output `<sample>.rmdup.bam` and skipping when that file existed — so the second run of each
+sample would have been silently dropped, no error and no log line. Glob order made the loss uneven:
+for `UNTA58_68Sk1` the smaller run sorts first, so 2.54M of 3.30M reads (77%) would have gone
+missing from the shallowest sample in the set. Runs are now grouped by sample and merged **before**
+`markdup`, because PCR duplicates of one library are duplicates whichever run they were sequenced
+in. Regression: re-running the batch over `/mnt/AncientDNA/SwissLN-2020` reports 15 samples, 1 run
+each, `mapped=0 skipped=15 failed=0` — those results are untouched.
+
 ## Open Questions
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).
 - Decide whether alt/decoy calls are retained only as technical appendix or excluded from variant interpretation entirely.
