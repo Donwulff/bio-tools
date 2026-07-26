@@ -336,7 +336,8 @@ The ancient sample on the YFull `G-L166` page resolves to public data, and was t
 - Submitted BAM is GRCh37/hs37d5-aligned (`1..22,X,Y,MT`) and ships with a `.bai`, so
   `samtools view -b <https-url> Y` streams the chrY slice without downloading all 27.3M reads.
 - **Coverage is the limiting factor**: 54,685 chrY reads, 2,413,071 bases = **0.041x on chrY**.
-  P(any read at a given site) = 4%. All reads pre-filtered to MQ>=25.
+  P(any read at a given site) = 4%. All reads pre-filtered to **MQ>=30** (read from the deposited
+  BAM header 2026-07-26; this line previously said MQ>=25, which was wrong).
 - Marker test (56 deep-G markers lifted hg38->hg19): 11 covered, all single-read. Derived at
   `S19530/Z6213` (an L166-level SNP, consistent with the YFull assignment) and at `Z6504`
   (single deamination-prone read where the Iceman is ancestral at DP 7 — treat as damage).
@@ -1071,7 +1072,7 @@ now based on 5 informative sites rather than 2.
 Full FASTQ is available for these samples (`ERR14752008.fastq.gz` etc.), so a proper remap to hg38 through
 `mapping/revert-bam.sh` is possible with **no** reference bias — the bias objection only applies to
 re-aligning an already-Y-filtered slice. Remapping is therefore legitimate here, and would additionally
-recover reads lost to the depositors' `MQ>=25` pre-filter. It just does not help `CGG017683`, where the
+recover reads lost to the depositors' MQ pre-filter (`MQ>=30` for `CGG017683`). It just does not help `CGG017683`, where the
 limit is 0.192x depth rather than alignment quality.
 
 **Iceman Novel-Branch Candidate SNPs (superseded — see the MAPQ-filtered re-derivation below)**
@@ -1476,3 +1477,62 @@ Neolithic lineage and is **not** evidence of demographic replacement, violence, 
 Note also that `G-L166` itself is *not* extinct — FTDNA has L166 testers
 (`results/iceman_y_ftdna_project_terminals.tsv`). Whatever is missing is sub-branch structure, not
 the clade.
+
+## Every Sample In This Project Came From A Mapped-Only Deposit (2026-07-26)
+
+Raised as a suspicion — that ancient deposits are probably filtered to mapped reads, since the
+libraries are mostly incidental metagenome. Checked, and it is true of **19 of our 20 own-mapped
+samples**. This qualifies the "we did our own mapping so they are comparable" claim in a way that
+should have been established before the first BAM was made.
+
+**Every ENA "FASTQ" used here is ENA-generated from a submitted BAM.** `submitted_format=BAM` for
+`ERR14752008` (Crimea), `ERR2207344` (Olalde), `ERR3518170` (Mittnik) and `ERR3800863`
+(Furtwängler) — the four checked, spanning all four studies. For `CGG017683` the arithmetic is
+exact: ENA's fastq `read_count` is 27,290,045 and the BAM's mapped total is 27,290,045, unmapped 0.
+The fastq *is* the filtered BAM.
+
+**Confirmed empirically against our own output** (`samtools idxstats`, unmapped fraction of the
+BAMs this repo produced):
+
+| sample set | unmapped fraction |
+|---|---|
+| all 15 Swiss (`MX*`, `SX*`) | 0.000 (2–138 reads each) |
+| `I14677`, `I14678`, `I15942`, `I5118` | 0.000 |
+| **`UNTA58_68Sk1`** | **0.434** |
+
+Nineteen inputs contain essentially nothing that fails to map, which is only possible if the
+depositor had already discarded everything that did not map. `UNTA58_68Sk1` is the sole exception,
+and this is now the **third** independent signal that its deposit is a different kind of object from
+the others: 97% of chrY reads at MAPQ>=25 against 41–43% for the capture libraries; a contradictory
+`Targeted-Capture`/`RANDOM` annotation; and now 43% of the library not human-mappable at all, which
+is what an unfiltered shotgun aDNA library actually looks like.
+
+**What our re-mapping does and does not achieve.** It is genuine and worth having: read placement,
+MAPQ, damage-aware calling and the reference build are ours, applied identically across samples. But
+the *read set* is not ours. It was selected by each depositor's aligner against each depositor's
+reference. **We can re-place any read some earlier mapping already accepted; we can never recover a
+read that earlier mapping rejected.** Where the depositor used GRCh37 this is a build-specific
+ascertainment sitting inside the data — GRCh38 substantially revised chrY, so sequence that exists
+only in GRCh38 cannot be represented no matter what we map to. The bias has a known direction (loss
+only) but an unknown magnitude, and it cannot be corrected from the deposited data.
+
+**The one depositor pipeline that is publicly readable.** `CGG017683`'s BAM header, in order:
+
+    AdapterRemoval (reads are *.fastq.truncated.gz)
+    bwa samse            -> hs37d5
+    samtools view -F 4 -q 30
+    samtools view -F 1024 -q 30 -b ... 1..22 X Y MT     (drops hs37d5 decoys/unplaced)
+    picard MarkDuplicates REMOVE_DUPLICATES=true
+    GATK IndelRealigner 3.7
+    samtools calmd -Erb  -> hs37d5
+
+Three things follow. The MQ cut is **30, not 25** — the earlier note in this file was wrong and is
+corrected above. The `-q 30` was applied **in GRCh37 coordinates**, so any site multi-mapping in
+GRCh37 but unique in GRCh38 has already been stripped. And `calmd -Erb` means **extended BAQ was
+computed**; whether that capped `QUAL` in place or was written as a `BQ` tag depends on `-A`, which
+is absent, so the effect on our `--min-bq 20` threshold is **unverified and needs checking before
+this sample's base qualities are compared with any other sample's**.
+
+The submitted BAMs for the Swiss, Sardinian, Hungarian and Bavarian runs are **not** distributed
+(`submitted_ftp` is empty despite `submitted_format=BAM`), so their filter chains cannot be read the
+same way. Their filters are therefore unknown, not assumed equal.
