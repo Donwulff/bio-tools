@@ -1987,3 +1987,34 @@ man, and `I5118` — the only one available — has **no coverage at `FGC5671`**
 The Test B run regenerated every previously committed table as a side effect. **All ten** tables in
 `results/swiss15/` and `results/unhedged/` reproduce byte-identically from
 `results/testB/` and `results/testB_unhedged/`, at `git_commit=96de9d7`.
+
+## chrY-only references manufacture confident false calls (2026-07-26)
+
+The prediction recorded as UNTESTED in `RUNLOG.md` was run and holds.
+
+| marker | whole-genome | chrY-only |
+|---|---|---|
+| **`FGC5687`** | **0.000** — 45/45 reads MQ0, 29 off-target | **1.000**, 0 MQ0, 0 off-target |
+| `Z6215` | 0.778 | 1.000 |
+| `Z6208` | 0.933 | 1.000 |
+| nine others | unchanged | unchanged |
+
+`FGC5687` is X-homologous. Mapped against a whole-genome reference its reads have somewhere else to
+go, land ambiguously, and the site is correctly unusable. Mapped against chrY alone **every read
+returns at full MAPQ with 0% MQ0**, because the paralogue has been removed from the reference.
+
+**The failure is silent and self-certifying.** `pct_mq0` is the statistic that catches a collapsed
+repeat, and here it reads 0% *because* the reference is deficient — the deficiency erases its own
+evidence. A chrY-only pipeline emits a confident call with a clean QC flag at a position that cannot
+be called at all. None of the three "improvements" above is real; each is the same artifact at a
+different magnitude.
+
+This is not only about our tooling. chrY-only mapping is common in ancient-DNA Y work, so published
+calls at X-homologous positions can carry full confidence and no warning. It also bounds what our
+own `Z6494` exclusion rests on: `FGC5687` returns 0.000 against every whole-genome reference tested,
+so that exclusion rests on **two** markers, not three — and a Y-only reanalysis would appear to
+recover the third while actually inventing it.
+
+**Correction to an earlier note.** `RUNLOG.md` recorded that `bwa index` "did not complete under
+load". It was killed when its parent shell exited, at 53% of the BWT after about two minutes. Under
+`setsid` the same index builds in 199 s. Load was never the cause.

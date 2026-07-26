@@ -684,12 +684,11 @@ build a 45 bp read centred on each marker, substitute the derived base, then
 
 ### Not done, and explicitly outstanding
 
-- **chrY-only pipeline emulation — NEVER RAN.** A chrY-only bwa index was started to test whether a
-  Y-only pipeline manufactures apparent coverage at `FGC5687` (X-homologous, 0.000 recovery against
-  a whole-genome reference). `bwa index` on the 57 Mb contig did not complete under load and
-  `chrYonly.fa.sa` was never written. **The prediction — that recovery would jump from 0.000 to near
-  1.000, i.e. a Y-only pipeline produces confident false calls there — is UNTESTED.** It must not be
-  cited as a result.
+- ~~**chrY-only pipeline emulation — NEVER RAN.**~~ **Run 2026-07-26 and the prediction confirmed;
+  see "chrY-only emulation" below.** The reason it had not run was also recorded wrongly here: the
+  note said `bwa index` "did not complete under load", but the log stops after 2 minutes at 53% of
+  the BWT and no `bwa` process survived, so it was **killed when its parent shell exited**, not slow.
+  Relaunched under `setsid` it finished in **199 seconds**. Load was never the problem.
 - **Test A (F1 check) — not run.** `Z6219` for `I5118` sits in `results/unhedged/unhedged_L166_defining.tsv`
   and has deliberately not been read; see `PREREG_Z6219_node.md` §9.
 - **Test B (co-segregation scan) — not run.** Marker set committed as
@@ -777,5 +776,23 @@ committed table; all ten are byte-identical:
   `I5118`, the only `L166`-derived man available, has **no coverage** at `FGC5671`. The claim that
   the node rests on two SNPs currently borrows YFull's block assignment for the second one.
 - **F2 remains largely untested.** `MX210`, `MX213` and `SX10` have no `PF3239` coverage.
-- **The chrY-only pipeline emulation still has not run** (see previous section). Unchanged.
+- ~~**The chrY-only pipeline emulation still has not run.**~~ Run 2026-07-26; see below.
 - **Uniqueness-based filtering still not applied.** Unchanged; still needs its own registration.
+
+## chrY-only pipeline emulation (2026-07-26) — prediction confirmed
+
+Long outstanding, and the reason was misdiagnosed twice. `bwa index` was not slow: it was being
+reaped with its parent shell. Detached properly it takes 199 s.
+
+    SC=<scratchpad>
+    setsid nohup bwa index $SC/chrYonly.fa > $SC/bwaidx.log 2>&1 < /dev/null &
+
+    annotate/y_mappability.py \
+      --markers markers/Z6494_exclusion.txt markers/L166_defining.txt \
+      --source mapping/index/hg38p14DH3630O.fa \
+      --target wholegenome=mapping/index/GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna \
+      --target chrYonly=$SC/chrYonly.fa \
+      --read-lengths 45 --threads 4 \
+      --out results/mappability/chrYonly_emulation.tsv
+
+Result table committed as `results/mappability/chrYonly_emulation.tsv`.
