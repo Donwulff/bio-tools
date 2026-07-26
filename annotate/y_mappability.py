@@ -113,6 +113,19 @@ def ref_base(ref: str, chrom: str, pos: int) -> str:
     return s if s else "?"
 
 
+def substitute(seq: str, length: int, base: str) -> str:
+    """Put `base` at the marker position (the centre of a 2L-1 window).
+
+    Tiling straight from the reference gives every read the ANCESTRAL allele, so
+    a recovery figure obtained that way measures ancestral-read mappability only.
+    A read carrying the derived allele scores one mismatch lower against this
+    locus and may score better against a paralogous one -- which is a different
+    question and, for a marker two curators have excluded or down-rated, the more
+    important one.
+    """
+    return seq[:length - 1] + base + seq[length:]
+
+
 def build_tile(seq: str, marker: str, length: int) -> list[tuple[str, str]]:
     """Every read of `length` overlapping the centre of `seq`.
 
@@ -180,6 +193,12 @@ def main() -> int:
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--aln-opts", default=DEFAULT_ALN_OPTS)
     ap.add_argument("--min-mq", type=int, default=MIN_MQ)
+    ap.add_argument("--allele", choices=("anc", "der"), default="anc",
+                    help="which allele the tiled reads carry at the marker "
+                         "position (default anc, i.e. straight from the "
+                         "reference). 'der' tests whether a derived read maps "
+                         "back to the same locus -- allele asymmetry is a "
+                         "reliability failure a reference-only tile cannot see.")
     ap.add_argument("--out", default="-")
     a = ap.parse_args()
 
@@ -209,7 +228,7 @@ def main() -> int:
         return 1
 
     out = sys.stdout if a.out == "-" else open(a.out, "w")
-    cols = ["marker", "chrom_src", "pos_src", "anc", "der", "read_len", "target",
+    cols = ["marker", "chrom_src", "pos_src", "anc", "der", "allele", "read_len", "target",
             "n_reads", "n_mapped", "n_exact_correct_contig", "n_mq_ge_min",
             "frac_recovered", "n_mq0", "n_offtarget", "modal_pos",
             "modal_support", "target_ref_base", "ref_matches_anc",
@@ -230,6 +249,8 @@ def main() -> int:
                     print(f"SKIP {name} at L={length}: short/absent window",
                           file=sys.stderr)
                     continue
+                if a.allele == "der":
+                    seq = substitute(seq, length, der)
                 t = build_tile(seq, name, length)
                 per_marker[(name, length)] = len(t)
                 tiles.extend(t)
@@ -296,7 +317,7 @@ def main() -> int:
                     top_off = ",".join(f"{k}:{v}" for k, v in
                                        s_["offc"].most_common(3)) or "-"
                     print("\t".join(str(x) for x in [
-                        name, chrom, pos, anc, der, length, label,
+                        name, chrom, pos, anc, der, a.allele, length, label,
                         n, s_["mapped"], s_["exact"], s_["mq"],
                         f"{s_['mq'] / n:.3f}", s_["mq0"], s_["off"],
                         modal_pos or "NA", modal_sup, rb,

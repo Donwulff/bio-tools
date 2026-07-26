@@ -198,3 +198,51 @@ untested and must be stated as a residual risk regardless of outcome.
 
 **Not yet read at time of writing:** any allele-substituted mappability result, and the per-sample
 depth profile around `chrY:13782251`.
+
+## Amendment 2 (2026-07-26): MAPQ threshold is allele-biased — registered before checking
+
+F5 was diagnosed to its mechanism and it is **not** paralogy. Single-read test against the no-alt
+reference, `bwa aln -n 0.01 -k 2 -l 1024`:
+
+    L166_anc    MAPQ=37  XT=U X0=1 X1=0 NM=0   PASS
+    L166_der    MAPQ=23  XT=U X0=1 X1=1 NM=1   FILTERED  <-- unique, and discarded
+    Z6208_der   MAPQ=20  XT=U X0=1 X1=2 NM=1   FILTERED  <-- unique, and discarded
+    Z6219_der   MAPQ=37  XT=U X0=1 X1=0 NM=1   PASS
+    PF3239_der  MAPQ=37  XT=U X0=1 X1=0 NM=1   PASS
+
+Every alignment is unique (`XT:A:U`, `X0=1`). MAPQ drops only because a *suboptimal* hit exists
+elsewhere and the read carries its one mismatch. **Our `MAPQ >= 25` threshold therefore discards
+uniquely-mapped derived reads at `L166` and `Z6208`, and keeps every ancestral read.** The bias is
+allele-specific and its direction is toward calling ancestral. Identical in `working`, `noalt` and
+`hs37d5`, so it is a property of the locus and the aligner, not of the custom reference.
+
+### F6 — the Oberbipp ancestral calls may be incomplete
+
+**This threatens a conclusion already published in this repository.** Oberbipp is recorded as
+`L166` ancestral 11/11, 0 derived, which is the basis for refuting the circulating "7 of 10" claim.
+If those libraries contain derived `L166` reads sitting at MAPQ 20-24, the true call is **mixed**,
+not ancestral, and the refutation must be restated.
+
+**Check, registered now:** re-examine every read at `chrY:21843737` in all 15 Swiss BAMs with **no
+MAPQ floor**, reporting allele, MAPQ, `XT`, `X0`, `X1` and read-terminus position for each.
+
+- **F6 obtains** if any Oberbipp sample carries one or more `L166`-derived reads with `XT:A:U`,
+  `X0=1` and MAPQ >= 20 that the 25 threshold excluded. The ancestral calls are then incomplete and
+  the "7 of 10" refutation is reduced accordingly.
+- **F6 does not obtain** if the only sub-threshold reads at that position are `XT:A:R`/`X0>1`
+  (genuinely ambiguous) or absent. The ancestral calls then stand as recorded.
+
+**The threshold will not be changed as a consequence of this result.** Switching from `MAPQ >= 25`
+to a uniqueness criterion (`XT:A:U` and `X0=1`) is the principled repair and is very likely correct,
+but adopting it *after* discovering that it alters a specific finding is exactly the post-hoc rescue
+this project's protocol exists to prevent. It is recorded here as a proposal requiring its own
+registration and a re-run of every affected dataset, not as a change to be made now.
+
+**Consequences that follow regardless of F6**, since they are arithmetic rather than findings:
+derived-read recovery at `L166` is 0.156 at 45 bp and at `Z6208` 0.044, so a genuinely derived
+individual loses most of his reads at those sites. `I5118`'s single derived `L166` read implies of
+the order of six underlying molecules, and any sample reported "no coverage at `L166`" may be a
+derived man whose reads were filtered. Every `L166`/`Z6208` derived count in this repository is a
+**lower bound**, and no `no_coverage` at those two sites may be read as evidence of anything.
+
+**Not yet read at time of writing:** the sub-threshold read content at `chrY:21843737` in any sample.
