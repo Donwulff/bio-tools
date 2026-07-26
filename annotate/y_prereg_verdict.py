@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import glob
 import os
 import sys
 from collections import defaultdict
@@ -91,14 +92,23 @@ def main() -> int:
 
     prefix = a.prefix
     if prefix is None:
-        for cand in ("y", "swiss"):
-            if os.path.exists(os.path.join(a.dir, f"{cand}_L166_defining.tsv")):
-                prefix = cand
-                break
-        else:
-            print(f"no *_L166_defining.tsv in {a.dir}; pass --prefix",
+        # Glob rather than probe a hardcoded candidate list: the prefix is
+        # caller-chosen, so any fixed list is wrong for the next dataset.
+        # Pooled tables (y_pool_family.py) match the same pattern but are keyed
+        # by "pool", not "sample", and a pooled call is one observation for a
+        # patriline rather than a per-sample verdict -- so they are filtered out
+        # on their header rather than by name, and never silently averaged in.
+        hits = []
+        for p in sorted(glob.glob(os.path.join(a.dir, "*_L166_defining.tsv"))):
+            with open(p) as fh:
+                if fh.readline().split("\t")[:1] == ["sample"]:
+                    hits.append(p)
+        if len(hits) != 1:
+            what = "no per-sample" if not hits else f"{len(hits)} ambiguous"
+            print(f"{what} *_L166_defining.tsv in {a.dir}; pass --prefix",
                   file=sys.stderr)
             return 1
+        prefix = os.path.basename(hits[0])[: -len("_L166_defining.tsv")]
 
     l166 = read_table(os.path.join(a.dir, f"{prefix}_L166_defining.tsv"))
     z6494 = read_table(os.path.join(a.dir, f"{prefix}_Z6494_exclusion.tsv"))

@@ -1,0 +1,6 @@
+sample	chrY_DoC_callable	control_PF3239	control_derived	control_ancestral	L166_der	L166_anc	L166_nocov	L166_lowpower	Z6494_der	Z6494_anc	verdict	basis
+I14677	0.2973x	DERIVED	5	0	0	4	5	0	0	0	H2_ancestral	4 ancestral call(s), 0 derived
+I14678	0.3514x	DERIVED	7	0	0	4	5	0	0	1	H2_ancestral	4 ancestral call(s), 0 derived
+I15942	0.1013x	nocall_damage_prone_1read	3	0	0	1	6	2	0	0	H2_ancestral	1 ancestral call(s), 0 derived
+I5118	0.1406x	DERIVED	6	0	2	0	6	1	0	0	H1_derived	2 derived call(s), 0 ancestral
+UNTA58_68Sk1	0.0597x	nocall_damage_prone_1read	0	0	0	0	9	0	0	0	H0_no_power	no informative call: 9 uncovered, 0 below threshold; backbone control uncovered, chain unverified for this sample

@@ -1,0 +1,46 @@
+sample	block	marker	chrom	pos	anc>der	mutation_class	depth	anc_reads	der_reads	other_reads	call	n_reads	pct_mq0	mq_top	n_mq_top	site_qc	region	isogg	yfull_node
+I14677	L166_defining	FGC5696	chrY	8525805	C>A	transversion	5	5	0	0	ancestral	5	0%	37	5	pass	ok	G2a2a1b1a	G-L166
+I14677	L166_defining	Z6208	chrY	13776249	G>A	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a1b~	G-L166
+I14677	L166_defining	Z6219	chrY	13782251	C>T	transition(deamination-prone)	4	4	0	0	ancestral	4	0%	37	4	pass	ok	G2a2a1a2a1a	G-L166
+I14677	L166_defining	Z6287	chrY	14368999	C>T	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+I14677	L166_defining	S19530	chrY	15208473	T>C	transition	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	not listed	G-L166
+I14677	L166_defining	FGC5721	chrY	16280455	T>G	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-L166
+I14677	L166_defining	Z6516	chrY	19013205	T>A	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+I14677	L166_defining	L166	chrY	21843737	C>A	transversion	11	11	0	0	ancestral	11	0%	37	11	pass	ok	G2a2a1a2a1a	G-L166&J-Y29712
+I14677	L166_defining	L167	chrY	21843756	T>A	transversion	5	5	0	0	ancestral	5	0%	37	5	pass	ok	G2a2a1a2a1a	G-L166&I-Y92994&A00
+I14678	L166_defining	FGC5696	chrY	8525805	C>A	transversion	5	5	0	0	ancestral	5	0%	37	5	pass	ok	G2a2a1b1a	G-L166
+I14678	L166_defining	Z6208	chrY	13776249	G>A	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a1b~	G-L166
+I14678	L166_defining	Z6219	chrY	13782251	C>T	transition(deamination-prone)	2	2	0	0	ancestral	2	0%	37	2	pass	ok	G2a2a1a2a1a	G-L166
+I14678	L166_defining	Z6287	chrY	14368999	C>T	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+I14678	L166_defining	S19530	chrY	15208473	T>C	transition	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	not listed	G-L166
+I14678	L166_defining	FGC5721	chrY	16280455	T>G	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-L166
+I14678	L166_defining	Z6516	chrY	19013205	T>A	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+I14678	L166_defining	L166	chrY	21843737	C>A	transversion	8	8	0	0	ancestral	8	0%	37	8	pass	ok	G2a2a1a2a1a	G-L166&J-Y29712
+I14678	L166_defining	L167	chrY	21843756	T>A	transversion	5	5	0	0	ancestral	5	0%	37	5	pass	ok	G2a2a1a2a1a	G-L166&I-Y92994&A00
+I15942	L166_defining	FGC5696	chrY	8525805	C>A	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-L166
+I15942	L166_defining	Z6208	chrY	13776249	G>A	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a1b~	G-L166
+I15942	L166_defining	Z6219	chrY	13782251	C>T	transition(deamination-prone)	1	1	0	0	low_power_1read_ancestral	1	0%	37	1	pass	ok	G2a2a1a2a1a	G-L166
+I15942	L166_defining	Z6287	chrY	14368999	C>T	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+I15942	L166_defining	S19530	chrY	15208473	T>C	transition	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	not listed	G-L166
+I15942	L166_defining	FGC5721	chrY	16280455	T>G	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-L166
+I15942	L166_defining	Z6516	chrY	19013205	T>A	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+I15942	L166_defining	L166	chrY	21843737	C>A	transversion	2	2	0	0	ancestral	2	0%	37	2	pass	ok	G2a2a1a2a1a	G-L166&J-Y29712
+I15942	L166_defining	L167	chrY	21843756	T>A	transversion	1	1	0	0	low_power_1read_ancestral	1	0%	37	1	pass	ok	G2a2a1a2a1a	G-L166&I-Y92994&A00
+I5118	L166_defining	FGC5696	chrY	8525805	C>A	transversion	1	0	1	0	DERIVED_1read_transversion	1	0%	37	1	pass	ok	G2a2a1b1a	G-L166
+I5118	L166_defining	Z6208	chrY	13776249	G>A	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a1b~	G-L166
+I5118	L166_defining	Z6219	chrY	13782251	C>T	transition(deamination-prone)	1	0	1	0	nocall_damage_prone_1read	1	0%	37	1	pass	ok	G2a2a1a2a1a	G-L166
+I5118	L166_defining	Z6287	chrY	14368999	C>T	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+I5118	L166_defining	S19530	chrY	15208473	T>C	transition	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	not listed	G-L166
+I5118	L166_defining	FGC5721	chrY	16280455	T>G	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-L166
+I5118	L166_defining	Z6516	chrY	19013205	T>A	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+I5118	L166_defining	L166	chrY	21843737	C>A	transversion	1	0	1	0	DERIVED_1read_transversion	1	0%	37	1	pass	ok	G2a2a1a2a1a	G-L166&J-Y29712
+I5118	L166_defining	L167	chrY	21843756	T>A	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166&I-Y92994&A00
+UNTA58_68Sk1	L166_defining	FGC5696	chrY	8525805	C>A	transversion	0	0	0	1	no_coverage	1	0%	37	0	MARGINAL_no_unique_reads	ok	G2a2a1b1a	G-L166
+UNTA58_68Sk1	L166_defining	Z6208	chrY	13776249	G>A	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a1b~	G-L166
+UNTA58_68Sk1	L166_defining	Z6219	chrY	13782251	C>T	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+UNTA58_68Sk1	L166_defining	Z6287	chrY	14368999	C>T	transition(deamination-prone)	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+UNTA58_68Sk1	L166_defining	S19530	chrY	15208473	T>C	transition	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	not listed	G-L166
+UNTA58_68Sk1	L166_defining	FGC5721	chrY	16280455	T>G	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-L166
+UNTA58_68Sk1	L166_defining	Z6516	chrY	19013205	T>A	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166
+UNTA58_68Sk1	L166_defining	L166	chrY	21843737	C>A	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166&J-Y29712
+UNTA58_68Sk1	L166_defining	L167	chrY	21843756	T>A	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a	G-L166&I-Y92994&A00
