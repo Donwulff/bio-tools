@@ -796,3 +796,68 @@ reaped with its parent shell. Detached properly it takes 199 s.
       --out results/mappability/chrYonly_emulation.tsv
 
 Result table committed as `results/mappability/chrYonly_emulation.tsv`.
+
+## E1 — `FGC5671` in the Iceman (2026-07-26)
+
+Registered in `PREREG_Z6219_node.md` §Extensions before running; findings in `NOTES.md`.
+One BAM only, fixed in the registration:
+
+```bash
+BAM=/mnt/mirrored/iceman-reanalysis/dedup_out50/iceman.oetzi.UDG_merge_combined.mapped_rmdup.pair.prim_rmdup.sort_rmdup.coord.bam
+REF=mapping/index/hg38p14DH3630O.fa
+
+annotate/y_markers_pileup.py --bam "$BAM" --ref "$REF" \
+  --marker-file markers/yfull_L166_defining.txt --label Iceman \
+  --out results/z6219_node/iceman_yfull_L166_defining.tsv
+```
+
+Read-level and library evidence, required by §8 at any decisive C>T/G>A site. Note that
+`--damage-profile` is a **mode switch**, not an addition — it suppresses the per-read dump, so the
+two are separate invocations:
+
+```bash
+annotate/y_read_evidence.py --bam "$BAM" --ref "$REF" --damage-profile --region chrY --max-reads 200000
+annotate/y_read_evidence.py --bam "$BAM" --ref "$REF" --site chrY:7784648  --anc G --der A
+annotate/y_read_evidence.py --bam "$BAM" --ref "$REF" --site chrY:13321379 --anc C --der T
+# > results/z6219_node/iceman_E1_read_evidence.txt
+```
+
+Allele-aware mappability, run at `Z6499` because an unmappable derived allele produces the same
+picture as a genuinely ancestral man:
+
+```bash
+printf 'Z6499\nFGC5671\n' > /tmp/e1_markers.txt
+for al in anc der; do
+  annotate/y_mappability.py --markers /tmp/e1_markers.txt \
+    --source mapping/index/hg38p14DH3630O.fa \
+    --target noalt=mapping/index/GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna \
+    --read-lengths 35,45,60,100 --threads 4 --allele $al --out results/z6219_node/e1_mappability_$al.tsv
+done
+```
+
+The counting rule registered in advance, applied. Controls are the 9 markers of
+`markers/L166_defining.txt`, already known derived in the Iceman and excluded as non-independent;
+`site_qc pass` is required for a position to count either way, so the inherited 30% MQ0 threshold
+is what makes the three high-MQ0 `DERIVED` calls untested rather than confirmed:
+
+```bash
+grep -v '^#' markers/L166_defining.txt | grep -v '^$' > /tmp/e1_control.txt
+awk -F'\t' '
+  NR==FNR{ctrl[$1]=1; next}
+  FNR==1{for(i=1;i<=NF;i++)c[$i]=i; print "marker\tpos\tcall\tsite_qc\tE1_class"; next}
+  {
+    m=$c["marker"]; call=$c["call"]; qc=$c["site_qc"]; valid=(qc=="pass")
+    if (m in ctrl) { klass="control(" (valid&&call=="DERIVED" ? "ok" : "FAIL") ")"; ctrlok+=(valid&&call=="DERIVED"); nctrl++ }
+    else if (valid && call=="DERIVED")   { klass="block-confirmed"; conf++ }
+    else if (valid && call=="ancestral") { klass="block-refuted";   ref++ }
+    else                                 { klass="untested";        unt++ }
+    printf "%s\t%s\t%s\t%s\t%s\n", m, $c["pos"], call, qc, klass
+  }
+  END{ printf "#\n# control: %d/%d DERIVED at site_qc pass (run valid iff 9/9)\n", ctrlok, nctrl
+       printf "# block-confirmed=%d  block-refuted=%d  untested=%d  (of %d non-control)\n", conf, ref, unt, conf+ref+unt }
+' /tmp/e1_control.txt results/z6219_node/iceman_yfull_L166_defining.tsv \
+  > results/z6219_node/iceman_E1_classification.tsv
+```
+
+Result: `FGC5671` **DERIVED** 7/0 at 0% MQ0 — F3 does not obtain. Controls 9/9. Non-control
+block-confirmed 7, **block-refuted 1 (`Z6499`, ancestral 10/0)**, untested 5.

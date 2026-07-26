@@ -117,6 +117,6 @@ allele he carries is the test.
 
 | id | test | why it needs registering | status |
 |---|---|---|---|
-| E1 | `FGC5671` in the Iceman | Would resolve whether the second `Z6219`-block SNP is real or a private Oberbipp variant. I want it derived. | not yet registered |
+| E1 | `FGC5671` in the Iceman | Would resolve whether the second `Z6219`-block SNP is real or a private Oberbipp variant. I want it derived. | **RUN 2026-07-26**, prediction held; F3 does not obtain |
 | E2 | `CGG017683` (Crimea) mapped and called our way | YFull places it at `G-L166` but outside the resolved sub-branches — the exact signature a `Z6219`-derived / `L166`-ancestral man would produce. Never analysed by us. | not yet registered |
 | E3 | Uniqueness filtering (`XT:A:U`, `X0=1`) replacing `MAPQ >= 25` | Known to change at least one published finding; requires re-run of every dataset | proposal only, per Amendment 2 |

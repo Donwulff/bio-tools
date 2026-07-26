@@ -1,0 +1,23 @@
+block	marker	chrom	pos	anc>der	mutation_class	depth	anc_reads	der_reads	other_reads	call	n_reads	pct_mq0	mq_top	n_mq_top	site_qc	region	isogg	yfull_node
+Iceman	Z6516	chrY	19013205	T>A	transversion	9	0	9	0	DERIVED	9	0%	60	9	pass	ok	G2a2a1a2a1a	G-L166
+Iceman	FGC5721	chrY	16280455	T>G	transversion	8	0	8	0	DERIVED	8	0%	60	8	pass	ok	G2a2a1b1a	G-L166
+Iceman	FGC5696	chrY	8525805	C>A	transversion	5	0	5	0	DERIVED	5	0%	60	4	pass	ok	G2a2a1b1a	G-L166
+Iceman	Z6220	chrY	15115629	T>G	transversion	4	0	4	0	DERIVED	14	57%	60	3	REJECT_mapq(57%_MQ0)	ok	G2a2a1b1a	G-L166
+Iceman	FT91632	chrY	10756989	C>T	transition(deamination-prone)	0	0	0	0	no_coverage	19	63%	60	0	REJECT_mapq(63%_MQ0)	ok	G	G-L166
+Iceman	Z6499	chrY	13321379	C>T	transition(deamination-prone)	10	10	0	0	ancestral	10	0%	60	8	pass	ok	G2a2a1b1a	G-L166
+Iceman	Z6134	chrY	6834938	C>T	transition(deamination-prone)	2	0	2	0	DERIVED	2	0%	60	2	pass	ok	G2a2a1b1a	G-L166
+Iceman	FGC5671	chrY	7784648	G>A	transition(deamination-prone)	7	0	7	0	DERIVED	7	0%	60	7	pass	ok	G2a2a1b1a	G-L166
+Iceman	Z6287	chrY	14368999	C>T	transition(deamination-prone)	10	0	10	0	DERIVED	10	0%	60	9	pass	ok	G2a2a1a2a1a	G-L166
+Iceman	Z6208	chrY	13776249	G>A	transition(deamination-prone)	9	0	9	0	DERIVED	10	10%	60	8	pass	ok	G2a2a1a2a1a1b~	G-L166
+Iceman	Z6209	chrY	14364857	G>A	transition(deamination-prone)	6	0	6	0	DERIVED	6	0%	60	5	pass	ok	G2a2a1b1a	G-L166
+Iceman	FGC5672	chrY	8656918	C>T	transition(deamination-prone)	8	0	8	0	DERIVED	9	0%	60	9	pass	ok	G2a2a1b1a1	G-L166
+Iceman	FT191098	chrY	10874130	C>G	transversion	1	0	1	0	DERIVED_1read_transversion	7	57%	60	0	REJECT_mapq(57%_MQ0)	ok	G	G-L166
+Iceman	C101821	chrY	9575240	G>A	transition(deamination-prone)	0	0	0	1	no_coverage	4	75%	60	0	REJECT_mapq(75%_MQ0)	ok	G2a	G-L166
+Iceman	Z6519	chrY	21049898	T>A	transversion	2	0	2	0	DERIVED	9	78%	60	1	REJECT_mapq(78%_MQ0)	ok	G2a2a1a2a1a1b2~	G-L166
+Iceman	Z6135	chrY	7657979	C>T	transition(deamination-prone)	10	0	10	0	DERIVED	10	0%	60	10	pass	ok	G (not listed)	G-L166&R-Z6135
+Iceman	Z6219	chrY	13782251	C>T	transition(deamination-prone)	7	0	7	0	DERIVED	7	0%	60	7	pass	ok	G2a2a1a2a1a	G-L166
+Iceman	Z6206	chrY	12796285	G>A	transition(deamination-prone)	9	0	9	0	DERIVED	10	10%	60	8	pass	ok	G2a2a1b1a	G-L166
+Iceman	S19530	chrY	15208473	T>C	transition	10	0	10	0	DERIVED	10	0%	60	10	pass	ok	not listed	G-L166
+Iceman	L166	chrY	21843737	C>A	transversion	3	0	3	0	DERIVED	3	0%	60	3	pass	ok	G2a2a1a2a1a	G-L166&J-Y29712
+Iceman	L167	chrY	21843756	T>A	transversion	2	0	2	0	DERIVED	2	0%	60	2	pass	ok	G2a2a1a2a1a	G-L166&I-Y92994&A00
+Iceman	Z1370	chrY	7943467	A>G	transition	5	0	5	0	DERIVED	5	0%	60	5	pass	ok	not listed	G-L166

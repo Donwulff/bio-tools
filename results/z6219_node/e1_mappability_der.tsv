@@ -1,0 +1,9 @@
+marker	chrom_src	pos_src	anc	der	allele	read_len	target	n_reads	n_mapped	n_exact_correct_contig	n_mq_ge_min	frac_recovered	n_mq0	n_offtarget	modal_pos	modal_support	target_ref_base	ref_matches_anc	top_offtarget
+Z6499	chrY	13321379	C	T	der	35	noalt	35	35	25	14	0.400	9	10	13321379	24	C	yes	chr3:10
+FGC5671	chrY	7784648	G	A	der	35	noalt	35	35	35	35	1.000	0	0	7784648	35	G	yes	-
+Z6499	chrY	13321379	C	T	der	45	noalt	45	45	43	35	0.778	3	2	13321379	43	C	yes	chr3:2
+FGC5671	chrY	7784648	G	A	der	45	noalt	45	45	45	45	1.000	0	0	7784648	45	G	yes	-
+Z6499	chrY	13321379	C	T	der	60	noalt	60	60	60	60	1.000	0	0	13321379	60	C	yes	-
+FGC5671	chrY	7784648	G	A	der	60	noalt	60	60	60	60	1.000	0	0	7784648	60	G	yes	-
+Z6499	chrY	13321379	C	T	der	100	noalt	100	100	100	100	1.000	0	0	13321379	100	C	yes	-
+FGC5671	chrY	7784648	G	A	der	100	noalt	100	100	100	100	1.000	0	0	7784648	100	G	yes	-

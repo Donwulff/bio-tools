@@ -28,6 +28,21 @@ The genuinely new tables are `*_yfull_L166_defining.tsv` (22 testable positions 
 | `cosegregation_yfull32.tsv` | Test B output: per-marker pattern across upstream cohort vs outgroup |
 | `I5118_read_evidence.txt` | Test A: per-read evidence at `Z6219` and `L166`, plus the library damage profile |
 | `familyA_backbone_pooled.tsv` | Family A pooled backbone calls, for the F2 haplogroup-G check |
+| `iceman_yfull_L166_defining.tsv` | E1: Iceman genotyped at all 22 testable YFull `L166`-defining positions |
+| `iceman_E1_classification.tsv` | E1: the same table under the counting rule registered before the run |
+| `iceman_E1_read_evidence.txt` | E1: library damage profile, plus per-read evidence at `FGC5671` and `Z6499` |
+| `e1_mappability_{anc,der}.tsv` | E1: allele-aware recovery at `FGC5671` and `Z6499`, 35/45/60/100 bp |
+
+## Reading `iceman_E1_classification.tsv`
+
+The 9 `control(ok)` rows are `markers/L166_defining.txt`, already known derived in the Iceman before
+E1 was registered. They are excluded from the counts and exist only to invalidate the run if they
+are not 9/9.
+
+`untested` again means **not tested**. All five untested positions fail the inherited 30% MQ0
+rejection threshold or have no coverage; three of them carry `DERIVED`-direction calls that the
+threshold discards. Those three are not evidence of anything and must not be promoted by relaxing
+the rule after the fact.
 
 ## Reading `cosegregation_yfull32.tsv`
 

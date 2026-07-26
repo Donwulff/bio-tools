@@ -338,4 +338,9 @@ not I intend to. Their meaning is therefore fixed here, before the run:
   carry. That claim, if it arises, is registered here and is not post-hoc.
 - No marker outside these 22 is tested under E1.
 
-**Status.** REGISTERED 2026-07-26.
+**Status.** RUN 2026-07-26. **Prediction held.** `FGC5671` is `DERIVED` in the Iceman, 7 derived /
+0 ancestral, 0% MQ0, `site_qc pass`, seven independent molecules on both strands at interior
+positions of a library that deaminates at 0.02% there. **F3 does not obtain.** Controls 9/9.
+Secondary scan: block-confirmed 7, **block-refuted 1 (`Z6499`, ancestral 10/0)**, untested 5 — the
+`block-refuted > 0` outcome flagged above as the interesting one did occur. Results in `NOTES.md`,
+commands in `RUNLOG.md`, tables in `results/z6219_node/iceman_E1_*`.

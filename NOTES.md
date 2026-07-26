@@ -2018,3 +2018,85 @@ recover the third while actually inventing it.
 **Correction to an earlier note.** `RUNLOG.md` recorded that `bwa index` "did not complete under
 load". It was killed when its parent shell exited, at 53% of the BWT after about two minutes. Under
 `setsid` the same index builds in 199 s. Load was never the cause.
+
+## E1: `FGC5671` is derived in the Iceman — and `Z6499` is not (2026-07-26)
+
+Registered as E1 in `PREREG_Z6219_node.md` under `PROTOCOL_extending_analyses.md`, before any
+Iceman read at either position was seen. Predicted outcome: derived at `FGC5671`. It is.
+
+### The primary result
+
+| | depth | ancestral | derived | pct_mq0 | site_qc | call |
+|---|---|---|---|---|---|---|
+| `FGC5671` chrY:7,784,648 G>A | 7 | 0 | 7 | 0% | pass | **DERIVED** |
+
+Seven derived reads, four + strand and three −, lengths 59–137 bp, `NM=1` on every one with no
+other C>T or G>A mismatch anywhere in the read. `FGC5671` is a G>A site, so deamination lives at
+the **3'** end; the closest read sits 8 bp from it and the rest at 23, 33, 35, 48, 54 and 131 bp.
+No read is at position 0 or 1. The Iceman library is UDG-treated and measures **0.10% C>T / 0.08%
+G>A at position 0**, falling to 0.02% by position 2 — an order of magnitude below the Oberbipp
+libraries. Seven independent molecules, both strands, at interior positions, in a library that
+deaminates at 2 in 10,000 there: this is not damage.
+
+Note that `y_read_evidence.py` labels each of these reads `derived(damage-pattern)`. That verdict is
+assigned from the **site's mutation class**, not the read's position — it fires identically for the
+read 131 bp from the 3' terminus. It flags what to check, not what was found.
+
+**F3 does not obtain.** A second position now co-segregates with `Z6219` on read-level evidence in
+three cohorts rather than two: derived in Oberbipp, ancestral in both Sardinians, and derived in a
+man who is himself `L166`-derived. The disjunction recorded in "The gap that decides it" above is
+resolved in favour of its first branch — `FGC5671` is a shared branch marker, not a private
+Oberbipp variant. Homoplasy (H3) would now have to have struck twice, at two independent positions,
+in the same lineages.
+
+What this does **not** establish is that `FGC5671` sits beside `Z6219` *above* `L166`. The Iceman
+is derived at `L166`, `Z6219` and `FGC5671` alike, so all three are on his path and he cannot order
+them. He removes the "private variant" alternative; he does not place the marker.
+
+### The secondary result, which was registered as the interesting one
+
+Of the 22 testable positions in YFull's 32-SNP `L166` definition, the 9 already in
+`markers/L166_defining.txt` are controls and returned **9/9 DERIVED at `site_qc pass`** — the run is
+valid. Of the other 13, under the counting rule fixed in advance:
+
+| class | n | markers |
+|---|---|---|
+| block-confirmed | 7 | `Z6134`, `FGC5671`, `Z6209`, `FGC5672`, `Z6135`, `Z6206`, `Z1370` |
+| **block-refuted** | **1** | **`Z6499`** |
+| untested | 5 | `Z6220`, `FT91632`, `FT191098`, `C101821`, `Z6519` |
+
+All five untested positions fail the inherited 30% MQ0 rejection threshold (57–78% MQ0) or have no
+coverage behind it. `Z6220`, `FT191098` and `Z6519` carry `DERIVED`-direction calls that the MAPQ
+rule discards; they are **not** counted as confirmed, and the rule is not relaxed to admit them.
+
+**`Z6499` (chrY:13,321,379, C>T): the Iceman is ancestral 10/0.** Five + strand and five −,
+`NM=0` on every read, MAPQ 55–60, `site_qc pass`, 0% MQ0. An ancestral `C` at a C>T site cannot be
+manufactured by deamination, so the call is damage-robust by direction.
+
+Mappability was checked because a derived allele that cannot map produces exactly this picture.
+`Z6499` is imperfect at short reads and asymmetric against the derived allele — 0.400 der / 0.429
+anc at 35 bp, 0.778 / 0.867 at 45 bp, with off-target placements on chr3 — but **1.000 at both
+alleles at 60 and 100 bp**. Six of the ten reads are 62–111 bp, in the stratum where recovery is
+perfect and symmetric, and all six are ancestral. An 11% relative deficit at 45 bp cannot turn a
+derived man into 0 derived reads out of 10. The call survives.
+
+The other ancient data agree as far as they go: `MX213` is 1 ancestral and `I14677` 1 ancestral at
+`Z6499`, which is why Test B scored it `uninformative`. Every ancient read anyone here has at this
+position is ancestral. The Iceman is simply the first sample with the depth to make it a call.
+
+**So YFull's `L166` definition contains at least one SNP that an `L166`-derived man does not carry.**
+The economical reading is that `Z6499` sits **below** the `L166` node, on the branch leading to the
+modern samples the block was built from, and the Iceman's lineage diverged above it.
+
+That is the same phenomenon as the `Z6219` hypothesis, pointing the other way. `Z6219` would split
+the block upward, `Z6499` splits it downward, and both are invisible to a modern-only tree for the
+same structural reason: **an equivalence block can only be split by a sample on the intermediate
+branch**, and ancient samples are where those branches survive. The `L166` block is being opened at
+both ends by the same defect in the same direction of inference. This strengthens the general claim
+in §3 of the pre-registration — that this is a systematic confounder for ancient `G-L166` calls —
+while remaining silent on `Z6219`'s own placement, which `Z6499` does not bear on.
+
+Registered in advance as the notable outcome, so it is not a post-hoc finding. What it is *not* is
+a test of anything: one refuted marker out of 13 in one individual, and the direction of the
+inference (below rather than parallel) rests on parsimony, not on a sample that carries `Z6499`
+derived and `L166` ancestral. No such sample has been looked for.

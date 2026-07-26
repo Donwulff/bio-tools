@@ -1,0 +1,26 @@
+marker	pos	call	site_qc	E1_class
+Z6516	19013205	DERIVED	pass	control(ok)
+FGC5721	16280455	DERIVED	pass	control(ok)
+FGC5696	8525805	DERIVED	pass	control(ok)
+Z6220	15115629	DERIVED	REJECT_mapq(57%_MQ0)	untested
+FT91632	10756989	no_coverage	REJECT_mapq(63%_MQ0)	untested
+Z6499	13321379	ancestral	pass	block-refuted
+Z6134	6834938	DERIVED	pass	block-confirmed
+FGC5671	7784648	DERIVED	pass	block-confirmed
+Z6287	14368999	DERIVED	pass	control(ok)
+Z6208	13776249	DERIVED	pass	control(ok)
+Z6209	14364857	DERIVED	pass	block-confirmed
+FGC5672	8656918	DERIVED	pass	block-confirmed
+FT191098	10874130	DERIVED_1read_transversion	REJECT_mapq(57%_MQ0)	untested
+C101821	9575240	no_coverage	REJECT_mapq(75%_MQ0)	untested
+Z6519	21049898	DERIVED	REJECT_mapq(78%_MQ0)	untested
+Z6135	7657979	DERIVED	pass	block-confirmed
+Z6219	13782251	DERIVED	pass	control(ok)
+Z6206	12796285	DERIVED	pass	block-confirmed
+S19530	15208473	DERIVED	pass	control(ok)
+L166	21843737	DERIVED	pass	control(ok)
+L167	21843756	DERIVED	pass	control(ok)
+Z1370	7943467	DERIVED	pass	block-confirmed
+#
+# control: 9/9 DERIVED at site_qc pass (run valid iff 9/9)
+# block-confirmed=7  block-refuted=1  untested=5  (of 13 non-control)
