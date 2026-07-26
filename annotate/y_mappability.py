@@ -131,6 +131,17 @@ def build_tile(seq: str, marker: str, length: int) -> list[tuple[str, str]]:
     return reads
 
 
+def norm_contig(c: str) -> str:
+    """Compare contig names across builds that disagree about the 'chr' prefix.
+
+    GRCh38/CHM13 write 'chrY'; hs37d5 and other GRCh37 builds write 'Y'. Without
+    this every read mapped to a GRCh37 target counted as off-target and recovery
+    read 0.000 for the whole reference -- a tool bug that looks exactly like the
+    catastrophic finding it is not.
+    """
+    return c[3:] if c.startswith("chr") else c
+
+
 def cigar_is_exact(cig: str) -> bool:
     """True for a clean ungapped alignment: a single M/=/X run, no clipping."""
     ops = CIGAR_RE.findall(cig)
@@ -253,7 +264,7 @@ def main() -> int:
                 # The source contig is the truth; a read landing anywhere else
                 # has been pulled away, which is exactly the loss a chrY-only
                 # pileup can never see.
-                if rname != src_chrom_of[marker]:
+                if norm_contig(rname) != norm_contig(src_chrom_of[marker]):
                     s_["off"] += 1
                     s_["offc"][rname] += 1
                     continue
