@@ -1840,3 +1840,57 @@ having just discovered it changes specific results, is the post-hoc rescue this 
 exists to prevent. It is recorded as a proposal requiring its own pre-registration and a re-run of
 every affected dataset. Note also the tension named at the time: any such change — to the filter or
 to the reference — recovers real signal at the cost of comparability with every other analysis.
+
+## YFull's `(H)` Flag Independently Reproduced, And Test B's Real Power (2026-07-26)
+
+YFull's live tree defines `G-L166` with **32 SNPs**; the list was supplied and is committed as
+`markers/yfull_L166_defining.txt`. `Z6219` is **26th** in it, confirming the rank. Eleven of the 40
+names (counting synonyms) do not resolve in our catalogue — all `Y######` YFull-assigned names plus
+`Z6288` — because YFull publishes no coordinate or flanking sequence for SNPs it names itself. That
+is a hard power limit on the registered Test B, not an omission.
+
+**Allele-aware recovery across the 22 testable positions, `noalt`, 45 bp:**
+
+| marker | pos (hg38) | anc | der | delta | note |
+|---|---|---|---|---|---|
+| `Z6220` | 15,115,629 | **0.000** | **0.000** | — | -> chr6, chr5, chr10 |
+| `Z6519` | 21,049,898 | **0.000** | **0.000** | — | **YFull `(H)`** -> chr14:19, chrX:15 |
+| `C101821` | 9,575,240 | **0.067** | **0.067** | — | -> chrX, chr4, chr5 |
+| `Z6206` | 12,796,285 | 0.733 | 0.556 | −0.177 | |
+| `Z6209` | 14,364,857 | 0.822 | 0.667 | −0.155 | |
+| `Z6208` | 13,776,249 | 0.933 | **0.044** | **−0.889** | allele-biased |
+| `L166` | 21,843,737 | 0.956 | **0.156** | **−0.800** | allele-biased |
+| `L167` | 21,843,756 | 1.000 | **0.222** | **−0.778** | allele-biased |
+| `Z1370` | 7,943,467 | 1.000 | **0.333** | **−0.667** | allele-biased |
+| `Z6219` | 13,782,251 | 1.000 | 1.000 | +0.000 | clean |
+
+Thirteen further markers (`FGC5671`, `FGC5672`, `FGC5675`, `FGC5721`, `FT91632`, `FT191098`,
+`S10301`, `S19530`, `Z6134`, `Z6287`, `FGC5696`, `FGC5712`, `Z6499`) are at 0.867–1.000 in both
+alleles.
+
+**The `(H)` flag is independently reproduced.** `Z6519` is the only `(H)`-marked SNP resolvable in
+our catalogue, and it comes back at **0.000 recovery in both alleles**, with reads scattering to
+chr14, chrX and chr8. Our tool had no knowledge of the flag. That is external validation of
+`y_mappability.py` against a curator's own annotation, and the first independent check this tool has
+had.
+
+**But the flag does not cover everything that matters here.** `Z6220` (0.000) and `C101821` (0.067)
+are equally unusable and are **not** `(H)`-marked. `(H)` marks homology as it manifests in the
+modern 100–150 bp regime; at 45 bp more sites fail than that flag anticipates. Same structural point
+as the allele bias: curator annotations are produced in a regime where the aDNA failure modes do not
+occur.
+
+**`Z1370` joins the allele-biased set.** `L166`, `L167`, `Z6208` and now `Z1370` all lose most
+derived reads at 45 bp. `Z1370` is not in any marker set this project currently uses; it is recorded
+so it is not adopted later without the caveat.
+
+**Test B's real power, fixed before the scan runs.** Of 32 SNPs defining the node: 11 untestable
+(no public coordinates), 3 unusable at any allele (`Z6220`, `Z6519`, `C101821`), 4 severely
+allele-biased, and **15 clean**. The co-segregation scan therefore has ~15 usable positions rather
+than the ~11 estimated in the prereg, but the F3 threshold must be evaluated against 15, not 32 —
+absence of co-segregation among markers that cannot be called is not evidence.
+
+**Reproducibility check passed.** After making the filter parameters injectable, re-running
+`y_genotype_batch.sh` at defaults reproduced **all five** `results/swiss15/` tables byte-identically,
+and wrote `swiss_params.txt` recording thresholds, reference, inputs and git commit `44c6bdd` with a
+clean tree.

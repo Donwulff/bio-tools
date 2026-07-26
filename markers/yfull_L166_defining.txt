@@ -1,0 +1,40 @@
+# The 32 SNPs YFull's live tree uses to define G-L166, as supplied 2026-07-26.
+# Source of the Test B co-segregation scan registered in PREREG_Z6219_node.md
+# (Amendment 3): our own catalogue holds only ~20 distinct positions at this
+# node, so sourcing the scan from resources/marker_index.tsv.gz alone would have
+# under-powered it.
+#
+# Synonyms are listed on one line as YFull gives them. 11 of the 40 names do not
+# resolve in our catalogue -- Y232879, Y490731, Y543593, Y634135, Y634196,
+# Y634216, Y652433, Y652505, Y663079, Y664816, Y664817, Z6288 -- because YFull
+# assigns its own Y-numbers to SNPs it discovers and publishes no coordinate or
+# flanking sequence for them. They cannot be tested here and their absence is a
+# power limit on Test B, not an omission.
+#
+# (H) marks YFull's own homologous-region flag. Five of the six so marked are
+# Y-numbers and therefore untestable; the sixth, Z6519, is measured at 0.000
+# recovery here -- see NOTES 2026-07-26.
+#
+# 22 distinct testable positions follow, one name per position.
+Z6516
+FGC5721
+FGC5696
+Z6220
+FT91632
+Z6499
+Z6134
+FGC5671
+Z6287
+Z6208
+Z6209
+FGC5672
+FT191098
+C101821
+Z6519
+Z6135
+Z6219
+Z6206
+S19530
+L166
+L167
+Z1370
