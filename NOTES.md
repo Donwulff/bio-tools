@@ -1340,3 +1340,57 @@ strength of a post-hoc reading.
   near-contemporary date — but on one read per site at two markers.
 - Nothing here speaks to where anyone came from. The geographic spread invites that reading and
   the prereg refuses it in advance.
+
+### The compilation's own evidence column already disagreed with its label column (2026-07-26)
+
+Asked afterwards where these labels came from, and whether the answer is motivated reasoning
+somewhere upstream. Checked `all-ancient-dna.2026-07-26.txt` directly rather than reasoning about
+it. The file carries, per row, a `SNP-positive` list of every derived call with the clade each SNP
+defines. Comparing that field against the `ISOGG2019` label field, for these six:
+
+| sample | deepest node in `SNP-positive` | `ISOGG2019` label | `Responsible-SNP` | read-level verdict |
+|---|---|---|---|---|
+| `I14677` | `G2a2a1a2a1` (PF3239, FGC5666, Z6130, +2) | `G2a2a1a2a1a` | Kolgeh | ancestral 11/11 at `L166` |
+| `I14678` | `G2a2a1a2a1` (PF3239, Z6130, Z6277, +2) | `G2a2a1a2a1a` | Kolgeh | ancestral 8/8 |
+| `I15942` | `G2a2a1a2a1` (PF3239, Z6130, Z6277, +2) | `G2a2a1a2a1a` | Kolgeh | ancestral 2/2 |
+| `I5118` | `G2a2a1a2a1a` — **incl. `L166:23989884C->A`** | `G2a2a1a2a1a` | *(blank)* | **derived** at `L166` |
+| `E09538` | `G2a2a1a2a1a` (FGC5671^, Z6219 — *not* `L166`) | `G2a2a1a2a1a` | *(blank)* | — |
+| `UNTA58_68Sk1` | **empty — no positive SNPs at all** | `G2a2a1a2a1a` | Kolgeh | H0, no power |
+
+**The three samples the reads falsified are exactly the three whose own evidence field never
+reaches `L166`.** It stops at `PF3239` in all three. The one sample that verified is the one whose
+evidence field lists `L166` itself, at the correct coordinate and as the correct transversion
+(`C->A`) — the same call this project made independently from reads. The concordance between the
+compilation's evidence column and the pileups is complete; the disagreement is entirely between the
+compilation's evidence column and its own label column.
+
+So no suppressed or unexamined data is required to explain this. Someone did the work, recorded it,
+and the label field was then filled one node deeper than the recorded evidence supports. That is the
+**same structural failure** as the Horgen hedge, which survives in `ISOGG2019` and is lost one column
+over in `Y-Haplotree-Variant`, and the same as the Iceman's own `G-Z6208` — a derived SNP read as a
+terminal placement. Three occurrences, three different columns, one mechanism: **the qualifier and
+the evidence live in a different field from the label, and only the label propagates.**
+
+`UNTA58_68Sk1` deserves separate mention: it carries the unhedged label with an entirely empty
+`SNP-positive` field, and its `Assessment` is `QUESTIONABLE (Xcontam=[0.013,0.029])`. Its duplicate
+row `E09538` is where the Y evidence sits. Neither row's evidence includes `L166` itself.
+
+**Source publications, and what they do not tell us.** `Source` gives `FernandesNatEcolEvol2020`
+for the three Sardinians and `OlaldeNature2018` for `I5118` and `E09538` — both Reich-lab papers.
+This does **not** make the labels theirs. `haplogroup.info` states its own method (Yleaf v2 plus
+hobbyist BAM analyses) and credits `Responsible-SNP` per row; `Source` names the paper the *sample*
+came from, not the origin of the Y call. What Fernandes 2020 and Olalde 2018 themselves assign to
+these individuals has **not been read**, and AADR's `.anno` Y-column resolution remains unchecked
+(no copy on this machine). Until one of those is done, nothing here can be attributed to any
+publication or lab, and it should not be.
+
+Note also which direction the error runs in the cases that *have* been checked: Furtwängler 2020
+assigns the Oberbipp males `PF3239`, and the aggregator moved them deeper. There the publication was
+the conservative layer. The Iceman's `G-Z6208` shows publications are not immune — but in this
+corpus the over-calling has been downstream of them every time it has been traced.
+
+**Corollary for `Z6219`.** The file assigns `Z6219` to `G2a2a1a2a1a`, i.e. the `L166` node itself.
+The Oberbipp series is `Z6219`-derived 10/10 and `L166`-ancestral 11/11, which contradicts that
+placement on its own, independently of the Sardinian data above. If `Z6219` sits between `PF3239`
+and `L166` as the reads indicate, then `E09538`'s label rests on a marker that never reaches `L166`
+either. This remains post-hoc and still requires its own pre-registration.
