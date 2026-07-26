@@ -49,27 +49,47 @@ echo "ref:    ${REF}"
 echo "outdir: ${OUTDIR}"
 echo "started $(date -Is)"
 
-done_n=0 skip_n=0 fail_n=0
+# Group runs by sample FIRST. A sample sequenced across several runs must be
+# mapped from all of them: keying work off individual FASTQs meant the first run
+# produced <sample>.rmdup.bam and every later run of that same sample hit the
+# resume check and was silently skipped, discarding data with no error and no
+# log line. Whether that mattered depended on glob order -- for a sample whose
+# smaller run sorts first, most of the library was dropped.
+declare -A SAMPLE_RUNS=()
+ORDER=()
 for fq in "${FQS[@]}"; do
   base="$(basename "$fq" .fastq.gz)"
   sample="${base%%.*}"                 # <alias> from <alias>.<run>
   run="${base#*.}"                     # <run>
   [ "$run" = "$base" ] && run="$sample"
+  [ -n "${SAMPLE_RUNS[$sample]:-}" ] || ORDER+=("$sample")
+  SAMPLE_RUNS[$sample]+="${fq}:${run} "
+done
+
+echo "=== ${#ORDER[@]} sample(s) from ${#FQS[@]} fastq(s) ==="
+
+done_n=0 skip_n=0 fail_n=0
+for sample in "${ORDER[@]}"; do
+  read -r -a specs <<< "${SAMPLE_RUNS[$sample]}"
 
   bam="${OUTDIR}/${sample}.rmdup.bam"
   if [ -s "$bam" ] && [ -s "${bam}.bai" ]; then
-    echo "SKIP  ${sample} (${bam} present)"
+    echo "SKIP  ${sample} (${bam} present, ${#specs[@]} run(s))"
     skip_n=$((skip_n + 1))
     continue
   fi
 
+  first="${specs[0]}"
+  fq1="${first%:*}"; run1="${first##*:}"
+  rest=("${specs[@]:1}")
+
   echo
-  echo "---- ${sample} [$((done_n + skip_n + fail_n + 1))/${#FQS[@]}] $(date -Is) ----"
-  if "$MAPPER" "$fq" "$sample" "$run" "$THREADS"; then
+  echo "---- ${sample} [$((done_n + skip_n + fail_n + 1))/${#ORDER[@]}] ${#specs[@]} run(s) $(date -Is) ----"
+  if "$MAPPER" "$fq1" "$sample" "$run1" "$THREADS" ${rest[@]+"${rest[@]}"}; then
     done_n=$((done_n + 1))
   else
     echo "FAIL  ${sample} (exit $?)" >&2
-    rm -f "${OUTDIR}/${sample}.sai"    # truncated .sai would poison a rerun
+    rm -f "${OUTDIR}/${sample}".*.sai "${OUTDIR}/${sample}.sai"  # truncated .sai poisons a rerun
     fail_n=$((fail_n + 1))
   fi
 done
