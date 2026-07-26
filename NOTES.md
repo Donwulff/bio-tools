@@ -1664,3 +1664,42 @@ for every marker — hs37d5 writes `Y` where GRCh38 writes `chrY`, so every corr
 counted off-target. A tool bug indistinguishable from a catastrophic finding, which is the argument
 for having a self-map control in the design: `working` against itself must return ~1.0, and any
 target that returns 0.000 everywhere is a naming failure, not biology.
+
+## The 1000G Phase 3 chrY Call Set Cannot Answer The Novel-Variant Question (2026-07-26)
+
+The project's actual target is whether any public sample shares the Iceman's *novel* (uncatalogued)
+derived variants, which is what would establish a shared sub-`L166` patriline. `HG02681`
+(Pakistan/Punjab, YFull `G-Z6285`) is on this machine already, inside
+`/mnt/GenomicData/1KG/1KGchrY/ALL.chrY.phase3_integrated_v1a.20130502.genotypes.vcf.gz` (column 508
+of 1,233 males), so the obvious question is whether it is worth testing.
+
+It is not, and the reason generalises to every 1000G male.
+
+Tested with `annotate/panel_membership.py --sites` (added for this) against the phase 3 chrY site
+list (62,042 positions), lifting GRCh38 -> GRCh37:
+
+- **Named markers: 17 of 22 present**, including `L166`, `L167`, `Z6219`, `Z6494`, `PF3239`. Absent:
+  `FGC5696`, `FGC5721`, `FGC5687`, `Z6215`, `Z6488`.
+- **Novel candidate positions: 0 of 21 present.** Not one.
+
+So the call set can re-confirm known nodes and cannot address the question this project is actually
+asking. Under the working data rule — public modern samples earn a place only if they yield genuine
+insight — `HG02681` does not clear the bar, and no per-sample modern genotype needs to enter this
+repository. That is a cleaner outcome than a judgement call about policy.
+
+**Five of the 21 novel positions do not lift to GRCh37 at all:**
+
+    chrY:10,768,171   10,964,462   10,990,649   10,996,925   11,667,647
+
+All five fall in a ~1 Mb window at 10.7-11.7 Mb, and the last is inside the declared
+`11.1-11.7 Mb` no-go region. "Does not lift" here means *no same-strand chain block*, which
+`load_chain()` deliberately reports rather than guessing at: it may mean the sequence is absent from
+GRCh37, or that it lies in an inverted block. Which one has not been determined.
+
+**This is the one place the GRCh37/GRCh38 difference genuinely bites.** The mappability sweep found
+GRCh37 and GRCh38 indistinguishable across all 22 *named* markers at every read length. That result
+does not transfer here: a fifth of the novel candidate positions have no straightforward GRCh37
+equivalent, so any analysis performed on GRCh37-mapped data — which is every depositor BAM in this
+project, and `CGG017683` in particular — is structurally unable to see them. The sensitivity result
+is scoped to catalogued markers in well-behaved sequence and must not be quoted as though it cleared
+the novel scan.
