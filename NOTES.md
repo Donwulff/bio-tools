@@ -1308,11 +1308,12 @@ deamination manufactures. Broken out: `MX210` 4/4 derived (a `DERIVED` call), `S
 (`DERIVED`, but no `L166` coverage, so it constrains nothing here), and `MX187`/`MX211`/`MX212`/
 `MX213` at one derived read each — every one of which the registered rules score
 `nocall_damage_prone_1read`. Three of those four are the Family A patriline and pool to a single
-observation. **The "above `L166`" constraint therefore rests essentially on `MX210`**, which is the
-only individual carrying both a clean derived call at `Z6219` and clean ancestral calls at two
-`L166`-defining transversions, and which is outside Family A. One man, 4 reads, at a damage-prone
-site class. The cheap decisive check not yet done: whether the `C>T` mismatches in those 4 reads sit
-at read termini.
+observation. **The "above `L166`" constraint therefore rests principally on `MX210`**, the only individual
+carrying both a clean derived call at `Z6219` and clean ancestral calls at two `L166`-defining
+transversions, and which is outside Family A.
+
+*Superseded 2026-07-26 by the read-terminus check below: the four single reads are not damage
+either, and the constraint is considerably stronger than this paragraph allows.*
 
 An individual derived at `PF3239` and ancestral at `Z6219` places `Z6219` **below** `PF3239`,
 which **refutes (i)**. Oberbipp places it above `L166`. The consistent topology is
@@ -1703,3 +1704,67 @@ equivalent, so any analysis performed on GRCh37-mapped data — which is every d
 project, and `CGG017683` in particular — is structurally unable to see them. The sensitivity result
 is scoped to catalogued markers in well-behaved sequence and must not be quoted as though it cleared
 the novel scan.
+
+## `Z6219` Read-Terminus Check: None Of It Is Damage (2026-07-26)
+
+Tool: `annotate/y_read_evidence.py`. The registered rules score a single derived read at a `C>T`
+site `nocall_damage_prone_1read` on **site class alone** — they never ask where in the read the
+mismatch sits. Deamination is a terminal process, so that is the question that decides it.
+
+**Every `Z6219`-derived read in the Oberbipp series, all six individuals:**
+
+| sample | strand | read_len | BQ | MAPQ | dist_5p | dist_3p | NM |
+|---|---|---|---|---|---|---|---|
+| `MX210` | + | 68 | 41 | 37 | **30** | 37 | 1 |
+| `MX210` | + | 31 | 41 | 37 | **28** | 2 | 1 |
+| `MX210` | − | 44 | 41 | 37 | **15** | 28 | 1 |
+| `MX210` | − | 50 | 41 | 37 | **34** | 15 | 1 |
+| `MX187` | − | 53 | 41 | 37 | **22** | 30 | 1 |
+| `MX211` | − | 76 | 41 | 37 | **72** | 3 | 1 |
+| `MX212` | + | 39 | 41 | 37 | **20** | 18 | 1 |
+| `MX213` | − | 41 | 41 | 37 | **14** | 26 | 1 |
+| `SX10` | + | 51 | 41 | 37 | **46** | 4 | 1 |
+| `SX10` | − | 59 | 41 | 37 | **48** | 10 | 1 |
+
+`dist_5p` is distance along the **original molecule** — a reverse-strand read is stored
+reverse-complemented, so its 5' end is at the right of the alignment, and naive
+"distance from alignment start" would mislabel exactly the reads that matter.
+
+Ten reads. The closest any of them comes to a 5' terminus is **14 bp**. Every one has `NM=1`, so
+the site is the only mismatch on its molecule — no read shows the multi-mismatch pattern of a
+genuinely damaged fragment. All are BQ 41 at the `bwa aln` MAPQ ceiling of 37.
+
+**These libraries are UDG-treated, measured from the BAMs themselves:**
+
+| sample | pos 0 | pos 1 | pos 2 | pos 3 |
+|---|---|---|---|---|
+| `MX210` | 0.0103 | 0.0008 | 0.0008 | 0.0005 |
+| `MX213` | 0.0221 | 0.0014 | 0.0005 | 0.0006 |
+| `SX10` | 0.0136 | 0.0011 | 0.0009 | 0.0006 |
+| `MX187` | 0.0203 | 0.0011 | 0.0006 | 0.0001 |
+
+C>T frequency by distance from the 5' end. Terminal damage survives at 1–2%; by position 1 it is
+already an order of magnitude down and at background beyond. That is the partial-UDG signature, and
+it is consistent across the study, as one lab's protocol should be. *(Rates are per read covering
+the position, not per C — divide by the ~0.21 C content for a per-cytosine figure, so position 0 is
+~5% per C and position 14+ is ~0.25%.)*
+
+**Conclusion: the `Z6219` derived calls are real.** At 14–72 bp from the 5' end, in libraries whose
+deamination is already at background by position 1, the chance that ten independent molecules across
+six individuals all carry a damage-induced `C>T` is not worth computing. The four single-read calls
+the registered rules refused were refused correctly on the information those rules use, and they are
+now resolvable with information the rules do not look at.
+
+**What this does to the topology.** Both constraints on `PF3239 → Z6219 → L166` are now solid:
+
+- **Above `L166`** — Oberbipp: 10 derived reads at `Z6219` across four independent lineages
+  (`MX210`, `MX213`, `SX10`, and Family A as one observation), none damage-positioned; ancestral
+  11/11 at `L166`, a transversion and therefore damage-immune in both directions.
+- **Below `PF3239`** — the Sardinians: `I14677` derived 5/5 at `PF3239` and ancestral 4/4 at
+  `Z6219`; `I14678` 3/3 and 2/2. An *ancestral* call at a `C>T` site is damage-robust by direction,
+  since deamination cannot manufacture the ancestral `C`.
+
+**It is still post-hoc.** Nothing above was pre-registered, and the strength of the evidence is not
+a substitute for having said in advance what would count. The pre-registration should now be written
+knowing this, and should state what would falsify `PF3239 → Z6219 → L166` rather than what would
+confirm it — the failure mode of the last one was assuming the labels it set out to test.
