@@ -128,8 +128,13 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--panel", required=True,
                     help="EIGENSTRAT .snp panel definition")
-    ap.add_argument("--markers", required=True, nargs="+",
+    ap.add_argument("--markers", nargs="*", default=[],
                     help="one or more marker-name lists (# comments allowed)")
+    ap.add_argument("--sites", nargs="*", default=[],
+                    help="site TSVs (chrom pos anc der [class]) for positions "
+                         "that have no marker name -- being uncatalogued is "
+                         "exactly what makes a novel candidate novel, so it "
+                         "cannot be looked up by name")
     ap.add_argument("--index", default=DEFAULT_INDEX,
                     help=f"marker coordinate index (default {DEFAULT_INDEX})")
     ap.add_argument("--chain", default=None,
@@ -141,7 +146,25 @@ def main() -> int:
     args = ap.parse_args()
 
     index = load_marker_index(args.index)
-    names = load_marker_names(args.markers)
+    names = load_marker_names(args.markers) if args.markers else []
+
+    # Uncatalogued positions join the same run as synthetic entries, so panel
+    # membership for a novel-variant scan is answered by the same tool and the
+    # same liftover as for named markers.
+    for sp in args.sites:
+        with open(sp) as fh:
+            for ln in fh:
+                f = ln.split("#", 1)[0].split()
+                if len(f) < 4:
+                    continue
+                key = f"site_{f[0]}_{f[1]}"
+                index[key] = {"name": key, "chrom": f[0], "pos": f[1],
+                              "anc": f[2], "der": f[3], "isogg": "uncatalogued",
+                              "yfull_node": "."}
+                if key not in names:
+                    names.append(key)
+    if not names:
+        sys.exit("nothing to test: pass --markers and/or --sites")
 
     missing = [n for n in names if n not in index]
     if missing:
@@ -178,7 +201,16 @@ def main() -> int:
         pos_src = int(r["pos"])
         m_all = f"{r['anc']}/{r['der']}"
 
-        lifted = lift(pos_src - 1, blocks) + 1 if blocks else None
+        # lift() returns None for a position inside no chain block. The
+        # docstring promises such a site is reported "unmapped" rather than
+        # dropped, but "lift(...) + 1" raised TypeError and aborted the whole
+        # run mid-table -- silently, if stderr was not being read. It never
+        # fired on the 1240k marker panel because all 22 markers lift cleanly;
+        # it fires on the 6th of the Iceman's novel candidate positions.
+        lifted = None
+        if blocks:
+            l0 = lift(pos_src - 1, blocks)
+            lifted = l0 + 1 if l0 is not None else None
         hit_pos = by_pos.get(lifted) if lifted is not None else None
         hit_name = by_name.get(n)
 
