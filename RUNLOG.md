@@ -1229,3 +1229,51 @@ ancestral reads is consistent with it, and is deliberately not counted as confir
 Two non-ancestral oddities, neither contradicting the chain: `Aesch21` at `PF3147` is `mixed`
 (1 ancestral, 2 derived, C>T, `pct_mq0 = 0%`), and `Aesch4` at `Z6043` has a single read carrying
 neither allele (`other_allele`, transversion, `pct_mq0 = 0%`).
+
+### Test C genotyping (2026-07-27)
+
+```bash
+REF=$PWD/mapping/index/hg38p14DH3630O.fa PREFIX=testC \
+  annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam-testC results/testC
+```
+
+Four marker sets across 15 samples: `testC_L166_defining.tsv` (135 rows),
+`testC_yfull_L166_defining.tsv` (330), `testC_backbone_control.tsv` (150),
+`testC_Z6494_exclusion.tsv` (45), `testC_novel_sites.tsv` (120), plus coverage and params.
+
+Damage evidence, required by §8 for the decisive C>T calls:
+
+```bash
+B=/mnt/AncientDNA/SwissLN-2020/bam-testC
+R=/home/jsantala/src/bio-tools/mapping/index/hg38p14DH3630O.fa
+for s in Aesch12 Aesch13 Aesch23 SNPRA61 SNPRA62; do
+  annotate/y_read_evidence.py --bam "$B/${s}.rmdup.bam" --ref "$R" \
+    --site chrY:13782251 --anc C --der T
+  annotate/y_read_evidence.py --bam "$B/${s}.rmdup.bam" --ref "$R" \
+    --damage-profile --region chrY --max-reads 200000
+done
+```
+
+Outcome in `PREREG_testC_aesch_muttenz.md` §"Registered outcome": PC1 met, FC1 and FC2 not triggered,
+FC3 not evaluable, PC3 holds.
+
+**Two gotchas, both mine, both recorded because each produced plausible output rather than an error.**
+
+*The shell's working directory persists between tool calls.* A `cd results/testC` from an earlier
+command was still in effect when a later block set `R=$PWD/mapping/index/...`, which expanded to a
+path that does not exist. `samtools faidx` failed, `ref_base()` returned its `"?"` fallback, and the
+run printed `ref=?` and silently dropped the damage-pattern tag from every verdict. The per-read
+bases, positions and qualities come from the BAM and were unaffected, but the run was repeated with
+an absolute reference path before anything was recorded from it. **Use absolute paths in these
+commands; `$PWD` is not stable across calls.**
+
+*Read-ID adjacency is not a duplicate signature here.* Every pair of derived reads at `Z6219` carried
+consecutive SRA spot indices (`...1527837`/`...1527838` and so on) in all five samples, which looks
+like undetected duplication. The control is to look at a site with more reads: `L166`'s ancestral
+reads in the same libraries are consecutive too (`2687332`, `2687333`, `2687336`-`2687339`). ENA
+regenerated these FASTQs from coordinate-sorted BAMs, so reads at one locus have adjacent spot
+numbers by construction. The reads differ in length and strand and survive `samtools markdup -r`.
+
+**`derived(damage-pattern)` in `y_read_evidence.py` output is mechanical**: it tags any C>T or G>A by
+mutation class, not by how the read looks. It is not a damage assessment and carries no evidence on
+its own; `dist_5p`/`dist_3p` against the library profile is what does.

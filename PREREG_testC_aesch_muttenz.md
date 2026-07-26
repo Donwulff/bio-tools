@@ -360,3 +360,113 @@ each pair a candidate with a female (`Aes11`, `Aes15`), so no Y is shared and no
   `YHG = G2a2b2a1a1`. `PF3239` is `G2a2a1a2a1`; the two cannot both be right. `SX11` is Niederried
   Ursisbalm and is the single non-Aesch/Oberbipp/Muttenz individual in the published `PF3239` tally
   of 20, so any future count over that tally should treat it as unresolved.
+
+---
+
+## Registered outcome, 2026-07-27
+
+Applied mechanically from §§5, 6 and 9. Interpretation is deliberately not in this section.
+
+### Callability against the registered prediction
+
+| quantity | predicted (§4) | observed |
+|---|---|---|
+| individuals callable at `Z6219` | 4.0 | **5** |
+| individuals callable at `L166` | 5.9 | **12** |
+| individuals callable at **both** | 2.1 | **4** |
+
+The model under-predicted throughout, in the direction the `NRY` defect implies: `Aesch13` alone was
+registered at essentially zero power and is callable at both.
+
+### The four individuals callable at both
+
+| individual | `Z6219` | `L166` |
+|---|---|---|
+| `Aesch12` | DERIVED (2/0) | ancestral (0/2) |
+| `Aesch13` | DERIVED (2/0) | ancestral (0/2) |
+| `Aesch23` | DERIVED (2/0) | ancestral (0/6) |
+| `SNPRA62` | DERIVED (2/0) | ancestral (0/2) |
+
+`SNPRA61` is DERIVED at `Z6219` (2/0) with a single ancestral read at `L166`, so it is callable at
+`Z6219` only. Under the registered pooling rule `Aesch12` and `Aesch19` are one unit; `Aesch19` has no
+`Z6219` coverage and 5 ancestral reads at `L166`, so the pooled unit is unchanged in direction.
+
+Across all 15 candidates: **zero `Z6219`-ancestral reads** and **zero `L166`-derived reads**.
+`L166` drew 45 ancestral reads, `L167` 24 ancestral against 1 derived, `Z6219` 15 derived.
+
+### Damage evidence, required by §8 for decisive C>T calls
+
+`Z6219` is C>T at chrY:13782251. All ten derived reads carry BQ 32-41 and MAPQ 37. Eight of ten sit
+17-51 bp from the 5' end. The two exceptions are both in `SNPRA62`, at 1 and 4 bp. The libraries are
+UDG-treated and their measured chrY damage is low — terminal C>T of 1.0-1.5%, falling to ~0.15% at
+position 1 and ~0.05% by position 4 — so even the worst-placed pair has a joint damage probability
+below 1e-5. Damage is excluded for all five.
+
+### Falsifiers and predictions
+
+- **FC1 — not triggered.** It requires two or more independent kin groups callable at both and
+  `Z6219`-ancestral. Zero `Z6219`-ancestral reads exist in the cohort.
+- **FC2 — not triggered.** It requires an individual `Z6219`-ancestral and `L166`-derived. Neither
+  allele appears anywhere: zero ancestral reads at `Z6219`, zero derived reads at `L166`.
+- **FC3 — cannot be evaluated as written, and the rule is degenerate.** See below.
+- **PC1 — met.** Kin groups outside Oberbipp are `Z6219`-derived and `L166`-ancestral.
+- **PC2 — no split.** All five callable at `Z6219` are derived. §6 registered uniformity in either
+  direction as **uninformative rather than confirmatory**, and it is recorded that way. This is not
+  evidence for H1.
+- **PC3 — holds.** The ten YFull positions that drew zero reads across 15 Oberbipp libraries drew
+  zero reads here: `C101821`, `FGC5721`, `FT191098`, `FT91632`, `Z6206`, `Z6208`, `Z6220`, `Z6287`,
+  `Z6499`, `Z6519`. The mapping control passes.
+
+### FC3 is degenerate and this is a defect in the registration
+
+FC3 fires if "every callable candidate turns out to carry an identical Y haplotype across the backbone
+control set". No candidate differs from any other at any backbone marker: every informative cell is
+derived and there are no ancestral calls. On a literal reading FC3 obtains and §9 sends the outcome
+to H0.
+
+That reading is not usable, and the reason is a flaw in the falsifier rather than a fact about the
+cohort. The backbone control set **is** the published `G2a2a1a2a1` path, and the cohort was selected
+on a label asserting membership of that clade. A set of markers defining a clade cannot discriminate
+within it. FC3 therefore fires with probability 1 for any cohort this document could have assembled,
+and a falsifier that cannot fail to fire tests nothing.
+
+It is also true that identity is not established: 95 of the 150 backbone cells are `no_coverage`, so
+what is observed is absence of contradiction, not demonstrated sameness.
+
+**Recorded as: FC3 not evaluable.** The outcome is *not* being routed to H0 on it, and equally the
+independence it was written to protect is *not* claimed. The registration is not amended to repair
+FC3 — under `PROTOCOL_extending_analyses.md` a rule found wanting after seeing its effect gets its own
+registration and a re-run, never a patch applied to the run that exposed it.
+
+### Outcome under §9
+
+**PC1 met → H1 supported at a second site**, with the number stated rather than the word
+"replicated":
+
+- **4 individuals** callable at both markers, all `Z6219`-derived and `L166`-ancestral;
+- **3 documented kin groups** — Aesch Family D (`Aesch12`+`Aesch19`, `Aesch23`), Aesch Family B
+  (`Aesch13`), and Muttenz (`SNPRA62`, plus `SNPRA61` at `Z6219` only);
+- **2 sites** beyond Oberbipp.
+
+**These are not demonstrably independent patrilines and this design cannot make them so.** §8's
+independence rule stands: kin groups negative at third degree are not thereby Y-independent, and
+neither Furtwängler 2020 nor the compilation measures patrilineal sharing beyond that. The honest
+count of demonstrably independent Y lineages carrying this state remains **1**, now observed at three
+sites rather than one.
+
+### Post-hoc, labelled as such: `Z6135`
+
+Not registered as a decisive marker and not predicted. `Z6135` (C>T, chrY:7657979) drew **zero reads
+in all 15 Oberbipp libraries** and was `uninformative` in Test B; here it is covered in 11 of 15 with
+**23 derived reads and no ancestral read**, 8 of them callable at depth. Read evidence on the three
+deepest libraries puts the derived reads at 1-49 bp from the 5' end with BQ 41 and MAPQ 37.
+
+Its behaviour matches `Z6219` — derived where `L166`, `L167` and `Z6134` are ancestral — in men who
+are callable at `L166`, including `Aesch1`, `Aesch4`, `Aesch20`, `Aesch21` and `Aesch22`, none of
+which is callable at `Z6219`. `Z6209` (G>A) is derived in `Aesch22` at depth, with the same
+orientation.
+
+This is a scan result over 22 positions and is reported as post-hoc, not as a prediction that came
+true. What it justifies is a *new registration*, not an extension of this one: the question of whether
+`Z6219`, `Z6135` and `Z6209` form a block below `PF3239` and above `L166` is a different question from
+the one this document asked, and the markers were chosen after seeing which ones had coverage.
