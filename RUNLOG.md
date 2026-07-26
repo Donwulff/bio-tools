@@ -622,3 +622,79 @@ Reference notes recorded at the time:
   list is built against, so it is an exact control for the custom build rather than an approximation.
 
 Findings in `NOTES.md` under "Sensitivity Test: What Fraction Of Reads Can Even Come Back".
+
+### Allele-aware mappability, damage forensics, reproducibility (2026-07-26, later)
+
+All findings are in `NOTES.md`; this section records how to regenerate them.
+
+**Reference composition audit** — no oral decoy present; chrY fix-patch alignment blocks:
+
+    awk '{print $1}' mapping/index/hg38p14DH3630O.fa.fai | sed -E 's/[0-9]+$//' | sort | uniq -c
+    awk -F'\t' '$3=="chrY"{...}' mapping/additional_hg38_p14_A3630_contigs.alt   # 4 blocks
+    for b in .../I14677.rmdup.bam ...; do samtools idxstats "$b"; done            # reads/kb per contig
+
+**Deposit provenance** — every ENA "fastq" is generated from a submitted BAM:
+
+    curl -s "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=ERR14752008&result=read_run\
+&fields=run_accession,read_count,submitted_format,fastq_ftp&format=tsv"
+    samtools view -H https://ftp.sra.ebi.ac.uk/vol1/run/ERR147/ERR14752008/CGG017683.bam
+    for b in /mnt/AncientDNA/*/bam/*.rmdup.bam; do samtools idxstats "$b"; done   # unmapped fraction
+
+**1000G phase 3 chrY membership** (`--sites` added to `panel_membership.py` for this):
+
+    zcat /mnt/GenomicData/1KG/1KGchrY/ALL.chrY.phase3_integrated_v1a.20130502.genotypes.vcf.gz \
+      | awk -F'\t' '!/^#/{printf "%s\t24\t0.0\t%s\t%s\t%s\n",($3=="."?"snp_24_"$2:$3),$2,$4,$5}' > 1kg_chrY.snp
+    annotate/panel_membership.py --panel 1kg_chrY.snp \
+      --sites markers/iceman_novel_candidates_all21.tsv \
+      --chain /mnt/GenomicData/OpenSNP/puller/hg38ToHg19.over.chain
+
+**Z6219 read forensics** (terminus positions and library damage rate):
+
+    annotate/y_read_evidence.py --bam <bam> --ref mapping/index/hg38p14DH3630O.fa \
+      --site chrY:13782251 --anc C --der T
+    annotate/y_read_evidence.py --bam <bam> --damage-profile --region chrY --ends 8
+
+**F6 recheck** — all L166 reads with no MAPQ floor, 15 Swiss BAMs:
+
+    for b in /mnt/AncientDNA/SwissLN-2020/bam/*.rmdup.bam; do
+      annotate/y_read_evidence.py --bam $b --ref mapping/index/hg38p14DH3630O.fa \
+        --site chrY:21843737 --anc C --der A --min-mq 0
+    done
+    # 14 reads, 8 samples, all ancestral C, all MAPQ 37, all NM=0, zero derived at any MAPQ
+
+**Allele-aware mappability** (F5, and the YFull L166 set):
+
+    for al in anc der; do
+      annotate/y_mappability.py --markers markers/yfull_L166_defining.txt \
+        --source mapping/index/hg38p14DH3630O.fa \
+        --target noalt=mapping/index/GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna \
+        --read-lengths 45,100,150 --threads 4 --allele $al --out tb_$al.tsv
+    done
+
+**MAPQ mechanism diagnostic** — single reads, ancestral vs derived, showing `XT:A:U X0=1 X1>=1`:
+build a 45 bp read centred on each marker, substitute the derived base, then
+
+    bwa aln -n 0.01 -k 2 -l 1024 <ref> multi.fq | bwa samse <ref> - multi.fq
+
+**Reproducibility regression** — defaults must reproduce committed tables byte-identically:
+
+    REF=mapping/index/hg38p14DH3630O.fa PREFIX=swiss \
+      annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam <outdir> markers
+    diff results/swiss15/swiss_*.tsv <outdir>/swiss_*.tsv    # all 5 IDENTICAL, 2026-07-26
+
+### Not done, and explicitly outstanding
+
+- **chrY-only pipeline emulation — NEVER RAN.** A chrY-only bwa index was started to test whether a
+  Y-only pipeline manufactures apparent coverage at `FGC5687` (X-homologous, 0.000 recovery against
+  a whole-genome reference). `bwa index` on the 57 Mb contig did not complete under load and
+  `chrYonly.fa.sa` was never written. **The prediction — that recovery would jump from 0.000 to near
+  1.000, i.e. a Y-only pipeline produces confident false calls there — is UNTESTED.** It must not be
+  cited as a result.
+- **Test A (F1 check) — not run.** `Z6219` for `I5118` sits in `results/unhedged/unhedged_L166_defining.tsv`
+  and has deliberately not been read; see `PREREG_Z6219_node.md` §9.
+- **Test B (co-segregation scan) — not run.** Marker set committed as
+  `markers/yfull_L166_defining.txt`; 15 usable positions of 32.
+- **`Z6219`'s YFull rank (26/32) is not reproduced** by anything measured here: it is 1.000 at both
+  alleles at 35/45/60/100/150 bp with zero MQ0 and zero off-target in every reference tested.
+- **Uniqueness-based filtering is a proposal, not applied.** `--report-uniqueness` reports it;
+  no call uses it. Changing the filter requires its own registration and a re-run of every dataset.
