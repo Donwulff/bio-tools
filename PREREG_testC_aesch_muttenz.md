@@ -79,6 +79,11 @@ kinship is documented in the compilation's own `Kinship-Notes`:
 **Seven kin groups at two sites**, against Oberbipp's one site and — after Family A pooling — very
 few. That, and not the raw individual count, is what Test C buys.
 
+> **Annotation added after the §7 checks, 2026-07-26.** The table above is sourced to the
+> compilation and it is *not* the publication's. Furtwängler 2020 Supplementary Table 5 documents
+> only one of these links among the candidates (`Aes12`–`Aes19`). See "§7 checks — completed" at the
+> end of this document. The registered pooling rule is unaffected; the attribution is.
+
 ## 3. Hypotheses
 
 **H1 — `Z6219` marks a real node between `PF3239` and `L166`.** Then the `Z6219`-derived,
@@ -275,3 +280,83 @@ from read counts, an external coverage proxy and the Oberbipp marker rates.
   re-derivation is not a finding about the haplotree.
 - No re-interpretation of any prior finding in the same commit as the results. Calls are recorded
   first; what they mean is a separate question asked afterwards.
+
+---
+
+## §7 checks — completed 2026-07-26, before any read was staged
+
+Run against Furtwängler 2020's corrected Supplementary Information PDF, fetched and read directly
+(`static-content.springer.com/esm/art%3A10.1038%2Fs41467-020-15560-x/MediaObjects/41467_2020_15560_MOESM1_ESM.pdf`,
+25 pp., Supplementary Tables 1 and 5). Not from a search summary and not from the compilation.
+
+**The cohort survives all three checks. Nothing in §§1–11 above is amended.**
+
+### 1. ID mapping — confirmed, and it runs the opposite way from the assumption
+
+Supplementary Table 1 uses `Aesch1`, `Aesch12`, `Aesch20`, `RA61`, `RA62` — **identical to the ENA
+`sample_alias` values**. It is the *compilation* that abbreviates to `Aes1`, `Aes12`, `RA61`. So the
+mapping applied when building `candidates.tsv` (`Aes` → `Aesch`, `RA` → `SNPRA`) recovers the
+publication's own IDs, and the ENA↔publication correspondence needs no inference at all. The
+off-by-one hazard named in §7.1 does not exist for this cohort.
+
+### 2. Sex of `RA61` and `RA62` — confirmed male
+
+Supplementary Table 1 is titled *"Y chromosomal haplogroup assignment for **all male individuals**"*.
+Both appear in it. The empty `Sex` field in the compilation is a gap in the compilation, not an
+ambiguity in the source.
+
+### 3. Published labels — the overlap with P3's set is now known, and the cohort is a superset
+
+Of the 15 registered candidates, **12 are published `PF3239`** and 3 are published *shallower*:
+
+| candidate | published terminal | published YHG |
+|---|---|---|
+| `Aesch6` | `PF3147` | `G2a2a` |
+| `Aesch7` | `FGC7739/Z6488` | `G2a2a1a2a` |
+| `Aesch20` | `FGC7739/Z6488` | `G2a2a1a2a` |
+
+The other 12 — `Aesch1`, `Aesch4`, `Aesch12`, `Aesch13`, `Aesch14`, `Aesch17`, `Aesch19`,
+`Aesch21`, `Aesch22`, `Aesch23`, `RA61`, `RA62` — are published `PF3239` / `G2a2a1a2a1`.
+
+That is **all 10 published-`PF3239` individuals at Aesch and both at Muttenz**, confirming the
+per-site counts recorded in `NOTES.md`. The registered cohort is therefore a strict **superset** of
+the set P3 named, and Test C can report under either definition without re-registration. The three
+shallower individuals are retained: they were selected by a stated, reproducible criterion, and
+dropping them now on a label read afterwards is rule-shopping. `Aesch6`'s predicted power is 0.036
+at `Z6219`, so retaining it costs nothing either way.
+
+### 4. Kinship — the registered pooling rule is confirmed by the source, but §2's table is not
+
+Supplementary Table 5 lists first- and second-degree pairs. Among the candidates it gives exactly
+one male–male first-degree pair: **`Aes12`–`Aes19`, `pi_HAT` 0.427, 272,655 SNPs, `same Y HG = yes`**
+— precisely and only the merge registered in §8. The pooling rule needed no revision.
+
+**But the wider family structure in §2's table is the compilation's, not the publication's.** Table 5
+contains no entry pairing `Aes1`, `Aes20`, `Aes21` or `Aes23` with anything. The compilation
+describes them as "2nd or 3rd degree" relatives within a twelve-member Family D; Table 5's stated
+scope is first and second degree, so a genuinely third-degree pair would be absent legitimately —
+but a second-degree one should have appeared. The compilation's kinship notes are therefore a
+re-derivation of unstated provenance, exactly like its `Y-Haplotree-Variant` calls, and §2's "seven
+kin groups" is **sourced to the compilation and must be attributed to it**, not to Furtwängler 2020.
+
+The consequence runs in the cohort's favour and is deliberately not banked: on the publication's
+evidence alone there are **14 observation units with no documented relationship among them**, rather
+than seven kin groups. That would make Test C stronger than registered. It is not claimed, because
+absence of a pair from a table scoped to first and second degree is not evidence of unrelatedness,
+and because neither source measures the thing that actually matters — patrilineal sharing beyond
+third degree, which is unmeasured in both. **FC3 stands unchanged and is still the right guard.**
+
+Two further pairs are first-degree but do not reduce the count: `Aes11`–`Aes17` and `Aes14`–`Aes15`
+each pair a candidate with a female (`Aes11`, `Aes15`), so no Y is shared and no merge follows.
+
+### Two observations recorded in passing, neither bearing on this test
+
+- **`Aes12`–`Aes24` are first-degree with `same Y HG = same clade`**, yet `Aes12` is published
+  `PF3239` and `Aes24` published `Z6488`. Two men who must carry the same Y chromosome carry
+  published labels one node apart. This is a fresh instance of the point already made from Table 5
+  for Oberbipp: **the published terminal is a coverage floor, not a placement.** `Aes24` is not in
+  the cohort and nothing here depends on it.
+- **`SX11` is internally inconsistent in Table 1**, carrying terminal mutation `PF3239` against
+  `YHG = G2a2b2a1a1`. `PF3239` is `G2a2a1a2a1`; the two cannot both be right. `SX11` is Niederried
+  Ursisbalm and is the single non-Aesch/Oberbipp/Muttenz individual in the published `PF3239` tally
+  of 20, so any future count over that tally should treat it as unresolved.

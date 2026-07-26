@@ -2331,3 +2331,46 @@ P3 named. Furtwängler 2020 Supplementary Table 1 has not been re-read for Aesch
 between the two sets is unknown and is listed as a required pre-staging check. Confirming or
 refuting the compilation's labels is not a finding about the haplotree; the labels are a sampling
 frame, chosen because it is reproducible from a committed file.
+
+### Test C §7 pre-staging checks, against the publication itself (2026-07-26)
+
+Furtwängler 2020's corrected Supplementary Information fetched and read directly (25 pp.,
+Supplementary Tables 1 and 5) rather than via the compilation or a search summary. **The cohort
+survives all three checks and nothing in the registration is amended.** Four things came out of it.
+
+**1. The ID-mapping hazard does not exist for this cohort, and the assumption was backwards.**
+Supplementary Table 1 uses `Aesch1`, `Aesch12`, `RA61` — *identical to the ENA `sample_alias`
+values*. It is the compilation that abbreviates to `Aes1`, `Aes12`. So the `Aes`→`Aesch` mapping
+recovers the publication's own IDs and the ENA↔publication correspondence needs no inference.
+
+**2. `RA61` and `RA62` are male.** Supplementary Table 1 is titled "Y chromosomal haplogroup
+assignment for **all male individuals**" and both are in it. The empty `Sex` field is a gap in the
+compilation, not an ambiguity in the source.
+
+**3. The registered cohort is a strict superset of the set P3 named.** Twelve of the 15 candidates
+are published `PF3239` — which is *all ten* at Aesch and *both* at Muttenz, confirming the per-site
+counts recorded above. The other three are published shallower: `Aesch6` `PF3147`, `Aesch7` and
+`Aesch20` `FGC7739/Z6488`. They are retained, because they were selected by a stated reproducible
+criterion and dropping them on a label read afterwards is rule-shopping; `Aesch6`'s predicted power
+is 0.036, so retaining it costs nothing. Test C can now report under either cohort definition.
+
+**4. The "seven kin groups" figure is the compilation's, not the publication's — and this is the
+one that needed catching.** Supplementary Table 5 gives exactly one male–male first-degree pair
+among the candidates, `Aes12`–`Aes19` (`pi_HAT` 0.427, 272,655 SNPs, `same Y HG = yes`), which is
+precisely and only the merge the registration had already fixed. It contains **no entry pairing
+`Aes1`, `Aes20`, `Aes21` or `Aes23` with anything**. The compilation's twelve-member "Family D" is a
+re-derivation of unstated provenance, like its `Y-Haplotree-Variant` calls.
+
+The correction runs in the cohort's *favour* — on the publication's evidence there are 14 units with
+no documented relationship rather than seven kin groups — and it is deliberately not banked. Table 5
+is scoped to first and second degree, so absence from it is not evidence of unrelatedness, and
+neither source measures patrilineal sharing beyond third degree, which is the thing that actually
+matters. FC3 stands.
+
+**Two observations recorded in passing.** `Aes12`–`Aes24` are first-degree with `same Y HG = same
+clade`, yet published `PF3239` and `Z6488` respectively — two men who must carry the same Y
+chromosome, labelled one node apart. That is the "published terminal is a coverage floor, not a
+placement" point of Table 5, now seen at Aesch as well as Oberbipp. Separately, **`SX11` is
+internally inconsistent in Table 1**: terminal mutation `PF3239` against `YHG = G2a2b2a1a1`, and
+`PF3239` is `G2a2a1a2a1`. `SX11` is the single Niederried individual in the published `PF3239` tally
+of 20, so that tally should treat it as unresolved.

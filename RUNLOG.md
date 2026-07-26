@@ -1052,3 +1052,20 @@ giving expected callable at `Z6219` of **1.3 / 4.0 / 7.9** and split power at fr
 `NOTES.md` on 2026-07-25 — and that one row alone raised the fitted ratio from 0.6514 to 0.7455, a
 14% optimistic bias in every downstream power number. The tool now takes the median of per-sample
 ratios and reports the through-origin value alongside it for comparison. No sample is dropped.
+
+### Test C §7 pre-staging checks (2026-07-26) — still no read staged
+
+    cd <scratch>
+    curl -sL -o furtw_suppl.pdf "https://static-content.springer.com/esm/\
+art%3A10.1038%2Fs41467-020-15560-x/MediaObjects/41467_2020_15560_MOESM1_ESM.pdf"
+    pdftotext -layout furtw_suppl.pdf furtw_suppl.txt
+    grep -n "Supplementary Table" furtw_suppl.txt     # Table 1 at l.220, Table 5 at l.454
+
+25 pp., 631 lines of extracted text. Supplementary Table 1 (Y haplogroup for all male individuals)
+and Table 5 (relatedness, first and second degree) are the two read. Outcome in
+`PREREG_testC_aesch_muttenz.md` §"§7 checks — completed" and `NOTES.md`: all three checks pass, the
+cohort is a superset of the published-`PF3239` set, and the registered `Aes12`–`Aes19` pooling is
+the only male–male first-degree pair the publication documents among the candidates.
+
+The PDF is not committed — it is a publisher artefact reachable from the URL above, and the two
+tables read from it are quoted where they are used.
