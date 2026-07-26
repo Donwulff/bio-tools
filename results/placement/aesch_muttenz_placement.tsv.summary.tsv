@@ -1,0 +1,16 @@
+sample	terminal	terminal_status	def_derived	def_derived_transversion	caveats	excluded	conflicts	unpublished_on_path	path
+Aesch1	G-M3308	published	1	1	single_marker	G-L166	-	-	G-P287(D) > G-P15(N) > G-M3308(D)
+Aesch12	G-Z6219	provisional	1	0	single_marker	G-L166	-	G-Z6219	G-P287(N) > G-P15(D) > G-M3308(D) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D) > G-Z6488(N) > G-PF3239(N) > G-Z6219*(D)
+Aesch13	G-Z6219	provisional	1	0	single_marker	G-L166	-	G-Z6219	G-P287(N) > G-P15(N) > G-M3308(D) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D) > G-Z6488(N) > G-PF3239(N) > G-Z6219*(D)
+Aesch14	G-L91	published	1	1	single_marker	G-L166	-	-	G-P287(N) > G-P15(N) > G-M3308(N) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+Aesch17	G-L91	published	1	1	single_marker	G-L166	-	-	G-P287(D) > G-P15(N) > G-M3308(N) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+Aesch19	G-M3308	published	1	1	single_marker	G-L166	-	-	G-P287(N) > G-P15(D) > G-M3308(D)
+Aesch20	G-M3308	published	1	1	single_marker	G-L166	-	-	G-P287(N) > G-P15(N) > G-M3308(D)
+Aesch21	G-P287	published	1	1	single_marker	G-L166	G-PF3147	-	G-P287(D)
+Aesch22	G-L91	published	1	1	single_marker	G-L166	-	-	G-P287(D) > G-P15(N) > G-M3308(N) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+Aesch23	G-Z6219	provisional	1	0	single_marker	G-L166	-	G-Z6219	G-P287(D) > G-P15(D) > G-M3308(D) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D) > G-Z6488(N) > G-PF3239(N) > G-Z6219*(D)
+Aesch4	G-L91	published	1	1	single_marker	G-L166	-	-	G-P287(N) > G-P15(N) > G-M3308(D) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+Aesch6	-	-	0	0	-	-	-	-	-
+Aesch7	G-L166	published	1	1	weak_ancestral=1;single_marker	-	-	G-Z6219	G-P287(D) > G-P15(N) > G-M3308(D) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(N) > G-Z6488(N) > G-PF3239(N) > G-Z6219*(N) > G-L166(D)
+SNPRA61	G-Z6219	provisional	1	0	single_marker	-	-	G-Z6219	G-P287(D) > G-P15(D) > G-M3308(D) > G-PF3147(D) > G-PF3148(N) > G-PF3177(N) > G-L91(D) > G-Z6488(N) > G-PF3239(N) > G-Z6219*(D)
+SNPRA62	G-Z6219	provisional	1	0	single_marker	G-L166	-	G-Z6219	G-P287(D) > G-P15(D) > G-M3308(N) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D) > G-Z6488(N) > G-PF3239(N) > G-Z6219*(D)

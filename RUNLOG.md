@@ -1277,3 +1277,64 @@ numbers by construction. The reads differ in length and strand and survive `samt
 **`derived(damage-pattern)` in `y_read_evidence.py` output is mechanical**: it tags any C>T or G>A by
 mutation class, not by how the read looks. It is not a damage assessment and carries no evidence on
 its own; `dist_5p`/`dist_3p` against the library profile is what does.
+
+## The tree gets a file — `markers/tree_local.tsv` and the placement tools (2026-07-27)
+
+Topology had never been machine-readable. Marker infrastructure handled two things — named markers
+resolved through the YBrowse index, and bare coordinates — and neither expresses which node sits
+above which. That `Z6219` is above `L166` and `Z6499` below it existed only as prose in `NOTES.md`,
+so no script could act on it and no script could be checked against it.
+
+`markers/tree_local.tsv` now states it: one row per node, with a `status` column of
+`published` / `provisional` / `putative` / `refuted`, a `defining` marker list (derived means this
+node or below; a terminal call may rest only on these) and an `equivalent` list (block members no
+sample here orders against the node — counted, reported, never decisive).
+
+`annotate/ytree.py` loads and validates it, and carries `TreeScorer`, shared by both consumers for
+the reason `ylib.py` exists. `annotate/y_tree_place.py` runs it against read-level pileup tables;
+`y_path_rank.py --tree` runs it against VCF-derived marker_status tables alongside the existing
+label ranking. The two are independent by construction — the ranking reads HG/ISOGG labels, the
+scorer reads only marker names — so they can disagree, which is the point.
+
+```bash
+python3 annotate/test_ytree.py            # 40 checks, no pytest, no fixtures on disk
+
+mkdir -p results/placement
+python3 annotate/y_tree_place.py --sample Iceman \
+  --pileup results/iceman_y_L166_evidence.tsv results/z6219_node/iceman_yfull_L166_defining.tsv \
+  --out results/placement/iceman_placement.tsv
+python3 annotate/y_tree_place.py --pileup results/swiss15/swiss_*.tsv \
+  --out results/placement/oberbipp15_placement.tsv
+python3 annotate/y_tree_place.py --pileup results/testC/testC_*.tsv \
+  --out results/placement/aesch_muttenz_placement.tsv
+python3 annotate/ytree.py --newick results/placement/tree_local.nwk \
+  --markers-out results/placement/tree_local_markers.tsv
+```
+
+**The ladder now comes out of a tool instead of a paragraph.** The Iceman is `G-L166`, on two
+derived transversions, with `G-Z6494`, `G-Z6211` and `G-Z6499` all ancestral below him; `G-Z6208` is
+`DERIVED` and `refuted`, which is the published label's error in one line. Oberbipp gives `MX210`
+and `SX10` at `G-Z6219` and nobody at `G-L166`; Aesch/Muttenz gives `Aesch12`, `Aesch13`, `Aesch23`,
+`SNPRA61` and `SNPRA62` at `G-Z6219`. Those reproduce the registered outcomes of the Swiss run and
+Test C, from the committed tables, without a human in the loop.
+
+**Two defects the first live run exposed, both fixed before the tables above were written.**
+
+*Overlapping block files double-counted.* `markers/L166_defining.txt` and
+`markers/yfull_L166_defining.txt` share ten positions, so globbing a results directory fed the same
+read in twice and every derived and ancestral total came out inflated. Rows are now deduplicated on
+`(sample, marker)`, and a call that differs between two input files is reported rather than silently
+resolved.
+
+*`Aesch7` places at `G-L166`, and the tool has to say why that is thin.* He has one derived read at
+`L167` (`DERIVED_1read_transversion`, a derived call under the standing rules) and one ancestral read
+at `L166` (`low_power_1read_ancestral`, a nocall under the same rules). Both rules are correct and
+together they produce a `G-L166` placement from one read. Test C reported the cohort aggregate — "24
+ancestral against 1 derived" at `L167` — so this never surfaced per-sample. The scorer does not
+change either rule; it counts low-power calls separately and prints `weak_ancestral=1` against the
+placement. `Aesch7` is the only sample in either cohort carrying that caveat.
+
+**`G-Z6208` is the reason the `refuted` status exists.** The published Iceman label
+`G2a2a1a2a1a1b (G-Z6208*)` treats `Z6208` as a node below `L166`. The marker is real and the Iceman
+is derived at it; the node is not. A `refuted` row keeps both facts — the call is scored and printed,
+and the node can never appear on a path, be a terminal placement, or reach the Newick export.

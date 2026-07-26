@@ -1,0 +1,16 @@
+sample	terminal	terminal_status	def_derived	def_derived_transversion	caveats	excluded	conflicts	unpublished_on_path	path
+MX150	G-L91	published	1	1	single_marker	-	-	-	G-P287(D) > G-P15(N) > G-M3308(N) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+MX182	G-L91	published	1	1	single_marker	-	-	-	G-P287(N) > G-P15(N) > G-M3308(N) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+MX183	G-L91	published	1	1	single_marker	G-L166,G-Z6494	-	-	G-P287(N) > G-P15(N) > G-M3308(N) > G-PF3147(D) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+MX187	G-L91	published	1	1	single_marker	-	-	-	G-P287(D) > G-P15(N) > G-M3308(N) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+MX203	-	-	0	0	-	-	-	-	-
+MX204	G-L91	published	1	1	single_marker	-	-	-	G-P287(N) > G-P15(N) > G-M3308(N) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+MX209	-	-	0	0	-	-	-	-	-
+MX210	G-Z6219	provisional	1	0	single_marker	G-L166	-	G-Z6219	G-P287(N) > G-P15(D) > G-M3308(D) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D) > G-Z6488(N) > G-PF3239(N) > G-Z6219*(D)
+MX211	G-L91	published	1	1	single_marker	-	-	-	G-P287(N) > G-P15(D) > G-M3308(D) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+MX212	G-L91	published	1	1	single_marker	G-L166	-	-	G-P287(N) > G-P15(N) > G-M3308(D) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+MX213	G-L91	published	1	1	single_marker	G-L166	-	-	G-P287(D) > G-P15(N) > G-M3308(D) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D)
+MX219	-	-	0	0	-	-	-	-	-
+MX299	-	-	0	0	-	-	-	-	-
+SX10	G-Z6219	provisional	1	0	single_marker	-	-	G-Z6219	G-P287(N) > G-P15(N) > G-M3308(N) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D) > G-Z6488(N) > G-PF3239(N) > G-Z6219*(D)
+SX8	-	-	0	0	-	-	-	-	-

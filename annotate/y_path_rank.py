@@ -28,6 +28,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Set, Tuple
 
+import ytree
+
 
 NOISE_PATTERNS = (
     "unknown",
@@ -202,11 +204,27 @@ def main() -> int:
         default=0.0,
         help="weight for nocall markers at candidate labels (default: 0.0)",
     )
+    ap.add_argument(
+        "--tree",
+        help="local tree TSV (e.g. markers/tree_local.tsv); adds a topology-aware "
+             "placement alongside the label ranking",
+    )
+    ap.add_argument(
+        "--tree-out",
+        help="per-node output TSV (default: <out> with .tree.tsv suffix)",
+    )
     args = ap.parse_args()
 
     in_path = Path(args.input)
     if not in_path.exists():
         raise SystemExit(f"ERROR: input file not found: {in_path}")
+
+    scorer = None
+    if args.tree:
+        try:
+            scorer = ytree.TreeScorer(ytree.load_tree(args.tree), name=in_path.name)
+        except ytree.TreeError as exc:
+            raise SystemExit(f"ERROR: {exc}")
 
     parse_prefix = "" if args.auto_clade else args.clade_prefix
 
@@ -241,6 +259,13 @@ def main() -> int:
             gq = parse_int_field(row[9])
             dp = parse_int_field(row[10])
             status = row[12]
+
+            # Before the label filter: tree scoring must see rows whose HG/ISOGG
+            # fields are blank or unparseable, since a marker's node comes from
+            # the tree file and not from the row's label.
+            if scorer is not None:
+                scorer.add(row_id, ytree.status_from_call(status),
+                           transversion=not is_transition(ref, alt))
 
             labels = tokenize_labels(hg, isogg, parse_prefix)
             if not labels:
@@ -368,6 +393,31 @@ def main() -> int:
             )
 
     print(f"Done. wrote {out_path}")
+
+    if scorer is not None:
+        tree_out = Path(args.tree_out) if args.tree_out else out_path.with_suffix(
+            out_path.suffix + ".tree.tsv")
+        with tree_out.open("w", encoding="utf-8", newline="") as fh:
+            tw = csv.writer(fh, delimiter="\t")
+            tw.writerow(ytree.NODE_COLUMNS)
+            tw.writerows(scorer.rows())
+        print(f"Tree: {scorer.tree.path} -- placement {scorer.summary()}")
+        for t in scorer.terminal():
+            print(f"  path: {scorer.ladder(t)}")
+            unpublished = [n for n in scorer.tree.path_nodes(t)
+                           if scorer.tree.nodes[n].status != "published"]
+            if unpublished:
+                print("  NOTE: routes through node(s) no published tree carries: "
+                      + ", ".join(unpublished))
+        if scorer.excluded():
+            print("  excluded (ancestral): " + ", ".join(
+                f"{n} {scorer.def_ancestral[n]}/{scorer.def_derived[n]}"
+                for n in scorer.excluded()))
+        if scorer.conflicts():
+            print("  CONFLICT at defining markers: " + ", ".join(scorer.conflicts()))
+        print(f"  ({ytree.STATUS_LEGEND})")
+        print(f"Done. wrote {tree_out}")
+
     return 0
 
 

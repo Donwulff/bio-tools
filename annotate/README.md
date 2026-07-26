@@ -39,6 +39,57 @@ Ranks clade/path candidates from `*.marker_status.tsv` with tunable scoring:
   (e.g. `HG=I1` + `ID=Y47125` can contribute to `I-Y47125` ranking).
 - reports simple support-strength summaries from derived marker rows:
   `derived_dp_sum`, `derived_dp_mean`, `derived_dp_max`, `derived_gq_mean`.
+- `--tree markers/tree_local.tsv` adds a topology-aware placement beside the label
+  ranking, written to `--tree-out` (default `<out>.tree.tsv`). The two are independent:
+  the ranking reads HG/ISOGG labels, the placement reads only marker names against the
+  tree, so they can disagree. When they do, that is the result.
+
+### ytree.py
+Loader, validator and scorer for the local Y tree in `markers/tree_local.tsv` — the one
+machine-readable statement of which node sits above which. Marker lists and coordinate
+files never carried topology, so `G-Z6219` above `G-L166` and `G-Z6499` below it lived
+only in prose until this existed.
+
+- `load_tree()` validates on read and raises rather than guessing: one root, no cycles,
+  every parent known, every status from the fixed vocabulary, every marker on exactly
+  one node, every node with at least one defining marker.
+- `TreeScorer` calls each node from its **defining** markers only. `equivalent` markers
+  are counted and reported but can never deepen a placement. `refuted` nodes are scored
+  and printed but never appear on a path.
+- `status_from_call()` translates `ylib.site_call()`'s vocabulary. One ancestral read
+  stays a nocall, as that function intends; it is counted separately and surfaces as a
+  `weak_ancestral` caveat on any derived call it sits under.
+- `to_newick()` exports the tree for external placement tools (pathPhynder/phynder).
+  Branch lengths are counts of defining markers, not time.
+
+Run directly to check the file or export it:
+```bash
+python3 annotate/ytree.py --newick tree.nwk --markers-out markers.tsv
+```
+
+### y_tree_place.py
+Places samples on the local tree from read-level pileup tables (`y_markers_pileup.py`
+output), rather than from VCF-derived label tables. This is the path used by the recent
+Iceman/Oberbipp/Aesch work.
+
+```bash
+python3 annotate/y_tree_place.py --pileup results/testC/testC_*.tsv \
+    --out results/placement/aesch_muttenz_placement.tsv
+```
+- columns are found by name; files without them are skipped with a note, so a whole
+  results directory can be globbed
+- `--sample NAME` for single-sample tables that carry no `sample` column
+- rows are deduplicated on `(sample, marker)`. The block files overlap on purpose —
+  `L166_defining` and `yfull_L166_defining` share ten positions — so without this every
+  derived and ancestral total would be inflated by the overlap
+- writes a per-node table and a one-row-per-sample summary carrying the terminal node,
+  its status, what the sample is excluded from, and any caveats
+
+### test_ytree.py
+`python3 annotate/test_ytree.py` — no pytest, no fixtures on disk. Checks the real tree
+file loads, that eight classes of malformed tree are refused, and that the scorer still
+reproduces the placements this project made from reads (Iceman at `G-L166` while derived
+at the refuted `G-Z6208`; Swiss Neolithic men at `G-Z6219`; Sardinians at `G-PF3239`).
 
 ### run_iceman_y_compare.sh
 Single-command driver for reproducible multi-branch Iceman chrY comparison:

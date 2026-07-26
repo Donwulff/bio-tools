@@ -1,0 +1,59 @@
+# Local Y tree for the G-L166 region. Marker coordinates are hg38, resolved
+# through resources/marker_index.tsv.gz (YBrowse).
+#
+# One row per node. This file is the machine-readable statement of topology for
+# this project: which node sits above which, and which markers put a sample at
+# each. The argument lives in NOTES.md and the pre-registrations; this is the
+# conclusion, in a form a script can read.
+#
+# Columns
+#   node        node name in SNP-label form, e.g. G-L166
+#   parent      parent node, or "-" for the local root
+#   status      published   -- the published tree (YFull/FTDNA/ISOGG) carries this
+#                              node and the read data here does not contradict it
+#               provisional -- placed by read-level evidence in this repository; no
+#                              published tree carries it, and none will get it from
+#                              modern testers (see "why" below)
+#               putative    -- hypothesis only: not pre-registered, or registered
+#                              and not yet tested. Never decisive.
+#               refuted     -- the placement does not hold. Kept because the label
+#                              is in circulation. Scored and printed, but excluded
+#                              from path and terminal-placement logic.
+#   defining    markers demonstrated to arise on the branch INTO this node:
+#               derived => the sample is at this node or below it,
+#               ancestral => the sample is strictly above it.
+#               A terminal call may rest only on these.
+#   equivalent  markers the published tree puts in this node's block whose branch
+#               position no sample available here resolves. Counted and reported,
+#               never decisive. "-" if none.
+#   evidence    one line: what places the node, and what the placement does not rest on.
+#
+# A marker name appears at most once in the whole file.
+#
+# Why two of these nodes are not in any published tree: an equivalence block can
+# only be split by a sample that sits on the intermediate branch, and for this
+# part of G2a those branches survive only in ancient individuals. FTDNA and YFull
+# build from modern testers, so they cannot recover G-Z6219 or G-Z6499 no matter
+# how many customers they sequence. This is a structural limit, not an oversight.
+#
+# The backbone (G-P287 .. G-PF3239) is the published path in
+# markers/backbone_control.txt. It is here so a run can show where a sample leaves
+# the backbone, not because any of it is under test: every cohort tested in this
+# repository recovers it derived with no ancestral read anywhere on it.
+#
+node	parent	status	defining	equivalent	evidence
+G-P287	-	published	P287	-	Published backbone. Derived in every G2a cohort tested here.
+G-P15	G-P287	published	P15	-	Published backbone.
+G-M3308	G-P15	published	M3308	-	Published backbone.
+G-PF3147	G-M3308	published	PF3147	-	Published backbone.
+G-PF3148	G-PF3147	published	PF3148	-	Published backbone.
+G-PF3177	G-PF3148	published	PF3177	-	Published backbone.
+G-L91	G-PF3177	published	L91	-	Published backbone. Transversion, so damage-immune; Family A pool 12 of 13 reads derived.
+G-Z6488	G-L91	published	Z6488	-	Published backbone.
+G-PF3239	G-Z6488	published	PF3239	Z6043	Deepest node the three Sardinians (I14677, I14678, I15942) reach: their own SNP-positive fields stop here and they are ancestral at L166 on 21 reads. FTDNA G-PF3239 block walk resolved 22 of 24 names derived in the Iceman.
+G-Z6219	G-PF3239	provisional	Z6219,FGC5671	Z6135,Z6209	Splits the YFull L166 block upward. 25 derived reads at Z6219 and zero ancestral across Oberbipp (10) plus Aesch and Muttenz (15), in the same men who are ancestral at L166 on 59 reads (14 Oberbipp, 45 Aesch/Muttenz) with zero derived; Iceman and I5118 derived at both Z6219 and L166. FGC5671 co-segregates (Iceman 7/0, Sardinians ancestral). Z6219 is C>T, so the derived direction is damage-exposed and was cleared per-read; the ancestral L166/L167 calls are transversions and cannot be damage. Registered in PREREG_Z6219_node.md, confirmed by Test C at a second and third site. The Z6135/Z6209 equivalents are a post-hoc scan result, unregistered, and carry no weight.
+G-L166	G-Z6219	published	L166,L167	FGC5696,FGC5721,Z6516,Z6287,S19530,Z6134,Z6206,Z1370,FGC5672,Z6220,C101821,Z6519,FT91632,FT191098	Terminal placement of the Iceman. He and I5118 (Hungary, 3300-3000 BCE) are derived at both transversions; Oberbipp, Aesch and Muttenz are ancestral at both. The node itself is published and uncontested -- what is new is its parent and its children. Equivalents are YFull block members no sample here orders against L166: Z6134 is bracketed (ancestral in Aesch, derived in the Iceman) so it arose somewhere between Z6219 and L166, and the rest are untested or uncovered. L166, L167, Z6208 and Z1370 are allele-biased for mappability, so derived counts at them are lower bounds.
+G-Z6208	G-L166	refuted	Z6208	-	The published Iceman label G2a2a1a2a1a1b (G-Z6208*) treats Z6208 as a node below L166. It is not one: YBrowse/YFull give yfull_node=G-L166, ISOGG's own longhand carries the provisional tilde (G2a2a1a2a1a1b~), and no ancient sample orders it -- zero reads across all 15 Oberbipp and all 15 Aesch/Muttenz libraries. The Iceman is derived at Z6208 (DP 9) and that is all the marker says; a derived SNP was read as a terminal placement, one node too deep.
+G-Z6494	G-L166	published	Z6494,FGC5687,Z6215	-	Sibling branch below L166. The Iceman is ancestral at all three (Z6494 DP 10), so his line is not on it. Kept as the exclusion control; see markers/Z6494_exclusion.txt.
+G-Z6211	G-Z6494	published	Z6211,Z6495,FGC5722	-	One node further down the sibling branch (yfull_node=G-Z6211 for all three in resources/marker_index.tsv.gz). The Iceman is ancestral at all three, which follows from his being ancestral at G-Z6494 and adds nothing; it is here so those markers resolve rather than being reported as unknown.
+G-Z6499	G-L166	provisional	Z6499	-	Splits the L166 block downward, onto the branch leading to the modern testers the block was built from. Iceman ancestral 10 of 10 at a C>T site, so an ancestral C cannot be deamination; NM=0 on every read, MAPQ 55-60, 0% MQ0, mappability 1.000 at both alleles at 60 and 100 bp with six of the ten reads in that stratum. MX213 and I14677 contribute 1 ancestral read each. Below-versus-parallel rests on parsimony alone: no sample derived at Z6499 and ancestral at L166 has been sought, and its relation to G-Z6494 is unresolved.
