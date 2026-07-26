@@ -219,9 +219,15 @@ make
 sudo make install
 cd ..
 
-# pathPhynder is an R script with no build step -- it is invoked via Rscript
+# pathPhynder is an R script with no build step. Upstream suggests a shell alias,
+# but bash does not expand aliases in non-interactive shells, so a pipeline script
+# calling it would fail. Install a wrapper on PATH instead.
 git_clone_or_pull https://github.com/ruidlpm/pathPhynder.git pathPhynder
-echo "pathPhynder: run as 'Rscript $PWD/pathPhynder/pathPhynder.R'"
+sudo tee /usr/local/bin/pathPhynder >/dev/null <<WRAPPER
+#!/bin/sh
+exec Rscript "$PWD/pathPhynder/pathPhynder.R" "\$@"
+WRAPPER
+sudo chmod +x /usr/local/bin/pathPhynder
 
 # Yleaf is not on PyPI (404 for both casings); source install only.
 # NOTE: current release is v4.x, but the haplogroup.info compilation this project
