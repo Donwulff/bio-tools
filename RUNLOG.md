@@ -689,14 +689,23 @@ build a 45 bp read centred on each marker, substitute the derived base, then
   note said `bwa index` "did not complete under load", but the log stops after 2 minutes at 53% of
   the BWT and no `bwa` process survived, so it was **killed when its parent shell exited**, not slow.
   Relaunched under `setsid` it finished in **199 seconds**. Load was never the problem.
-- **Test A (F1 check) — not run.** `Z6219` for `I5118` sits in `results/unhedged/unhedged_L166_defining.tsv`
-  and has deliberately not been read; see `PREREG_Z6219_node.md` §9.
-- **Test B (co-segregation scan) — not run.** Marker set committed as
-  `markers/yfull_L166_defining.txt`; 15 usable positions of 32.
+- ~~**Test A (F1 check) — not run.**~~ **Run 2026-07-26; F1 does not obtain.**
+- ~~**Test B (co-segregation scan) — not run.**~~ **Run 2026-07-26; F3 does not obtain**, on one
+  marker (`FGC5671`), whose status as a shared branch marker was settled by E1.
+- ~~**The registered outcome of `PREREG_Z6219_node.md` has never been recorded.**~~ **Recorded
+  2026-07-26 as `H1 supported`**; see §Registered outcome in that document.
 - **`Z6219`'s YFull rank (26/32) is not reproduced** by anything measured here: it is 1.000 at both
-  alleles at 35/45/60/100/150 bp with zero MQ0 and zero off-target in every reference tested.
-- **Uniqueness-based filtering is a proposal, not applied.** `--report-uniqueness` reports it;
-  no call uses it. Changing the filter requires its own registration and a re-run of every dataset.
+  alleles at 35/45/60/100/150 bp with zero MQ0 and zero off-target in every reference tested, and
+  E3 confirmed this holds under a uniqueness criterion as well.
+- ~~**Uniqueness-based filtering is a proposal, not applied.**~~ **Tested and rejected 2026-07-26**
+  (`PREREG_uniqueness_filter.md`): it fails U1 and U2. `MAPQ >= 25` stands and the lower-bound
+  caveat on every `L166`/`Z6208` derived count is now permanent.
+- **F2 is untested, not passed.** `MX210`, `MX213` and `SX10` have no `PF3239` coverage. Closing it
+  requires either deeper data at `PF3239` in those three or an explicit statement that it cannot be
+  closed with the libraries in hand.
+- **Test C (21 hedged Aesch/Muttenz individuals) — not run**, and out of scope until it has its own
+  power statement. P3 predicts they should *split*; uniformity either way is uninformative. This is
+  the only registered test that bears on the single-site limitation of the current verdict.
 
 ## Tests A and B of `PREREG_Z6219_node.md` (2026-07-26)
 

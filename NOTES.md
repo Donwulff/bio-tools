@@ -2250,3 +2250,21 @@ known when the measurement was registered.
 whether the alternative locus is a real paralogue or a chance similarity — which `X0`/`X1` counts
 discard by construction. That is a different aligner's problem, not a threshold change, and nothing
 here authorises attempting it.
+
+## Registered outcome of `PREREG_Z6219_node.md`: H1 supported (2026-07-26)
+
+The verdict §8 demanded had never been written down. It is now recorded in the pre-registration
+itself: **H1 supported**, F1/F3/F4 do not obtain, **F2 untested**.
+
+The substance in one paragraph: the ordering `PF3239 → Z6219 → L166` rested on a single SNP, which
+is precisely what recurrence looks like. It now rests on two. `FGC5671` is ancestral in the
+Sardinians (below `PF3239`) and derived in Oberbipp men who are `L166`-ancestral (above `L166`), so
+it sits on the same intermediate branch as `Z6219`; E1 ruled out the alternative that it was a
+private Oberbipp variant by finding it derived in the Iceman. Homoplasy would have to have struck
+twice at two independent positions in the same lineages.
+
+**The registered vocabulary is coarser than the evidence and was not adjusted to fit.** All four
+lineages are from one site, `FGC5671`'s upstream support is one registered call plus three
+single-read nocalls, and F2 could not be evaluated for three of the four. "H1 supported" names which
+of four boxes this falls in; it is not a claim that the node is established. The test that would
+discriminate H1 from H3 is a second population, registered as P3 and not run.

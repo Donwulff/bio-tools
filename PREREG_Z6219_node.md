@@ -418,3 +418,66 @@ with all filters disabled so the BAQ caveat above is not the cause. The one regi
 (`FGC5721` derived, 1-read transversion) is uninformative — the Iceman is derived there too. Both
 limbs of the no-power criterion met. Stage 2 not authorised and not run. `CGG017683` is closed as
 depth-limited and not retestable with public data.
+
+---
+
+## Registered outcome (2026-07-26): **H1 supported**
+
+§8 requires exactly one of **F1/F2 falsified**, **F3 unresolved (H1 vs H3)**, **H1 supported**, or
+**H0 no power**. Recorded here after Tests A and B and extensions E1 and E2, and not before.
+
+### Falsifiers
+
+| | status | basis |
+|---|---|---|
+| **F1** (primary) | **does not obtain** | `I5118`, the only `L166`-derived individual in either cohort, is `Z6219`-**derived**. No sample among 20 shows the pattern. |
+| **F2** | **UNTESTED** | `MX210`, `MX213`, `SX10` have **no `PF3239` coverage**. Only Family A is confirmed `PF3239`-derived. The "outside haplogroup G" clause does fail cleanly — all four lineages derived at `P15`, `L91`, `Z6043`, `M3308`, `P287`, zero ancestral anywhere in the backbone. |
+| **F3** | **does not obtain** | `FGC5671` co-segregates with `Z6219`, and E1 established it is a shared branch marker rather than a private Oberbipp variant. The node no longer rests on a single SNP. |
+| **F4** | **does not obtain** | `MX210`'s two `FGC5671` reads begin 46 bp apart; the 10 `Z6219` reads span four lineages with distinct fragment boundaries. |
+
+### Predictions
+
+**P1 met** in the weak sense: `I5118` is `L166`-derived and `Z6219`-derived. The registered call
+remains `nocall_damage_prone_1read` — the terminus evidence (37 bp from the 5' end of an 84 bp
+molecule, library at 0.67% C>T at position 0 and 0.06% interior, damage odds ~1/1700) sits *beside*
+the call and never inside it. **P2 met**: `FGC5671`. **P3 untested** — Test C is out of scope.
+
+### Why the ordering follows
+
+`FGC5671` is ancestral in both Sardinians, who are `PF3239`-derived and `Z6219`-ancestral, so it
+arose below `PF3239`. It is derived in Oberbipp, who are `L166`-**ancestral**, so it was already
+present in men who had not yet acquired `L166`. It therefore sits above `L166`, on the same
+intermediate branch as `Z6219`. Two markers, one branch. H3 would need homoplasy twice, at two
+independent positions, in the same lineages.
+
+The `L166`-ancestral calls that carry this are not threatened by the mappability defects found in
+Amendment 2 and E3. Oberbipp shows **11 ancestral reads** at `L166`; a genuinely `L166`-derived man
+has no ancestral molecules and cannot produce them at any filter setting. Filtering hides derived
+reads — it does not manufacture ancestral ones.
+
+### What "supported" does not mean here
+
+**The registered vocabulary is coarser than the evidence, and that is not repaired after the fact.**
+There is no fourth-and-a-half outcome for "supported on two markers from a single site with F2
+untested", and inventing one now would be changing a rule after seeing its effect. The verdict is
+recorded as the rule requires, and the limits are recorded with it:
+
+- **One site.** All four "independent lineages" are Oberbipp. H3 predicts the pattern is confined to
+  that lineage; H1 predicts it recurs elsewhere. **No second population has been tested.** E2
+  attempted one (`CGG017683`) and returned H0 on depth. This is the largest single weakness.
+- **`FGC5671`'s upstream evidence is thinner than `Z6219`'s.** Only `MX210` is a registered
+  `DERIVED` (2 reads); the other three lineages are single-read nocalls. One call plus three
+  consistent nocalls, not four calls. All five upstream reads are + strand at a site where
+  `site_qc`'s single-strand test structurally cannot fire.
+- **F2 untested** for three of four lineages.
+- **17 of 22 scanned positions were uninformative** — untested, never tested-and-negative.
+
+**H1 supported is therefore a statement about which of four registered boxes this lands in, not a
+claim that the node is established.** The discriminating test is a second population, and it is
+registered as P3 and unrun.
+
+### What this does not claim
+
+§10 stands unchanged. Nothing about geography or migration; nothing about the Iceman's own terminal
+placement, which is unaffected either way and rests on separate evidence; nothing about whether any
+lineage is extinct.
