@@ -2416,3 +2416,64 @@ convenient one.
 Whether those reads land on the decisive positions is a separate question, and the genotyping answers
 it. chrY yield is necessary for power, not sufficient — ten of the 22 YFull `L166`-defining positions
 attracted zero reads across all 15 Oberbipp libraries, four of them despite being on the 1240k panel.
+
+### The publication has two "Supplementary Table 1"s, and they disagree about the Y calls (2026-07-26)
+
+Found while corroborating the `NRY` defect above, still before any Test C genotype existed. A
+long-running background search from an earlier session finished and surfaced the machine-readable
+supplements (`MOESM2`–`MOESM5`, `.xlsx`) already sitting in the scratchpad alongside the PDF.
+
+Two different tables carry the number 1:
+
+- **`MOESM1` (PDF)** — *"Supplementary Table 1 | Y chromosomal haplogroup assignment for all male
+  individuals"*, four columns: ID, site, date, terminal derived mutation, YHG. This is the source
+  §7 check 3 was run against.
+- **`MOESM2` (xlsx)** — *"Supplementary Table 1. Summary of ..."*, 24 columns of per-sample library
+  and coverage statistics, with `Y GH` as the last one.
+
+For eight of the fifteen candidates they give different answers:
+
+| ID | `MOESM1` terminal mutation | `MOESM2` `Y GH` |
+|---|---|---|
+| `Aes12`, `Aes13`, `Aes17`, `Aes21`, `Aes23`, `RA61`, `RA62` | `PF3239` | **low coverage** |
+| `Aes20` | `FGC7739/Z6488` | **low coverage** |
+
+**§7 check 3 is unaffected and is not amended.** It was run against the dedicated Y-haplogroup
+table, which is the specific source for a Y call, and re-reading it confirms the recorded result
+exactly: `PF3239` for ten Aesch individuals and both Muttenz individuals, `PF3147` for `Aesch6`,
+`FGC7739/Z6488` for `Aesch7` and `Aesch20`. `RA61` and `RA62` are `PF3239 / G2a2a1a2a1` on lines 274
+and 275 of the extracted text.
+
+What is new is where the compilation's `published_Y = low coverage` values came from: **the summary
+spreadsheet's column, not the Y table**. `results/testC_power/candidates.tsv` carries that value for
+six of the fifteen, sourced to the compilation. It is the publication's own inconsistency propagating,
+not an error introduced downstream — but it does mean "published as low coverage" and "published as
+`PF3239`" are both quotable about the same individual from the same paper, and any statement of the
+form "the publication says X" has to name the table.
+
+**The `NRY` defect is now settled from the publication's side.** `MOESM2` reports `SNPs 1240k` per
+individual:
+
+| | `Aes6` | `Aes12` | **`Aes13`** | `Aes23` |
+|---|---|---|---|---|
+| SNPs on 1240k | 197,540 | 483,866 | **565,667** | 621,618 |
+| compilation `NRY` | 6,163 | 20,241 | **17** | 29,152 |
+
+`Aes13` is the third-best-covered library of the fifteen by the publication's own count and the worst
+by the compilation's. `Aes6` is genuinely the weak one on both. `SNPs 1240k` is an obviously better
+coverage proxy than `NRY` and it was available in a file already on disk — but the power statement is
+not re-fitted to it now, for the same reason §4 was not rewritten this morning. A future registration
+should use it from the start.
+
+**The `1st degree relatives` column confirms the pooling rule a third time**, independently of
+Supplementary Table 5: `Aes19` lists `Aes12`, and no other candidate lists another candidate.
+`Aes12` additionally lists `Aes3` and `Aes24`, `Aes14` lists `Aes15`, `Aes17` lists `Aes11` — none of
+which are in the cohort. `Aes12+Aes19` remains the only permitted merge.
+
+**Parser gotcha, recorded because it produced plausible wrong numbers rather than an error.** `xlsx`
+omits empty cells entirely and positions the rest by an `r="B3"` attribute. A reader that takes
+`<c>` elements in document order silently shifts every row containing a gap to the left, which here
+turned read counts into coverage values and printed `Aes12` as having 0.029 mapped reads. The numbers
+looked like numbers. This is the same column-offset failure as the `awk` field-name mistakes recorded
+earlier in this file, and the fix is the same: address columns by name or reference, never by
+position.

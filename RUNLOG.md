@@ -1125,3 +1125,45 @@ done
 `MX182` defect repeating: a near-zero `NRY` against a normal library. See `NOTES.md`. §4 of the
 pre-registration is **not** rewritten — the registered power stands as predicted, and is now known to
 be conservative.
+
+### Corroborating the `NRY` defect from the publication (2026-07-26) — still no genotype read
+
+The machine-readable supplements were already in the scratchpad from an earlier session. `MOESM2` is
+Supplementary Table 1 as a spreadsheet, with `SNPs 1240k`, `Mapped Reads after RMDup`, `sex`,
+`1st degree relatives` and a `Y GH` column.
+
+Read with a standalone parser rather than a dependency install (the box was out of swap at the time):
+
+    cd <scratch>/swiss_supp
+    python3 - <<'PY'
+    import zipfile, re
+    import xml.etree.ElementTree as ET
+    NS = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
+    def colnum(ref):                      # 'B3' -> 1. REQUIRED: xlsx omits empty
+        n = 0                             # cells, so document order shifts rows left.
+        for ch in re.match(r'([A-Z]+)', ref).group(1):
+            n = n * 26 + (ord(ch) - 64)
+        return n - 1
+    z = zipfile.ZipFile('41467_2020_15560_MOESM2_ESM.xlsx')
+    ss = [''.join(t.text or '' for t in si.iter(f'{NS}t'))
+          for si in ET.fromstring(z.read('xl/sharedStrings.xml')).findall(f'{NS}si')]
+    for r in ET.fromstring(z.read('xl/worksheets/sheet1.xml')).iter(f'{NS}row'):
+        row = {}
+        for c in r.findall(f'{NS}c'):
+            v = c.find(f'{NS}v')
+            if v is not None and v.text is not None:
+                row[colnum(c.get('r'))] = ss[int(v.text)] if c.get('t') == 's' else v.text
+        print([row.get(i, '') for i in range(max(row) + 1 if row else 0)])
+    PY
+
+Columns of interest: 5 `ID`, 6 `1st degree relatives`, 13 `sex`, 15 `SNPs 1240k`, 23 `Y GH`.
+
+Three results, all in `NOTES.md`: `Aes13` has **565,667** SNPs on the 1240k panel against a
+compilation `NRY` of 17, which settles that defect; the spreadsheet's `Y GH` column contradicts the
+PDF's Y-haplogroup table for eight of the fifteen candidates; and the `1st degree relatives` column
+confirms `Aes12`–`Aes19` as the only within-cohort male–male first-degree pair, independently of
+Supplementary Table 5.
+
+`PREREG_testC_aesch_muttenz.md` §7 check 3 was run against the PDF's Y table and **stands unamended**.
+The `.xlsx` files are not committed, for the same reason the PDF is not: publisher artefacts,
+reachable from the article's supplementary section, quoted where used.
