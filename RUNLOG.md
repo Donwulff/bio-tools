@@ -592,3 +592,33 @@ each, `mapped=0 skipped=15 failed=0` — those results are untouched.
 - Quantify survivor vs removed read characteristics beyond prefix counts (MAPQ distribution, context near repetitive loci).
 - Decide whether alt/decoy calls are retained only as technical appendix or excluded from variant interpretation entirely.
 - Decide whether gVCF is required for all exploratory runs (skip when not needed).
+
+### Marker sensitivity / mappability sweep (2026-07-26)
+
+Tool: `annotate/y_mappability.py` (commit `e95244e`, contig-name fix `1a2b`-series). Answers "can a
+read at this marker come back at all", which no site-level QC can see: `ylib.mapq_audit()` reports
+MAPQ at the site and is therefore blind to reads that left for another contig.
+
+    ./annotate/y_mappability.py \
+      --markers markers/L166_defining.txt markers/Z6494_exclusion.txt markers/backbone_control.txt \
+      --source mapping/index/hg38p14DH3630O.fa \
+      --target working=mapping/index/hg38p14DH3630O.fa \
+      --target noalt=mapping/index/GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna \
+      --target chm13=mapping/index/chm13v2.0_maskedY_rCRSDH3630O.fa \
+      --target hs37d5=/mnt/GenomicData/hs37d5/bwa/hs37d5.fa \
+      --read-lengths 35,45,60,90 --threads 4 \
+      --out results/mappability/y_marker_mappability.tsv
+
+Output: `results/mappability/y_marker_mappability.tsv` (352 rows), `run.log`. Runtime ~25 min under
+load average ~10; four index loads, one per reference.
+
+Reference notes recorded at the time:
+- `chm13v2.0_maskedY_rCRSDH3630O.fa` carries T2T chrY at **62,460,029 bp** (GRCh38: 57,227,415) and
+  zero `chrY_*` GRCh38 patch contigs. T2T-CHM13v2.0 is CHM13 — a hydatidiform mole with no Y — plus
+  a finished chrY from **GIAB HG002/NA24385**, a different individual from GRCh38's BAC-derived Y and
+  from a different haplogroup. A "reference allele" on that chrY is therefore one living man's
+  genotype, which is why the `ref_matches_anc` column matters more for CHM13 than for GRCh38.
+- `GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna` is the reference the repo's own alt-contig
+  list is built against, so it is an exact control for the custom build rather than an approximation.
+
+Findings in `NOTES.md` under "Sensitivity Test: What Fraction Of Reads Can Even Come Back".
