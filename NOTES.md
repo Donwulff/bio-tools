@@ -2477,3 +2477,77 @@ turned read counts into coverage values and printed `Aes12` as having 0.029 mapp
 looked like numbers. This is the same column-offset failure as the `awk` field-name mistakes recorded
 earlier in this file, and the fix is the same: address columns by name or reference, never by
 position.
+
+## Test C: the `Z6219` Node Is Not an Oberbipp Property (2026-07-27)
+
+The `H1 supported` verdict in `PREREG_Z6219_node.md` carried one limitation that mattered more than
+the rest: everything supporting it was one patriline at one site, so an Oberbipp-private variant or a
+homoplasy explained the data equally well. Test C was registered to separate those, and it did.
+
+**Four men at Aesch and Muttenz are derived at `Z6219` and ancestral at `L166`.** The registered
+prediction was 2.1 callable at both; the observed number is 4, plus a fifth (`SNPRA61`) callable at
+`Z6219` alone. Across all fifteen candidates there is **not one `Z6219`-ancestral read and not one
+`L166`-derived read**. `L166` drew 45 ancestral reads and `L167` 24 against a single derived.
+
+That is the intermediate-branch state — derived at the candidate node, ancestral below it, in the
+same man — recovered at two sites that are not Oberbipp. H3 predicted this would not happen. It is
+the only registered test that could have separated H1 from H3, and it came down on H1.
+
+**The falsifiers had teeth and did not fire.** FC2 was the sharp one: any man `Z6219`-ancestral and
+`L166`-derived would have falsified the `PF3239 → Z6219 → L166` order outright, and it was written
+because it is exactly as likely to appear if the ordering is wrong as if it is right. Neither allele
+appears anywhere in the cohort. FC1 needed two kin groups ancestral at `Z6219`; there are none.
+
+**What is not claimed.** PC2 — a split at `Z6219` — did not occur: all five callable men are derived.
+§6 registered uniformity in either direction as uninformative *before* the direction was known, so it
+is recorded as uninformative and not as confirmation. And the count of demonstrably independent
+patrilines carrying this state is still **1**. Four individuals in three documented kin groups at two
+sites is what was observed; kin-group negativity at third degree does not establish Y-independence,
+and nothing in this design can. The single-site limitation is discharged to "three sites", which is a
+weaker and more truthful statement than "replicated".
+
+### FC3 was a badly written falsifier and the record says so
+
+FC3 fires if every callable candidate carries an identical Y haplotype across the backbone control
+set. They do — no candidate differs from any other at any backbone marker. On a literal reading §9
+routes the whole thing to H0.
+
+The rule is broken, not the cohort. `backbone_control.txt` **is** the published `G2a2a1a2a1` path, and
+the cohort was assembled from a label asserting membership of that clade. Markers defining a clade
+cannot discriminate within it, so FC3 fires with probability 1 for any cohort this document could
+have built. A falsifier that cannot fail to fire tests nothing.
+
+It is recorded as **not evaluable**, the outcome is not routed to H0 on it, and the independence it
+was written to guard is not claimed either — that second half is the part that keeps this honest,
+because the convenient move would be to void the rule and then quietly bank the independence. The
+registration is not patched. Under the protocol a rule found wanting after its effect is visible gets
+a fresh registration and a re-run, never a repair applied to the run that exposed it.
+
+### The power model was conservative, in the direction the `NRY` defect predicted
+
+| | predicted | observed |
+|---|---|---|
+| callable at `Z6219` | 4.0 | 5 |
+| callable at `L166` | 5.9 | 12 |
+| callable at both | 2.1 | 4 |
+
+`L166` came in at twice the prediction. Some of that is `Aesch13`, registered at essentially zero
+power on a corrupt proxy value and callable at both in the event. The rest says the `NRY` column
+under-reports more widely than the two rows caught so far.
+
+### `Z6135`, post-hoc
+
+`Z6135` drew zero reads in all fifteen Oberbipp libraries and was `uninformative` in Test B. Here it
+is covered in eleven of fifteen with **23 derived reads and no ancestral read**, and it behaves like
+`Z6219`: derived where `L166`, `L167` and `Z6134` are ancestral. Crucially it is callable in five men
+who are *not* callable at `Z6219` — `Aesch1`, `Aesch4`, `Aesch20`, `Aesch21`, `Aesch22` — several of
+whom are also callable at `L166`. `Z6209` (G>A) does the same in `Aesch22`.
+
+If that holds it means the YFull `L166` block contains markers at more than one depth, which is the
+thesis this whole project has been circling: a block collapsed into a single node hides structure, and
+the Iceman's label was one node too deep for exactly that reason.
+
+It is a scan result over 22 positions and it is labelled post-hoc, not predicted. It is queued as
+**D** in `PROTOCOL_extending_analyses.md` and is **not registered** — the markers were picked after
+seeing which ones had coverage, so it needs its own document, its own power statement and its own
+falsifiers before any of it counts.
