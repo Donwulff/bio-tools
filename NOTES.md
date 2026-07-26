@@ -1297,8 +1297,21 @@ The Sardinians settle it:
 |---|---|---|---|
 | `I14677` | **DERIVED 5/5** | **ancestral 4/4** | ancestral 11/11 |
 | `I14678` | **DERIVED 3/3** | **ancestral 2/2** | ancestral 8/8 |
-| Oberbipp (15 samples) | DERIVED | DERIVED 10/10 | ancestral 11/11 |
+| Oberbipp (15 samples) | DERIVED | DERIVED 10/10 reads | ancestral 11/11 |
+| — of which `MX210` alone | DERIVED | **DERIVED 4/4** | **ancestral 3/3** (`L167` anc 2/2) |
 | Iceman | DERIVED | DERIVED | DERIVED |
+
+*Correction to the Oberbipp row (2026-07-26).* `10/10` is a correct **read** tally but overstates the
+**call**-level support, and the distinction matters because `Z6219` is `C>T` — the one direction
+deamination manufactures. Broken out: `MX210` 4/4 derived (a `DERIVED` call), `SX10` 2/2 derived
+(`DERIVED`, but no `L166` coverage, so it constrains nothing here), and `MX187`/`MX211`/`MX212`/
+`MX213` at one derived read each — every one of which the registered rules score
+`nocall_damage_prone_1read`. Three of those four are the Family A patriline and pool to a single
+observation. **The "above `L166`" constraint therefore rests essentially on `MX210`**, which is the
+only individual carrying both a clean derived call at `Z6219` and clean ancestral calls at two
+`L166`-defining transversions, and which is outside Family A. One man, 4 reads, at a damage-prone
+site class. The cheap decisive check not yet done: whether the `C>T` mismatches in those 4 reads sit
+at read termini.
 
 An individual derived at `PF3239` and ancestral at `Z6219` places `Z6219` **below** `PF3239`,
 which **refutes (i)**. Oberbipp places it above `L166`. The consistent topology is
@@ -1394,3 +1407,72 @@ The Oberbipp series is `Z6219`-derived 10/10 and `L166`-ancestral 11/11, which c
 placement on its own, independently of the Sardinian data above. If `Z6219` sits between `PF3239`
 and `L166` as the reads indicate, then `E09538`'s label rests on a marker that never reaches `L166`
 either. This remains post-hoc and still requires its own pre-registration.
+
+### Tree-version drift is real, and the compilation flags it with an undocumented caret (2026-07-26)
+
+Raised as a hypothesis: the labels may not be errors at all, but fossils of an older tree in which
+`PF3239` sat inside `G-L166`. Checked against `resources/marker_index.tsv.gz` and the compilation.
+
+**Version drift is demonstrably present inside a single catalogue file.** Markers at the same node
+carry two different ISOGG longhands:
+
+| longhand | markers | yfull_node |
+|---|---|---|
+| `G2a2a1a2a1a` | `L166`, `L167`, `Z6219`, `Z6287`, `Z6516` | `G-L166` |
+| `G2a2a1b1a` (superseded numbering) | `Z6134`, `FGC5671`, `FGC5696`, `FGC5721` | `G-L166` |
+
+Both name the `L166` node. `Z6134` and `Z6516` additionally carry the free-text comment
+`Equiv. to L166`.
+
+**The `PF3239`/`L166` boundary has genuinely moved.** The compilation assigns `FGC8009` and `PF3178`
+to `G2a2a1a2a1a` (`L166`); the catalogue assigns both to `G-PF3239`. Two markers, opposite sides of
+the boundary, two sources. So the hypothesis is not idle.
+
+**The caret means something.** The compilation suffixes some SNP names with `^`. No legend has been
+located, but across the 15 markers checked here the correlation with the catalogue is exact:
+
+    ^ present  : FGC2271, PF3244, PF3247, S11565, PF3178, FGC8009 (isogg "not listed"/"unknown")
+                 FGC5696, FGC5671, Z6134                          (isogg = superseded G2a2a1b1a)
+    ^ absent   : PF3239, Z6130, Z6277, FGC5666                    (isogg = current G2a2a1a2a1)
+                 L166, L167, Z6219                                (isogg = current G2a2a1a2a1a)
+
+`^` ⟺ *the marker has no current ISOGG longhand*. 15/15. This is an **inference from correlation**,
+like the asterisk reading above — do not present it as documented. But if it holds, the compilation
+is flagging version-unstable placements per SNP, and the flag is again in a field nobody reads.
+
+**Applying the caret to the six.** Restricting to unmarked (current-longhand) evidence:
+
+- `I14677`, `I14678`, `I15942` — deepest unmarked support is `PF3239`/`Z6130`/`Z6277`/`FGC5666`,
+  all `G2a2a1a2a1`. **No unmarked `L166`-level SNP at all.** The reads agree.
+- `I5118` — unmarked `L166`-level support is `L166` itself and `Z6219`. The reads independently
+  confirm `L166` (and `FGC5696`). Stands either way.
+- `E09538` — unmarked `L166`-level support is `Z6219` **only**; `FGC5671` is carets-and-superseded.
+  If `Z6219` sits above `L166`, this individual's entire claim to the node evaporates.
+
+**Does drift explain the three failures?** Partly, and better than the "label filled deeper than the
+evidence" reading offered above — but not on its own. Against it: the compilation's *own row* uses
+`G2a2a1a2a1` for `PF3239` and `G2a2a1a2a1a` for `L166`, distinctly, in the same line. Within the
+file as it stands they are not equivalent. For it: the label field and the evidence field need not
+have been generated at the same time from the same tree, and a stale label beside a refreshed
+evidence list would produce exactly this. **Not resolved.** Testing it needs a dated ISOGG tree
+series (2016–2019), which is not held locally.
+
+### Why `Z6219` could not have been found in a modern-only tree
+
+The catalogue lists `Z6219` as `isogg G2a2a1a2a1a` / `yfull G-L166` — i.e. inside the `L166`
+equivalence block. Splitting an equivalence block requires a sample **on the intermediate branch**:
+derived at `Z6219`, ancestral at `L166`. A tree built from living testers can only contain such a
+sample if that lineage still has living male-line descendants. If it does not, the block stays
+merged permanently, no matter how many moderns are sequenced.
+
+This is a structural capability of ancient DNA rather than a defect in the modern trees, and it
+generalises: **every equivalence block is a hypothesis that no intermediate lineage survived.**
+Ancients are the only way to test it.
+
+Caveat against over-reading the extinction angle: Y-lineage extinction is the *default* outcome of a
+neutral branching process, not a signal of anything. Most patrilines leave no male-line descendants
+within a few generations. "Absent from moderns" is therefore the expected state of an arbitrary
+Neolithic lineage and is **not** evidence of demographic replacement, violence, or anything else.
+Note also that `G-L166` itself is *not* extinct — FTDNA has L166 testers
+(`results/iceman_y_ftdna_project_terminals.tsv`). Whatever is missing is sub-branch structure, not
+the clade.
