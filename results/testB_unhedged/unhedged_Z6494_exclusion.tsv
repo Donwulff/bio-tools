@@ -1,0 +1,16 @@
+sample	block	marker	chrom	pos	anc>der	mutation_class	depth	anc_reads	der_reads	other_reads	call	n_reads	pct_mq0	mq_top	n_mq_top	site_qc	region	isogg	yfull_node
+I14677	Z6494_exclusion	FGC5687	chrY	6019771	A>C	transversion	0	0	0	0	no_coverage	2	100%	37	0	REJECT_mapq(100%_MQ0)	ok	G2a2a1b1a	G-Z6494
+I14677	Z6494_exclusion	Z6215	chrY	11965520	T>C	transition	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-Z6494
+I14677	Z6494_exclusion	Z6494	chrY	17131187	G>T	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a1	G-Z6494
+I14678	Z6494_exclusion	FGC5687	chrY	6019771	A>C	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-Z6494
+I14678	Z6494_exclusion	Z6215	chrY	11965520	T>C	transition	2	2	0	0	ancestral	2	0%	37	2	pass	ok	G2a2a1b1a	G-Z6494
+I14678	Z6494_exclusion	Z6494	chrY	17131187	G>T	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a1	G-Z6494
+I15942	Z6494_exclusion	FGC5687	chrY	6019771	A>C	transversion	0	0	0	0	no_coverage	1	100%	37	0	REJECT_mapq(100%_MQ0)	ok	G2a2a1b1a	G-Z6494
+I15942	Z6494_exclusion	Z6215	chrY	11965520	T>C	transition	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-Z6494
+I15942	Z6494_exclusion	Z6494	chrY	17131187	G>T	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a1	G-Z6494
+I5118	Z6494_exclusion	FGC5687	chrY	6019771	A>C	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-Z6494
+I5118	Z6494_exclusion	Z6215	chrY	11965520	T>C	transition	1	0	1	0	nocall_1read_transition	1	0%	37	1	pass	ok	G2a2a1b1a	G-Z6494
+I5118	Z6494_exclusion	Z6494	chrY	17131187	G>T	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a1	G-Z6494
+UNTA58_68Sk1	Z6494_exclusion	FGC5687	chrY	6019771	A>C	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1b1a	G-Z6494
+UNTA58_68Sk1	Z6494_exclusion	Z6215	chrY	11965520	T>C	transition	1	1	0	0	low_power_1read_ancestral	1	0%	37	0	MARGINAL_no_unique_reads	ok	G2a2a1b1a	G-Z6494
+UNTA58_68Sk1	Z6494_exclusion	Z6494	chrY	17131187	G>T	transversion	0	0	0	0	no_coverage	0	NA	37	0	nocall_noreads	ok	G2a2a1a2a1a1	G-Z6494

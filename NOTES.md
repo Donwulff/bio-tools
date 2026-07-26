@@ -1894,3 +1894,96 @@ absence of co-segregation among markers that cannot be called is not evidence.
 `y_genotype_batch.sh` at defaults reproduced **all five** `results/swiss15/` tables byte-identically,
 and wrote `swiss_params.txt` recording thresholds, reference, inputs and git commit `44c6bdd` with a
 clean tree.
+
+---
+
+## Tests A and B of `PREREG_Z6219_node.md`, run 2026-07-26
+
+Both registered tests were run in the order A then B. Neither falsifier fired, and the co-segregation
+scan returned one additional marker — but the power is thin enough that the qualifier matters more
+than the headline.
+
+### Test A — F1 does not obtain
+
+`I5118` (Mezőcsát-Hörcsögös, Hungary, 3300–3000 BCE) is the **only `L166`-derived individual in
+either cohort**, and he is derived at `Z6219` rather than ancestral:
+
+| site | class | anc | der | registered call |
+|---|---|---|---|---|
+| `Z6219` chrY:13,782,251 | C>T | 0 | 1 | `nocall_damage_prone_1read` |
+| `L166` chrY:21,843,737 | C>A | 0 | 1 | `DERIVED_1read_transversion` |
+
+Both at MAPQ 37, 0% MQ0, `site_qc pass`, and on **different molecules** (`ERR2207344.6856395`,
+`ERR2207344.6878821`). Across all 20 individuals in `results/testB/` and `results/testB_unhedged/`,
+**no sample is `L166`-derived and `Z6219`-ancestral**. F1 had a real opportunity to fire and did not.
+
+Per prereg §8 the C>T site requires read-terminus evidence, and it is decisive here: the derived read
+sits **37 bp from the 5' terminus and 46 bp from the 3'** on an 84 bp molecule, while `I5118`'s
+library runs 0.67% C>T at position 0 falling to **0.06% in the interior**. Damage probability for
+that base is of the order of 1 in 1700.
+
+**The registered call remains `nocall`.** One read is one molecule and the rule refuses it on site
+class. The terminus evidence is reported beside the call, never folded into it.
+
+**This is a survived falsification, not positive support.** H2 — `Z6219` genuinely `L166`-equivalent
+— predicts the identical observation, because a man below both SNPs is derived at both under either
+topology. Test A discriminates H1 from nothing; it only had the power to kill H1.
+
+### Test B — F3 does not obtain, on one marker
+
+Scan of the 22 testable positions of `markers/yfull_L166_defining.txt`, upstream cohort
+`MX210, MX213, SX10, FamilyA` (pooled, one observation) against outgroup `I14677, I14678`:
+
+| pattern | n | markers |
+|---|---|---|
+| `splits_with_Z6219` | 2 | `Z6219`, **`FGC5671`** |
+| `stays_with_block` | 3 | `L166`, `L167`, `FGC5672` |
+| `uninformative` | 17 | no coverage, single damage-prone read, or mixed |
+
+**`FGC5671` (chrY:7,784,648, G>A) co-segregates with `Z6219`.** Upstream: `MX210` 2 derived,
+`MX213` 1, `SX10` 1, `FamilyA` (`MX209`) 1 — **five derived reads, zero ancestral, four independent
+lineages**. Outgroup: `I14678` 3 ancestral, `I14677` 1, and `I15942` 2 — six ancestral reads, zero
+derived. This is P2 satisfied: the node does not rest on a single SNP.
+
+Damage was checked and does not explain it, though the first look suggested it might. Four of the
+five derived reads sit within 8 bp of the 3' terminus, which is where G>A deamination lives — but
+**none is at position 0**, and these partial-UDG libraries collapse from 0.7–1.7% at position 0 to
+0.1–0.2% at position 1 and beyond. Per-read damage probability is ≤0.2% for every one of the five.
+Terminal *proximity* was the wrong statistic; terminal proximity weighted by the library's own rate
+is the right one, which is exactly why prereg §8 requires both.
+
+Mappability is clean at `FGC5671`: **1.000 recovery at both alleles** at 35, 45 and 60 bp, zero MQ0,
+zero off-target — unlike `L166` (derived 0.000/0.156/0.867 at the same lengths). So neither the
+upstream derived reads nor the outgroup ancestral calls are artifacts of allele-specific bias.
+
+`MX210`'s two reads start 46 bp apart (7,784,587 and 7,784,633) despite consecutive read IDs, so
+they are distinct molecules and F4 does not obtain for them.
+
+### How weak this actually is
+
+- **Only one registered `DERIVED` call.** Under the per-sample rules `MX210` alone is `DERIVED` at
+  `FGC5671`; the other three lineages are `nocall_damage_prone_1read`. The co-segregation rests on
+  one registered observation plus three consistent single-read nocalls.
+- **All five upstream reads are + strand.** `y_markers_pileup.py` parses strand-agnostically and
+  passes `1/1` to `site_qc`, so the `MARGINAL_single_strand` test cannot fire. Not adjudicated here;
+  recorded because it is unflagged by construction.
+- **17 of 22 positions are uninformative** — untested, not tested-and-negative.
+- **F2 is largely untested, not passed.** The clause "ancestral at `PF3239`" could not be evaluated
+  for `MX210`, `MX213` or `SX10`: all three have **no coverage** at `PF3239`. Only `FamilyA` is
+  confirmed `PF3239`-derived (2 reads pooled, 0 ancestral). The "outside haplogroup G" clause does
+  not obtain — all four lineages are derived at `P15`, `L91`, `Z6043`, `M3308`, `P287` with zero
+  ancestral calls anywhere in the backbone.
+
+### The gap that decides it, and which this scan cannot close
+
+`FGC5671` derived in Oberbipp and ancestral in Sardinians is equally consistent with two things:
+`FGC5671` sitting on the `Z6219` branch, **or** `FGC5671` being a private Oberbipp variant with no
+relation to the `L166` block at all. Distinguishing them requires the marker in an **`L166`-derived**
+man, and `I5118` — the only one available — has **no coverage at `FGC5671`**. Until that is closed,
+"the node rests on two SNPs" is an inference from YFull's block assignment, not from our reads.
+
+### Reproducibility
+
+The Test B run regenerated every previously committed table as a side effect. **All ten** tables in
+`results/swiss15/` and `results/unhedged/` reproduce byte-identically from
+`results/testB/` and `results/testB_unhedged/`, at `git_commit=96de9d7`.

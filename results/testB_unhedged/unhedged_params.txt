@@ -1,0 +1,13 @@
+generated=2026-07-26T17:30:20+03:00
+bam_dir=/mnt/AncientDNA/Unhedged-2026/bam
+marker_dir=markers
+ref=/home/jsantala/src/bio-tools/mapping/index/hg38p14DH3630O.fa
+sites=markers/iceman_novel_candidates_usable8.tsv
+index=resources/marker_index.tsv.gz
+min_mq=25
+min_bq=20
+max_pct_mq0=30.0
+n_samples=5
+marker_sets=backbone_control.txt L166_defining.txt yfull_L166_defining.txt Z6494_exclusion.txt 
+git_commit=96de9d7
+git_dirty=4
