@@ -1596,3 +1596,71 @@ own share rather than stealing.
 That detects ambiguous reads which **stayed**. It is structurally blind to reads that were **pulled
 away** to another contig, because those never appear in a chrY pileup at all. The table above is the
 missing measurement and it was typed at a prompt, not committed — it belongs in a tool.
+
+## Sensitivity Test: What Fraction Of Reads Can Even Come Back (2026-07-26)
+
+`annotate/y_mappability.py`, results in `results/mappability/y_marker_mappability.tsv`. Every read of
+length L overlapping each marker is cut from GRCh38 and mapped back with the pipeline's own
+`bwa aln` options; `frac_recovered` is the fraction returning to the right locus at MAPQ>=25. Reads
+are exact reference copies, so a failure is pure mappability with no sequencing error or damage
+mixed in. 22 markers x 4 read lengths x 4 references.
+
+**Mean `frac_recovered`:**
+
+| target | 35 bp | 45 bp | 60 bp | 90 bp |
+|---|---|---|---|---|
+| `working` (hg38p14DH3630O) | 0.797 | 0.912 | 0.951 | 0.956 |
+| `noalt` (GRCh38 no-alt masked) | 0.797 | 0.912 | 0.951 | 0.956 |
+| `hs37d5` (GRCh37) | 0.797 | 0.912 | 0.951 | 0.956 |
+| `chm13` (T2T) | 0.783 | 0.907 | 0.951 | 0.956 |
+
+**1. The custom reference costs nothing and gains nothing here.** `working` and `noalt` are identical
+to three decimals at every length. The alt, decoy and HLA content neither steals reads from our
+markers nor protects them. This is the controlled version of the `idxstats` measurement above, and it
+agrees with it.
+
+**2. GRCh37 and GRCh38 are indistinguishable at these sites.** `hs37d5` matches GRCh38 exactly at all
+four lengths. The concern that the regions under investigation might have changed materially between
+builds is **answered in the negative for mappability** — which is the property that governs whether a
+read is recoverable at all. It does not speak to sequence-level edits, but no marker changed its
+recoverable fraction by so much as 0.001.
+
+**3. Read length, not reference, is what costs power.** Mean recovery falls from 0.956 at 90 bp to
+0.797 at 35 bp. A nominal 10x library at 35 bp reads is really interrogating these sites at ~8x.
+Thirteen markers are at 1.000 in every build at 45 bp (`P15`, `M3308`, `PF3147`, `PF3177`, `L91`,
+`P287`, `PF3239`, `Z6219`, `Z6287`, `Z6516`, `S19530`, `FGC5721`, `L167`), so the loss is
+concentrated, not diffuse.
+
+**4. `FGC5687` is uncallable and is in a marker set we use.** It is one of the three markers in
+`markers/Z6494_exclusion.txt`:
+
+    L=35  rec=0.000   35/35 reads MQ0   26 off-target -> chrX:9, chr6:3, chr17_alt:2
+    L=45  rec=0.000   45/45 reads MQ0   34 off-target -> chrX:23, chr6:5, chr2:3
+    L=60  rec=0.000   45/45 reads MQ0   23 off-target -> chrX:23
+    L=90  rec=0.067   21    reads MQ0   11 off-target -> chrX:11
+
+Identical in all four references, so it is an intrinsic property of the site, not a build artifact.
+`FGC5687` sits in X-homologous sequence and **cannot be genotyped at any aDNA read length**. Every
+previous "no coverage at `FGC5687`" in this project was mislabelled: it was never a coverage
+shortfall, it is a site the aligner cannot place a short read on. The `Z6494` exclusion therefore
+rests on `Z6215` (0.778 at 45 bp) and `Z6494` (1.000 at 60 bp+, 0.486 at 35 bp) — two markers, not
+three.
+
+**5. CHM13 carries a different base at `Z6488`.** Our catalogue has `anc=T der=C`; CHM13's chrY
+reports **`A`** at the discovered position — neither allele. Every GRCh38/GRCh37 target reports `T`
+correctly. CHM13v2's chrY is HG002's chromosome, a different individual and a different haplogroup
+from GRCh38's, so this is the ref/alt inversion trap the check exists for. Whether it is a genuine
+third allele or a one-base offset from a nearby indel has **not** been determined; either way,
+**CHM13 must not be used for calling at `Z6488` until it is.** All other 21 markers match their
+ancestral allele in all four builds.
+
+**Method note.** The tool needs no liftover: the tile carries its own truth, so the modal implied
+position is the marker's coordinate in the target build, discovered rather than asserted. This
+yielded the GRCh38 -> T2T coordinates as a by-product (`L166` 21,843,737 -> 22,679,247; `PF3239`
+15,205,748 -> 16,112,288; `Z6494` 17,131,187 -> 18,037,700) for an assembly we hold no chain for.
+
+**One bug found and fixed before these numbers.** The first run reported `hs37d5` at 0.000 recovery
+for every marker — hs37d5 writes `Y` where GRCh38 writes `chrY`, so every correctly-mapped read was
+counted off-target. A tool bug indistinguishable from a catastrophic finding, which is the argument
+for having a self-map control in the design: `working` against itself must return ~1.0, and any
+target that returns 0.000 everywhere is a naming failure, not biology.
