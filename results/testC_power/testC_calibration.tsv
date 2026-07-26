@@ -1,0 +1,19 @@
+kind	key	value	ci_low	ci_high	note
+proxy_ratio_used	chrY_per_proxy	0.6514	0.5426	4574.0000	median of 12 per-sample ratios; ci cols are min/max, not a CI
+proxy_ratio_origin	chrY_per_proxy	0.7455			through-origin fit, reported for comparison, not used
+proxy_sample	MX150	0.5426			chrY=3425 proxy=6312
+proxy_sample	MX182	4574.0000			chrY=9148 proxy=2
+proxy_sample	MX183	0.6889			chrY=14799 proxy=21482
+proxy_sample	MX187	0.6319			chrY=11846 proxy=18748
+proxy_sample	MX209	0.5657			chrY=6328 proxy=11186
+proxy_sample	MX210	0.7994			chrY=30629 proxy=38316
+proxy_sample	MX211	0.7119			chrY=16762 proxy=23547
+proxy_sample	MX212	0.7272			chrY=13273 proxy=18252
+proxy_sample	MX213	0.6495			chrY=9664 proxy=14880
+proxy_sample	MX219	0.6262			chrY=950 proxy=1517
+proxy_sample	MX299	0.5567			chrY=967 proxy=1737
+proxy_sample	SX10	0.6534			chrY=10663 proxy=16319
+marker_rate	Z6219	7.385633e-05	3.535835e-05	1.358326e-04	10 reads over 135398 chrY reads, 15 samples
+marker_rate	L166	1.033989e-04	5.648186e-05	1.734959e-04	14 reads over 135398 chrY reads, 15 samples
+marker_rate	FGC5671	3.692817e-05	1.190082e-05	8.617678e-05	5 reads over 135398 chrY reads, 15 samples
+marker_rate	L167	5.169943e-05	2.071250e-05	1.065249e-04	7 reads over 135398 chrY reads, 15 samples

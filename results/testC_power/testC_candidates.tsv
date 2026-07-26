@@ -1,0 +1,16 @@
+sample	proxy	pred_chrY	lambda_Z6219	p_call_Z6219	lambda_L166	p_call_L166	lambda_FGC5671	p_call_FGC5671	lambda_L167	p_call_L167	note
+Aesch1	20769	13530	0.999	0.264	1.399	0.408	0.500	0.090	0.699	0.156	compilation_id=Aes1;site=Aesch (CH);published_Y=G2a2a1a2a1
+Aesch4	24741	16117	1.190	0.334	1.666	0.496	0.595	0.120	0.833	0.203	compilation_id=Aes4;site=Aesch (CH);published_Y=G2a2a1a2a1a
+Aesch6	6163	4015	0.297	0.036	0.415	0.066	0.148	0.010	0.208	0.019	compilation_id=Aes6;site=Aesch (CH);published_Y=G2a2a
+Aesch7	15555	10133	0.748	0.173	1.048	0.282	0.374	0.055	0.524	0.098	compilation_id=Aes7;site=Aesch (CH);published_Y=G2a2a1a2a1a
+Aesch12	20241	13186	0.974	0.255	1.363	0.395	0.487	0.086	0.682	0.149	compilation_id=Aes12;site=Aesch (CH);published_Y=low coverage
+Aesch13	17	11	0.001	0.000	0.001	0.000	0.000	0.000	0.001	0.000	compilation_id=Aes13;site=Aesch (CH);published_Y=low coverage
+Aesch14	21356	13912	1.027	0.274	1.438	0.421	0.514	0.094	0.719	0.163	compilation_id=Aes14;site=Aesch (CH);published_Y=G2a2a1a2a1
+Aesch17	25382	16535	1.221	0.345	1.710	0.510	0.611	0.125	0.855	0.211	compilation_id=Aes17;site=Aesch (CH);published_Y=low coverage
+Aesch19	26546	17293	1.277	0.365	1.788	0.534	0.639	0.135	0.894	0.225	compilation_id=Aes19;site=Aesch (CH);published_Y=G2a2a1a2a1
+Aesch20	26595	17325	1.280	0.366	1.791	0.535	0.640	0.135	0.896	0.226	compilation_id=Aes20;site=Aesch (CH);published_Y=low coverage
+Aesch21	25127	16369	1.209	0.341	1.692	0.504	0.604	0.123	0.846	0.208	compilation_id=Aes21;site=Aesch (CH);published_Y=low coverage
+Aesch22	20338	13249	0.979	0.256	1.370	0.398	0.489	0.087	0.685	0.151	compilation_id=Aes22;site=Aesch (CH);published_Y=G2a2a1a2a1
+Aesch23	29152	18991	1.403	0.409	1.964	0.584	0.701	0.156	0.982	0.258	compilation_id=Aes23;site=Aesch (CH);published_Y=low coverage
+SNPRA61	21368	13920	1.028	0.275	1.439	0.422	0.514	0.094	0.720	0.163	compilation_id=RA61;site=Muttenz (CH);published_Y=low coverage
+SNPRA62	22831	14873	1.098	0.300	1.538	0.455	0.549	0.105	0.769	0.180	compilation_id=RA62;site=Muttenz (CH);published_Y=low coverage

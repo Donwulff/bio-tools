@@ -1,0 +1,15 @@
+sample	proxy	pred_chrY	lambda_Z6219	p_call_Z6219	lambda_L166	p_call_L166	note
+Aesch12+Aesch19	46787	30479	2.251	0.658	3.151	0.822	AeschFamilyD;pooled_1st_degree_male_pair;site=Aesch
+Aesch1	20769	13530	0.999	0.264	1.399	0.408	AeschFamilyD;2nd_or_3rd_degree_to_Aes12/Aes19/Aes21;site=Aesch
+Aesch20	26595	17325	1.280	0.366	1.791	0.535	AeschFamilyD;2nd_or_3rd_degree_to_Aes1/Aes21;site=Aesch
+Aesch21	25127	16369	1.209	0.341	1.692	0.504	AeschFamilyD;2nd_or_3rd_degree_to_Aes1/Aes20;site=Aesch
+Aesch23	29152	18991	1.403	0.409	1.964	0.584	AeschFamilyD;2nd_or_3rd_degree_to_Aes12/Aes19/Aes24;site=Aesch
+Aesch14	21356	13912	1.027	0.274	1.438	0.421	AeschFamilyC;2nd_or_3rd_degree_to_Aes22;site=Aesch
+Aesch22	20338	13249	0.979	0.256	1.370	0.398	AeschFamilyC;2nd_or_3rd_degree_to_Aes14;site=Aesch
+Aesch6	6163	4015	0.297	0.036	0.415	0.066	AeschFamilyA;2nd_or_3rd_degree_to_Aes17;site=Aesch
+Aesch17	25382	16535	1.221	0.345	1.710	0.510	AeschFamilyA;1st_degree_to_Aes11_female_only;site=Aesch
+Aesch4	24741	16117	1.190	0.334	1.666	0.496	AeschFamilyB;2nd_or_3rd_degree_via_Aes18_female;site=Aesch
+Aesch13	17	11	0.001	0.000	0.001	0.000	AeschFamilyB;proxy_near_zero_expect_no_power;site=Aesch
+Aesch7	15555	10133	0.748	0.173	1.048	0.282	no_documented_kinship;site=Aesch
+SNPRA61	21368	13920	1.028	0.275	1.439	0.422	no_documented_kinship;site=Muttenz
+SNPRA62	22831	14873	1.098	0.300	1.538	0.455	no_documented_kinship;site=Muttenz

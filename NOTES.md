@@ -894,7 +894,15 @@ independent reasons for caution, both observed here rather than assumed:
   `MX183` are from Oberbipp. The paper assigns **7** Oberbipp males `PF3239`, and assigns `MX183`
   to `FGC7739/Z6488` — one node *shallower* than haplotree places it. So haplotree both under-covers
   the published set and moves at least one sample deeper than its source.
-- Aesch and Muttenz, which carry 10 and 2 published `PF3239` individuals, do not appear at all.
+- Aesch and Muttenz, which carry 10 and 2 published `PF3239` individuals, ~~do not appear at all~~
+  *do not appear in that query*.
+
+*Correction (2026-07-26): the struck clause was wrong, and wrong in the same way as the `G-L166`
+literal-string search corrected immediately above. Aesch and Muttenz are present in the compilation
+in quantity — as `Aes1`–`Aes25` and `RA42`–`RA64`, IDs that no search for the strings "Aesch" or
+"Muttenz" will match. Between them they carry **15 `G-L166*` rows**, which are the Test C cohort
+registered in `PREREG_testC_aesch_muttenz.md`. What is true is the narrower statement: neither site
+appears under a `G-PF3239` query, because the compilation does not label them `G-PF3239`.*
 
 Aggregator coverage is therefore partial and its labels drift downward — the same failure mode
 this project documents for the Iceman. Treat the table above as a to-test list, not a result.
@@ -2268,3 +2276,58 @@ lineages are from one site, `FGC5671`'s upstream support is one registered call 
 single-read nocalls, and F2 could not be evaluated for three of the four. "H1 supported" names which
 of four boxes this falls in; it is not a claim that the node is established. The test that would
 discriminate H1 from H3 is a second population, registered as P3 and not run.
+
+## Test C is Registered, and the Power Analysis Changed What It Is (2026-07-26)
+
+`PREREG_testC_aesch_muttenz.md`, written before any Aesch or Muttenz read was staged. Tables in
+`results/testC_power/`. Test C is the only registered test that separates H1 (a real node between
+`PF3239` and `L166`) from H3 (homoplasy, or a variant private to the Oberbipp patriline), because
+everything supporting the current `H1 supported` verdict is one patriline at one site.
+
+**The cohort named in the earlier documents does not exist.** "The 21 hedged Aesch/Muttenz
+individuals", used in `PREREG_Z6219_node.md` §7 and in `RUNLOG.md`, conflates two sets. There are
+exactly 21 individuals labelled `G-L166*` in the compilation, but **6 of them are the Oberbipp men
+already genotyped in `results/swiss15/`**. The untested cohort is **13 Aesch + 2 Muttenz = 15**.
+
+**Aesch has Oberbipp's kinship problem, and that is the real result of the power analysis.** The 13
+Aesch candidates are not 13 observations: six of them (`Aes1`, `Aes12`, `Aes19`, `Aes20`, `Aes21`,
+`Aes23`) are one documented family, and the rest fall into three more. What Test C buys is **seven
+kin groups across two sites**, against the current verdict's one site. The count of individuals was
+never the interesting number.
+
+**Only 5 of the 22 YFull `L166`-defining positions are testable in this data at all.** Across all 15
+Oberbipp libraries — 135,398 chrY reads at MAPQ >= 25 — `L166` attracted 14 reads, `Z6219` 10,
+`L167` 7, `FGC5671` 5, `FGC5672` 3, and **ten positions attracted zero**. Four of those ten
+(`FGC5696`, `FGC5721`, `Z6516`, `S19530`) *are* on the 1240k panel. So panel membership does not
+predict coverage here, and the idea of buying power by pooling more markers is not available. The
+testable set is `L166`, `L167`, `Z6219`.
+
+**Registered expectation, for later comparison against the outcome:** ~4.0 individuals callable at
+`Z6219`, ~5.9 at `L166`, and **~2.1 callable at both** — the last being the number that matters,
+since the intermediate-branch signature is derived at `Z6219` and ancestral at `L166` *in the same
+man*. Power to observe the split P3 predicts is 0.79 at a derived frequency of 0.5 and 0.33 at 0.1
+or 0.9.
+
+**The dominant uncertainty is the marker rate, and it is large.** The `Z6219` rate is fitted on ten
+reads; its Poisson interval spans a factor of 3.8, which puts expected callable between **1.3 and
+7.9** and split power between **0.23 and 0.98**. Test C is somewhere between barely worth running
+and decisive, and which one cannot be known until the reads are mapped. It is registered anyway,
+because the alternative is leaving the verdict resting on a single site.
+
+**The model reproduces the cohort it was fitted on.** Run against Oberbipp/Rapperswil themselves it
+predicts 2.08 callable at `Z6219` (observed 2) and 3.15 at `L166` (observed 4).
+
+**One estimator choice worth recording, because it was nearly a silent bias.** The coverage proxy is
+the compilation's `NRY` column, and `MX182`'s row carries `NRY = 2` against 9,148 mapped chrY reads
+— a defect already noted here on 2026-07-25. Under a through-origin fit that single row raised the
+proxy ratio from 0.6514 to 0.7455, inflating every power number by 14%, because a sample with a
+near-zero denominator and real reads dominates the numerator. `y_power_estimate.py` now uses the
+median of per-sample ratios and reports the through-origin value beside it. `MX182` is not dropped;
+it stays visible in the committed table and simply stops dominating the fit.
+
+**What this test may not claim, registered in advance.** The cohort is defined by the compilation's
+`G-L166*` label, which is a hobbyist re-derivation, **not** by the publication's `PF3239` label that
+P3 named. Furtwängler 2020 Supplementary Table 1 has not been re-read for Aesch, so the overlap
+between the two sets is unknown and is listed as a required pre-staging check. Confirming or
+refuting the compilation's labels is not a finding about the haplotree; the labels are a sampling
+frame, chosen because it is reproducible from a committed file.

@@ -703,9 +703,20 @@ build a 45 bp read centred on each marker, substitute the derived base, then
 - **F2 is untested, not passed.** `MX210`, `MX213` and `SX10` have no `PF3239` coverage. Closing it
   requires either deeper data at `PF3239` in those three or an explicit statement that it cannot be
   closed with the libraries in hand.
-- **Test C (21 hedged Aesch/Muttenz individuals) — not run**, and out of scope until it has its own
-  power statement. P3 predicts they should *split*; uniformity either way is uninformative. This is
-  the only registered test that bears on the single-site limitation of the current verdict.
+- ~~**Test C (21 hedged Aesch/Muttenz individuals) — not run**, and out of scope until it has its
+  own power statement.~~ **Power statement written 2026-07-26**, `PREREG_testC_aesch_muttenz.md`.
+  The cohort is **15 individuals, not 21** — the other 6 hedged `G-L166*` are the Oberbipp men
+  already in `results/swiss15/`. **No read has been staged.** Registered expectation: ~4.0 callable
+  at `Z6219`, ~2.1 callable at both `Z6219` and `L166`, split power 0.79 at best and 0.23 at the
+  lower bound of the marker-rate interval. Still the only registered test bearing on the
+  single-site limitation of the current verdict.
+- **Aesch has Oberbipp's kinship problem.** The 13 Aesch candidates fall into 4 documented families
+  plus one unassigned man; `Aes1`, `Aes12`, `Aes19`, `Aes20`, `Aes21` and `Aes23` are all Family D.
+  Seven kin groups across two sites is what Test C actually buys, not fifteen individuals.
+- **Test C's cohort is not the set P3 named.** P3 says "published-`PF3239` males"; the registered
+  cohort is defined by the compilation's re-derived `G-L166*` label. Furtwängler 2020 Supplementary
+  Table 1 has **not** been re-read for Aesch, so the overlap is unknown. Listed as a required
+  pre-staging check in `PREREG_testC_aesch_muttenz.md` §7.
 
 ## Tests A and B of `PREREG_Z6219_node.md` (2026-07-26)
 
@@ -975,3 +986,69 @@ bias is reduced, not repaired; `L166` at 45 bp goes 0.156 → 0.689 against a 0.
 **U1 derived-worse 0**, **U2 fails 29** — including `FGC5687` at 60 bp (0.000 → 0.250) and 100 bp
 (0.160 → 0.890) with 23 and 5–6 off-target tile reads. Not adopted. U3 not run: the decision was
 already determined by U1 and U2.
+
+## Test C power statement (2026-07-26) — no read staged
+
+Pre-registered in `PREREG_testC_aesch_muttenz.md`, committed together with the tables below.
+**Nothing here touches Aesch or Muttenz sequence data**; the whole estimate is built from read
+counts, an external coverage proxy, and the marker rates already measured on the Oberbipp cohort.
+
+Cohort enumeration from the All Ancient DNA compilation. The file is latin1 with bytes that make
+`grep` treat it as binary, so `-a` is required or every count silently comes back empty:
+
+    F=/mnt/AncientDNA/all-ancient-dna.2026-07-26.txt
+    grep -ac 'L166' "$F"          # 37
+
+    awk -F'\t' -v OFS='\t' 'NR==1{for(i=1;i<=NF;i++)c[$i]=i;next}
+      $c["Location"] ~ /Aesch|Muttenz/ && $c["Y-Haplotree-Variant"]=="G-L166*" {
+        id=$c["Object-ID"]; ena=id; sub(/^Aes/,"Aesch",ena); sub(/^RA/,"SNPRA",ena)
+        print ena,$c["NRY"],"compilation_id="id";site="$c["Location"]";published_Y="$c["Y-DNA"] }' \
+      "$F" | sort -t$'\t' -k1,1V > results/testC_power/candidates.tsv
+
+Calibration proxy (same columns, `Location ~ /Oberbipp|Rapperswil/`) →
+`results/testC_power/proxy_calibration.tsv`. `results/testC_power/candidates_lineage.tsv` is hand-
+built from the compilation's `Kinship-Notes` and applies the §8 pooling rule: only the documented
+1st-degree male–male pair `Aes12`–`Aes19` is merged.
+
+ENA availability and protocol match, confirmed for all 15 candidates and all 97 runs:
+
+    curl -s "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=PRJNA608699\
+&result=read_run&fields=run_accession,sample_alias,read_count,library_strategy,instrument_model&format=tsv"
+
+All 15 are present, all `Targeted-Capture` / `Hybrid Selection` on HiSeq 3000 — the same protocol
+and instrument as the calibration cohort, which is what licenses transferring the marker rates.
+
+Power:
+
+    annotate/y_power_estimate.py \
+      --calib-genotypes results/testB/swiss_yfull_L166_defining.tsv \
+      --calib-coverage  results/swiss15/swiss_coverage.tsv \
+      --candidates      results/testC_power/candidates_lineage.tsv \
+      --proxy-calibration results/testC_power/proxy_calibration.tsv \
+      --markers Z6219,L166 --out-prefix results/testC_power/testC_lineage
+
+and once more over the unpooled 15 with all four markers that attract any reads, which is what
+produces `results/testC_power/testC_{calibration,candidates,power}.tsv`:
+
+    annotate/y_power_estimate.py \
+      --calib-genotypes results/testB/swiss_yfull_L166_defining.tsv \
+      --calib-coverage  results/swiss15/swiss_coverage.tsv \
+      --candidates      results/testC_power/candidates.tsv \
+      --proxy-calibration results/testC_power/proxy_calibration.tsv \
+      --markers Z6219,L166,FGC5671,L167 --out-prefix results/testC_power/testC
+
+Self-check — the same command with `--candidates` pointing at the calibration cohort predicts
+**2.08** callable at `Z6219` (observed **2**) and **3.15** at `L166` (observed **4**).
+
+Marker-rate interval bracket, which dominates every other uncertainty here:
+
+    for s in 0.479 1.0 1.838; do ... --rate-scale $s ... ; done
+
+giving expected callable at `Z6219` of **1.3 / 4.0 / 7.9** and split power at frequency 0.5 of
+**0.23 / 0.79 / 0.98**.
+
+**Gotcha recorded.** `y_power_estimate.py` first used a through-origin fit for the coverage proxy.
+`MX182`'s compilation row carries `NRY = 2` against 9,148 mapped chrY reads — a defect noted in
+`NOTES.md` on 2026-07-25 — and that one row alone raised the fitted ratio from 0.6514 to 0.7455, a
+14% optimistic bias in every downstream power number. The tool now takes the median of per-sample
+ratios and reports the through-origin value alongside it for comparison. No sample is dropped.

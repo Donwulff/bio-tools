@@ -1,0 +1,15 @@
+sample	proxy	note
+Aesch12+Aesch19	46787	AeschFamilyD;pooled_1st_degree_male_pair;site=Aesch
+Aesch1	20769	AeschFamilyD;2nd_or_3rd_degree_to_Aes12/Aes19/Aes21;site=Aesch
+Aesch20	26595	AeschFamilyD;2nd_or_3rd_degree_to_Aes1/Aes21;site=Aesch
+Aesch21	25127	AeschFamilyD;2nd_or_3rd_degree_to_Aes1/Aes20;site=Aesch
+Aesch23	29152	AeschFamilyD;2nd_or_3rd_degree_to_Aes12/Aes19/Aes24;site=Aesch
+Aesch14	21356	AeschFamilyC;2nd_or_3rd_degree_to_Aes22;site=Aesch
+Aesch22	20338	AeschFamilyC;2nd_or_3rd_degree_to_Aes14;site=Aesch
+Aesch6	6163	AeschFamilyA;2nd_or_3rd_degree_to_Aes17;site=Aesch
+Aesch17	25382	AeschFamilyA;1st_degree_to_Aes11_female_only;site=Aesch
+Aesch4	24741	AeschFamilyB;2nd_or_3rd_degree_via_Aes18_female;site=Aesch
+Aesch13	17	AeschFamilyB;proxy_near_zero_expect_no_power;site=Aesch
+Aesch7	15555	no_documented_kinship;site=Aesch
+SNPRA61	21368	no_documented_kinship;site=Muttenz
+SNPRA62	22831	no_documented_kinship;site=Muttenz
