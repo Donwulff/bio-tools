@@ -1,0 +1,23 @@
+marker	chrom	pos_src	pos_panel	on_panel	matched_by	panel_id	panel_alleles	marker_alleles	alleles_agree	isogg	yfull_node
+FGC5696	chrY	8525805	8393846	yes	position	snp_24_8393846	C/A	C/A	yes	G2a2a1b1a	G-L166
+Z6208	chrY	13776249	15888129	no	none	.	.	G/A	.	G2a2a1a2a1a1b~	G-L166
+Z6219	chrY	13782251	15894131	yes	position	snp_24_15894131	C/T	C/T	yes	G2a2a1a2a1a	G-L166
+Z6287	chrY	14368999	16480879	yes	position	snp_24_16480879	C/T	C/T	yes	G2a2a1a2a1a	G-L166
+S19530	chrY	15208473	17320353	yes	position	snp_24_17320353	T/C	T/C	yes	not listed	G-L166
+FGC5721	chrY	16280455	18392335	yes	position	snp_24_18392335	T/G	T/G	yes	G2a2a1b1a	G-L166
+Z6516	chrY	19013205	21175091	yes	position	snp_24_21175091	T/A	T/A	yes	G2a2a1a2a1a	G-L166
+L166	chrY	21843737	23989884	yes	position	L166	C/A	C/A	yes	G2a2a1a2a1a	G-L166&J-Y29712
+L167	chrY	21843756	23989903	yes	position	L167	T/A	T/A	yes	G2a2a1a2a1a	G-L166&I-Y92994&A00
+FGC5687	chrY	6019771	5887812	no	none	.	.	A/C	.	G2a2a1b1a	G-Z6494
+Z6215	chrY	11965520	14086226	yes	position	snp_24_14086226	T/C	T/C	yes	G2a2a1b1a	G-Z6494
+Z6494	chrY	17131187	19243067	no	none	.	.	G/T	.	G2a2a1a2a1a1	G-Z6494
+P15	chrY	21082140	23244026	yes	position	PF3112	C/T	C/T	yes	G2a	G-P15&R-Y236267&R-BY49854&R-BY12063
+M3308	chrY	13503460	15615340	yes	position	L1259	C/G	C/G	yes	G2a2	G-L1259
+PF3147	chrY	7870028	7738069	yes	position	PF3147	G/A	G/A	yes	G2a2a	G-PF3147
+PF3148	chrY	7948451	7816492	yes	position	PF3148	G/A	G/A	yes	G2a2a1	G-PF3148
+PF3177	chrY	19165312	21327198	yes	position	PF3177	C/T	C/T	yes	G2a2a1a	G-PF3177
+L91	chrY	19483669	21645555	yes	position	S285	G/C	G/C	yes	G2a2a1a2	G-L91
+Z6488	chrY	22225244	24371391	no	none	.	.	T/C	.	G2a2a1a2a	G-Z6484
+PF3239	chrY	15205748	17317628	yes	position	snp_24_17317628	C/T	C/T	yes	G2a2a1a2a1	G-PF3239
+Z6043	chrY	12504169	14615971	yes	position	snp_24_14615971	A/C	A/C	yes	G2a2a1b1	G-PF3239
+P287	chrY	19910211	22072097	yes	position	rs4116820	G/T	G/T	yes	G2	G-P287
