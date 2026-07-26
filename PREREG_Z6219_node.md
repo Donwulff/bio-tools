@@ -271,3 +271,71 @@ prerequisite to Test B and has not been done.
 
 No result from Test A, Test B or the F6 recheck influenced this amendment; F6 was the only one run
 at time of writing and it returned "does not obtain".
+
+---
+
+## Extensions
+
+Registered under `PROTOCOL_extending_analyses.md`. Each is a test of a hypothesis already stated
+above, using the five-line form; the rules of §8 govern all of them unchanged.
+
+### E1 — Is `FGC5671` derived in the Iceman? [2026-07-26]
+
+**Prior state.** I have read every `FGC5671` value this project has produced: the 15 Swiss samples
+in `results/testB/swiss_yfull_L166_defining.tsv` (`MX210` DERIVED 2 derived / 0 ancestral; `MX213`,
+`SX10`, `MX209` each `nocall_damage_prone_1read`, derived direction; the remaining 11 `no_coverage`),
+both Sardinians in `results/testB_unhedged/` (`I14677` 1 ancestral, `I14678` 3 ancestral), the Test B
+verdict `splits_with_Z6219`, the allele-aware mappability (1.000 at both alleles at 35/45/60 bp,
+zero MQ0), and the read-terminus and damage-profile forensics at the site. I have **not** looked at
+any Iceman read, pileup, call or coverage figure at `chrY:7,784,648`. The marker is absent from
+`markers/L166_defining.txt`, so it was not in the 9-marker set of the driver validation, and no
+committed Iceman table contains the position or the name — checked by grep before writing this.
+The catalogue holds exactly one name at that coordinate, so no synonym could have leaked it.
+
+**Prediction.** Derived. The Iceman is derived at `PF3239`, `Z6219` and `L166` alike (§10), so a
+marker lying anywhere on the shared path down to the `L166` block must be derived in him. This is
+the outcome I want, which is why the test is registered rather than simply run.
+
+- **Derived** → `FGC5671` is a shared branch marker, not a private Oberbipp variant. **F3 does not
+  obtain**: a second position co-segregates with `Z6219`, and homoplasy (H3) would have to have
+  struck twice in the same lineages, at two independent positions, to reproduce it.
+- **Ancestral (>= 2 reads)** → an `L166`-derived man lacks `FGC5671`, so it cannot be an `L166`
+  block marker and **YFull's block assignment for it is wrong**. Test B's co-segregation count
+  falls to one (`Z6219` alone), **F3 obtains**, and the node is reported as unresolved between H1
+  and H3. Ancestral reads at this G>A site are damage-robust by direction, so two suffice, by the
+  same argument as F1.
+- Either way this says nothing about the Iceman's own placement, per §10.
+
+**No-power.** Any of `no_coverage`, `nocall_noreads`, `nocall_damage_prone_1read`,
+`low_power_1read_ancestral`, or a mixed call failing `site_qc` / `pct_mq0 < 30%`. Reported as H0
+for this extension. Given that 11 of 15 Oberbipp samples have no coverage here, H0 is a live
+outcome and not a fallback.
+
+**Decision.** `NOTES.md` gains the result and `RUNLOG.md` the command, whichever way it lands. The
+"the gap that decides it" paragraph in `NOTES.md` is rewritten to state what was found, not
+removed. If ancestral, the Test B section is amended in place to record that its
+`splits_with_Z6219 = 2` overcounted, and the F3 verdict changes.
+
+**Fixed in advance — one BAM.** The test runs against
+`iceman.oetzi.UDG_merge_combined.mapped_rmdup.pair.prim_rmdup.sort_rmdup.coord.bam`, the merged BAM
+every other Iceman finding in this repository rests on, and nothing else. There are ~20 further
+Iceman BAMs on disk from earlier assemblies and reference builds. If the canonical BAM gives no
+coverage, that is H0; trying another library until one yields a read is exactly the search this
+protocol exists to prevent, and requires its own registration.
+
+**Secondary scan, registered because it cannot be avoided.** The tool emits all 22 testable
+positions of `markers/yfull_L166_defining.txt` in one pass, so I will see the other 21 whether or
+not I intend to. Their meaning is therefore fixed here, before the run:
+
+- 9 of the 22 are `markers/L166_defining.txt` and are already known derived in the Iceman (RUNLOG,
+  driver validation). They are **excluded from the count** as non-independent and serve only as a
+  positive control: anything other than 9/9 derived invalidates the run.
+- Of the remaining 13, a position is **block-confirmed** if the Iceman is `DERIVED`,
+  **block-refuted** if he is `ancestral` under the registered rules, and **untested** otherwise.
+  `untested` is never counted as either.
+- Prediction: mostly block-confirmed, and `block-refuted > 0` is the interesting outcome — it would
+  mean YFull's 32-SNP `L166` definition contains positions that an `L166`-derived man does not
+  carry. That claim, if it arises, is registered here and is not post-hoc.
+- No marker outside these 22 is tested under E1.
+
+**Status.** REGISTERED 2026-07-26.
