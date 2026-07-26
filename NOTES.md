@@ -1068,12 +1068,22 @@ forward/reverse read counts so this is auditable rather than a bare verdict.
 `19647870`) — **ancestral at all three**. The negative result from the earlier comparison holds and is
 now based on 5 informative sites rather than 2.
 
-**Remapping Note (correction)**
+**Remapping Note (correction)** — *itself corrected 2026-07-26, see the strike below.*
 Full FASTQ is available for these samples (`ERR14752008.fastq.gz` etc.), so a proper remap to hg38 through
 `mapping/revert-bam.sh` is possible with **no** reference bias — the bias objection only applies to
-re-aligning an already-Y-filtered slice. Remapping is therefore legitimate here, and would additionally
-recover reads lost to the depositors' MQ pre-filter (`MQ>=30` for `CGG017683`). It just does not help `CGG017683`, where the
+re-aligning an already-Y-filtered slice. Remapping is therefore legitimate here, and ~~would additionally
+recover reads lost to the depositors' MQ pre-filter (`MQ>=30` for `CGG017683`)~~. It just does not help `CGG017683`, where the
 limit is 0.192x depth rather than alignment quality.
+
+**The struck clause is wrong and contradicts "Every Sample In This Project Came From A Mapped-Only
+Deposit" below, which is authoritative.** Re-mapping cannot recover reads lost to the depositor's MQ
+pre-filter, because the ENA FASTQ is *generated from the already-filtered BAM*: for `ERR14752008` the
+FASTQ `read_count` is 27,290,045 and the BAM's mapped total is 27,290,045 with 0 unmapped. The FASTQ
+**is** the filtered BAM. Every read the depositor's `samtools view -q 30` discarded is absent from
+both. What re-mapping does buy is real but narrower: native hg38 placement instead of an
+hg38→hg19 liftover of marker coordinates, our reference, and our own MAPQ and damage rules applied
+to the reads that survived. The conclusion — that re-mapping does not rescue `CGG017683` — is
+unchanged, but the reason is depth *and* an irrecoverable read set, not depth alone.
 
 **Iceman Novel-Branch Candidate SNPs (superseded — see the MAPQ-filtered re-derivation below)**
 Kept for the reasoning; the numbers here are stale.

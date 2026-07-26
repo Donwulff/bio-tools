@@ -344,3 +344,72 @@ positions of a library that deaminates at 0.02% there. **F3 does not obtain.** C
 Secondary scan: block-confirmed 7, **block-refuted 1 (`Z6499`, ancestral 10/0)**, untested 5 — the
 `block-refuted > 0` outcome flagged above as the interesting one did occur. Results in `NOTES.md`,
 commands in `RUNLOG.md`, tables in `results/z6219_node/iceman_E1_*`.
+
+### E2 — Where does `CGG017683` (Crimea) sit relative to `Z6219` and `L166`? [2026-07-26]
+
+**Prior state.** This sample is not new to the project and the protocol's queue entry calling it
+"never analysed by us" was wrong. Already read: it is the only G2a2a individual in PRJEB87274
+(Allentoft/GeoGenetics, 712 genomes), Ukraine ~550 CE, run `ERR14752008`; chrY 54,685 reads,
+2,413,071 bases, **0.192x on the 12.57 Mb callable denominator**; the depositor's own path stops at
+`L166` and does not invoke `Z6208`; of 56 deep-G markers lifted to hg19, **11 were covered, all
+single-read**, derived at `S19530/Z6213` and at `Z6504` (the latter treated as damage); it covers 3
+of the Iceman's novel candidate sites and is **ancestral at all three**; `CGG017682` from the same
+site is R1a and was used as a method positive control. The 11 covered markers were never enumerated
+in a committed table — the only per-site `CGG017683` data in the repository is the
+`CGG017683_b37` column of `results/iceman_y_novel_branch_candidates.tsv`, which holds Iceman-private
+positions only. **I have not read this sample's state at `Z6219`, `L166`, `L167` or `Z6499`**, and
+no committed table contains any of them; checked by grep before writing this.
+
+**Power, and why it is the whole story.** At 0.192x, P(>=1 read at a site) = 0.175 and
+P(>=2 reads) = 0.016. Of the 22 testable positions, ~3.8 are expected covered and there is only a
+**30%** chance that *any single one* reaches 2 reads. The motivating question — is this man
+`Z6219`-derived and `L166`-ancestral, i.e. on the intermediate branch — needs a real call at both,
+and `Z6219` is C>T so a lone derived read is `nocall_damage_prone_1read` by rule. Probability that
+both reach 2 reads: **0.026%, about 1 in 3,800.** This test cannot answer the question it was
+queued for, and that is registered here rather than discovered later.
+
+**What it can still do, which is why it is worth running.** Eight of the 22 are transversions, where
+a single read yields the registered call `DERIVED_1read_transversion`. `L166` (C>A) and `L167` (T>A)
+are **19 bp apart**, so one ordinary molecule calls both. So:
+
+- **Achievable and decisive against my preference (~17.5%):** `L166`/`L167` covered and **derived**.
+  That makes `CGG017683` an ordinary `L166`-derived man, kills the idea that he is the intermediate-
+  branch individual, and removes the reading of YFull's `L166*` placement the user noticed.
+- **Not achievable:** confirming him as `Z6219`-derived / `L166`-ancestral. A single ancestral read
+  at `L166` is `low_power_1read_ancestral`, which is **not a call** and will not be reported as one.
+
+E2 is therefore an **asymmetric falsifier**: it can defeat the hypothesis I favour and cannot
+support it. That asymmetry is the reason to run it, and no result from it may be read in the
+favourable direction.
+
+**Prediction.** H0. Most likely outcome by a wide margin (~70% that nothing reaches 2 reads
+anywhere, and ~82% that `L166`/`L167` are uncovered entirely). I want `L166` either uncovered or
+ancestral; the registration exists because I want that.
+
+**No-power.** Fewer than 2 reads at `Z6219` **and** no registered transversion call at
+`L166`/`L167`. Reported as H0 for this extension. Given the arithmetic above this is the expected
+result and is not a disappointment to be worked around.
+
+**Decision.** The coverage map at all 22 positions is committed whatever it shows, so this sample's
+depth limit becomes a citable fact instead of a recollection. If `L166`/`L167` return a registered
+derived call, `NOTES.md` records that `CGG017683` is excluded as an intermediate-branch candidate
+and the protocol queue entry is closed. If H0, the entry is closed as **depth-limited, not
+retestable with public data**, and no further work on this sample is authorised without a new
+registration.
+
+**Scope, narrowed on purpose, with the reason.** The queue described E2 as this sample "mapped and
+called our way". Its premise has since been shown false: re-mapping cannot recover the reads the
+depositor's `samtools view -q 30` discarded, because the ENA FASTQ is generated from the already
+filtered BAM (`read_count` 27,290,045 = mapped total, 0 unmapped). Re-mapping would buy native hg38
+placement instead of an hg38->hg19 liftover of 22 coordinates, and nothing else. At 1-in-3,800 power
+that does not justify putting 27.3M reads through the pipeline. **Stage 1** is a remote indexed chrY
+fetch and pileup against the deposited b37 BAM with our marker set lifted down. **Stage 2**, a full
+re-map, is authorised only if Stage 1 finds >= 2 reads at `Z6219`, `L166`, `L167` or `Z6499`; the
+liftover would then be worth eliminating. Nothing else about this sample is tested under E2.
+
+**Counting rule.** As in E1, with `site_qc pass` and the inherited 30% MQ0 threshold required for a
+position to count. Base qualities are **not** compared against other samples: this deposit ran
+`samtools calmd -Erb` without `-A`, so whether extended BAQ capped `QUAL` in place is unverified,
+and that check is not part of E2.
+
+**Status.** REGISTERED 2026-07-26.
