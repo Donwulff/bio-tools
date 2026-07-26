@@ -1,0 +1,13 @@
+generated=2026-07-26T23:20:06+03:00
+bam_dir=/mnt/AncientDNA/SwissLN-2020/bam-testC
+marker_dir=/tmp/claude-1000/-home-jsantala-src-bio-tools/2453dc1c-3dd8-4e65-87dd-cc9ceb9f59cd/scratchpad/markers_gate
+ref=/home/jsantala/src/bio-tools/mapping/index/hg38p14DH3630O.fa
+sites=/tmp/claude-1000/-home-jsantala-src-bio-tools/2453dc1c-3dd8-4e65-87dd-cc9ceb9f59cd/scratchpad/markers_gate/iceman_novel_candidates_usable8.tsv
+index=resources/marker_index.tsv.gz
+min_mq=25
+min_bq=20
+max_pct_mq0=30.0
+n_samples=15
+marker_sets=backbone_control.txt 
+git_commit=221d813
+git_dirty=1

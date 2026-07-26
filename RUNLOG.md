@@ -1167,3 +1167,65 @@ Supplementary Table 5.
 `PREREG_testC_aesch_muttenz.md` §7 check 3 was run against the PDF's Y table and **stands unamended**.
 The `.xlsx` files are not committed, for the same reason the PDF is not: publisher artefacts,
 reachable from the article's supplementary section, quoted where used.
+
+### Test C §7 check 5 — backbone control, run alone before any `L166` table existed (2026-07-26)
+
+Mapping finished `mapped=15 skipped=15 failed=0`. The 15 Test C BAMs were then exposed through a
+symlink view so the Oberbipp BAMs in the same directory are not genotyped into Test C's tables:
+
+```bash
+cd /mnt/AncientDNA/SwissLN-2020 && mkdir -p bam-testC && cd bam-testC
+for s in Aesch1 Aesch4 Aesch6 Aesch7 Aesch12 Aesch13 Aesch14 Aesch17 \
+         Aesch19 Aesch20 Aesch21 Aesch22 Aesch23 SNPRA61 SNPRA62; do
+  ln -sf "../bam/${s}.rmdup.bam" .; ln -sf "../bam/${s}.rmdup.bam.bai" .
+done
+```
+
+The gate was run against a marker directory containing **only** `backbone_control.txt`, so that no
+`L166`-defining call existed anywhere on disk at the moment the control was read:
+
+```bash
+G=<scratch>/markers_gate; mkdir -p "$G"; cp markers/backbone_control.txt "$G/"
+REF=$PWD/mapping/index/hg38p14DH3630O.fa PREFIX=testC SITES= \
+  annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam-testC results/testC "$G"
+```
+
+150 cells (15 samples x 10 markers):
+
+| call | n |
+|---|---|
+| `no_coverage` | 95 |
+| `DERIVED_1read_transversion` | 23 |
+| `DERIVED` | 17 |
+| `nocall_damage_prone_1read` | 13 |
+| `mixed` | 1 |
+| `other_allele` | 1 |
+| **`ancestral`** | **0** |
+
+| marker | derived | ancestral | covered |
+|---|---|---|---|
+| `L91` | 10 | 0 | 10 |
+| `M3308` | 9 | 0 | 9 |
+| `P287` | 8 | 0 | 8 |
+| `Z6043` | 7 | 0 | 8 |
+| `P15` | 5 | 0 | 8 |
+| `PF3147` | 1 | 0 | 3 |
+| `PF3239` | **0** | 0 | 7 |
+| `PF3148`, `PF3177` | 0 | 0 | 1 each |
+| `Z6488` | 0 | 0 | 0 |
+
+**Gate passes: 40 derived calls, zero ancestral calls anywhere.** The published path
+`P15 > M3308 > ... > L91` is recovered independently in this cohort, and nothing contradicts it.
+
+**But not via `PF3239`, which is what the marker file's own comment names as the positive control.**
+`PF3239` is a C>T transition at chrY:15205748. Seven libraries cover it, every one of them with
+**exactly one derived read and no ancestral read**; the other eight have no coverage. Under the
+registered rules every one of those is `nocall_damage_prone_1read` and **is not evidence**. So the
+chain is validated by `L91`, `M3308`, `P287`, `Z6043` and `P15`, and the specific marker the
+publication assigns these men is uninformative here. That is a depth-rule consequence, not a
+contradiction of the published call — 7 of 7 covered cells carrying the derived base with zero
+ancestral reads is consistent with it, and is deliberately not counted as confirming it.
+
+Two non-ancestral oddities, neither contradicting the chain: `Aesch21` at `PF3147` is `mixed`
+(1 ancestral, 2 derived, C>T, `pct_mq0 = 0%`), and `Aesch4` at `Z6043` has a single read carrying
+neither allele (`other_allele`, transversion, `pct_mq0 = 0%`).
