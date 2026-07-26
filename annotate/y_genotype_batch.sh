@@ -57,11 +57,16 @@ CAND=("${MARKERDIR}"/*.txt)
 
 [ -s "$INDEX" ] || { echo "no marker index at ${INDEX}" >&2; exit 1; }
 KNOWN="$(mktemp)" || exit 1
-zcat -f "$INDEX" | tail -n +2 | cut -f1 | sort -u > "$KNOWN"
+# LC_ALL=C throughout: sort and comm must agree on collation or comm silently
+# mis-reports matches, and this comparison decides whether a file is treated as
+# a marker set at all. Under a non-C locale it warns "input is not in sorted
+# order" and can undercount, which would skip a real marker set.
+zcat -f "$INDEX" | tail -n +2 | cut -f1 | LC_ALL=C sort -u > "$KNOWN"
 
 SETS=()
 for f in "${CAND[@]}"; do
-  n=$(sed 's/#.*//' "$f" | tr -d ' \t' | grep -v '^$' | sort -u | comm -12 - "$KNOWN" | wc -l)
+  n=$(sed 's/#.*//' "$f" | tr -d ' \t' | grep -v '^$' | LC_ALL=C sort -u \
+        | LC_ALL=C comm -12 - "$KNOWN" | wc -l)
   if [ "$n" -gt 0 ]; then
     SETS+=("$f")
   else
