@@ -2374,3 +2374,45 @@ placement" point of Table 5, now seen at Aesch as well as Oberbipp. Separately, 
 internally inconsistent in Table 1**: terminal mutation `PF3239` against `YHG = G2a2b2a1a1`, and
 `PF3239` is `G2a2a1a2a1`. `SX11` is the single Niederried individual in the published `PF3239` tally
 of 20, so that tally should treat it as unresolved.
+
+### The coverage proxy failed a second time, and this time in the cohort's favour (2026-07-26)
+
+Recorded while mapping was still running, **before any Test C genotype existed**, because a coverage
+observation noted before the alleles are read means something a coverage observation noted afterwards
+does not.
+
+The first two Test C libraries to finish give the first out-of-sample test of the proxy calibration
+in `PREREG_testC_aesch_muttenz.md` §4. Predicted chrY reads are the compilation's `NRY` value times
+the fitted ratio 0.6514; observed are reads on `chrY` at `MAPQ >= 25` in the `.rmdup.bam`:
+
+| sample | `NRY` proxy | predicted chrY | observed chrY @ MQ25 | obs/pred |
+|---|---|---|---|---|
+| `Aesch12` | 20,241 | 13,185 | 12,082 | 0.92 |
+| `Aesch13` | 17 | 11 | 15,953 | **1441** |
+
+`Aesch12` validates the model — 8% under, well inside the Poisson interval that dominates every
+number in §4.
+
+`Aesch13` does not, and the failure is the *same defect* as `MX182`: a near-zero `NRY` against a
+library with real chrY data. `MX182` carries `NRY = 2` against 9,148 mapped chrY reads; `Aesch13`
+carries `NRY = 17` against 15,953 at `MAPQ >= 25`. The MAPQ filter removes only 3% of its chrY reads,
+so this is not multi-mapping junk inflating a count — it is a normal library that the proxy column
+reports as empty. Two instances in the only two cohorts where the column has been checked against
+mapped reads is not a stray typo; it is a column that cannot be trusted per-row.
+
+**§4 is not rewritten.** The power statement was fixed before staging and its numbers stand as what
+was predicted. What changes is only the interpretation: `expected_callable = 4.0 of 15` at `Z6219` is
+now known to be an *under*-estimate, because one candidate registered at essentially zero power has a
+chrY yield in the cohort's upper half. Re-fitting the proxy now and quoting the larger number as the
+registered power would be exactly the rule change after seeing its effect that
+`PROTOCOL_extending_analyses.md` prohibits.
+
+`PREREG_testC_aesch_muttenz.md` §7 check 4 required `Aesch13` to be reported and not quietly dropped,
+on the expectation that it would return no power. That rule was written to stop a null being hidden.
+It has instead retained one of the cohort's better libraries — which is the argument for the rule,
+not against it: the same discipline that forbids dropping an inconvenient sample forbids dropping a
+convenient one.
+
+Whether those reads land on the decisive positions is a separate question, and the genotyping answers
+it. chrY yield is necessary for power, not sufficient — ten of the 22 YFull `L166`-defining positions
+attracted zero reads across all 15 Oberbipp libraries, four of them despite being on the 1240k panel.

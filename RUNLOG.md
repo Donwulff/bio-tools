@@ -1069,3 +1069,59 @@ the only male–male first-degree pair the publication documents among the candi
 
 The PDF is not committed — it is a publisher artefact reachable from the URL above, and the two
 tables read from it are quoted where they are used.
+
+### Test C staging and mapping (2026-07-26) — first reads of this cohort
+
+Staged into the existing Swiss Late Neolithic directory rather than a new one: same study, same
+project accession, and `fetch_ena_runs.sh` merges into `manifest.tsv` rather than overwriting it, so
+the provenance of the 15 Oberbipp/Rapperswil runs already there is preserved. `manifest.tsv` now
+carries 30 rows.
+
+```bash
+annotate/fetch_ena_runs.sh PRJNA608699 /mnt/AncientDNA/SwissLN-2020 \
+  '^(Aesch1|Aesch4|Aesch6|Aesch7|Aesch12|Aesch13|Aesch14|Aesch17|Aesch19|Aesch20|Aesch21|Aesch22|Aesch23|SNPRA61|SNPRA62)$'
+```
+
+15 runs, 28,601,005 reads, 734.5 MB, all MD5-verified against the ENA-published sums
+(`failures=0`). One run per sample, so the multi-run grouping defect fixed in `map_se_batch.sh`
+(a sample sequenced across several runs having all but the first silently skipped) cannot apply to
+this cohort.
+
+```bash
+REF=$PWD/mapping/index/hg38p14DH3630O.fa \
+  mapping/map_se_batch.sh /mnt/AncientDNA/SwissLN-2020 8
+```
+
+The batch sees 30 samples and maps 15: the resume check skips every Oberbipp BAM already present,
+so those are not rebuilt and their calls are untouched. Same reference and same `bwa aln`/`samse`
+parameters as the Iceman and Swiss 15 BAMs, which is what makes the two cohorts comparable without
+a liftover.
+
+**Both commands were run detached (`setsid`) from a session runner rather than in the foreground.**
+The staging download and the sequential mapping pass together exceed any single tool invocation's
+timeout, and a fetch killed mid-file leaves a truncated FASTQ. That is recoverable — the MD5 resume
+check refetches it — but it is recoverable only because the check exists, and it did happen once
+here.
+
+**Instrument check during mapping, no genotype read.** chrY yield of the first two finished BAMs,
+against the registered prediction (`NRY` proxy times the fitted ratio 0.6514):
+
+```bash
+cd /mnt/AncientDNA/SwissLN-2020/bam
+for s in MX210 SX10 Aesch12 Aesch13; do
+  printf "%-8s " "$s"
+  echo "$(samtools view -c -q 25 "$s.rmdup.bam" chrY) chrY@MQ25 / $(samtools view -c "$s.rmdup.bam" chrY) all"
+done
+```
+
+| sample | proxy | predicted | observed @ MQ25 | all |
+|---|---|---|---|---|
+| `MX210` (fitted) | 38,316 | — | 30,629 | 31,737 |
+| `SX10` (fitted) | 16,319 | — | 10,663 | 10,929 |
+| `Aesch12` | 20,241 | 13,185 | 12,082 | 12,556 |
+| `Aesch13` | 17 | 11 | **15,953** | 16,493 |
+
+`Aesch12` is 8% under prediction, which validates the calibration out of sample. `Aesch13` is the
+`MX182` defect repeating: a near-zero `NRY` against a normal library. See `NOTES.md`. §4 of the
+pre-registration is **not** rewritten — the registered power stands as predicted, and is now known to
+be conservative.
