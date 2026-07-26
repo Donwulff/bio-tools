@@ -154,3 +154,47 @@ Test B has not been run in any form. The catalogue counts in §7 were obtained f
   unaffected either way: he is derived at `PF3239`, `Z6219` and `L166` alike.
 - Nothing about whether any lineage is extinct. Absence from modern trees is the neutral
   expectation for an arbitrary Neolithic patriline, not evidence of anything.
+
+---
+
+## Amendment 1 (2026-07-26): allele-aware mappability, registered before running
+
+**Prompted by two external signals**, reported by the user and treated here as data rather than as
+verified fact: **FTDNA does not carry `Z6219` at all**, and **YFull rates it 3 of 5**, among the
+least reliable in its set. The precise meaning of YFull's scale has not been verified here and is
+not relied on. What matters is that two independent curators have either excluded or down-rated this
+marker, which is a reason to look for an artifact this project has not yet tested for.
+
+**A limitation of the evidence in §2 is acknowledged.** The mappability sweep
+(`results/mappability/`) tiled reads cut **from the reference**, so every read carried the
+**ancestral** allele. `Z6219 frac_recovered = 1.000` therefore establishes only that an *ancestral*
+read returns. It says nothing about a read carrying the derived `T`, which has a lower alignment
+score against this locus and may score better against a paralogous one. §2's claim that "mappability
+is not a confound" is hereby narrowed to ancestral reads and must not be quoted more broadly.
+
+### F5 — allele asymmetry / paralogy (new falsifier)
+
+`annotate/y_mappability.py` will be extended with an `--allele` option that substitutes the derived
+base at the marker position before tiling, and run for both alleles at `Z6219` and, as controls, at
+`PF3239`, `L166` and `Z6287`.
+
+**F5 obtains if**, for `Z6219`, derived-allele reads recover materially worse than ancestral-allele
+reads, **or** if any derived-allele read maps to a locus other than `chrY:13782251`. Either shows a
+near-identical paralog capable of donating false derived reads, which is a complete alternative
+explanation for the Oberbipp observation and would falsify H1 as currently supported.
+
+**Threshold, fixed now:** a drop in `frac_recovered` of **> 0.10** between alleles at 45 bp, or
+**any** off-target placement of a derived-allele read at MAPQ >= 25, triggers F5. The same
+comparison at `PF3239`, `L166` and `Z6287` is the control: if all four markers show similar
+asymmetry, it is a general property of short-read alignment and not specific to `Z6219`.
+
+**Prediction if H1 survives:** `Z6219` behaves like the control markers, and the curators'
+reservations are explained by something other than paralogy at this position — for example depth or
+region annotation — which would then need naming rather than assuming.
+
+**What F5 does not cover.** A paralog that is *absent from the reference entirely* cannot be
+detected this way, since reads from it have nowhere correct to go. That failure mode remains
+untested and must be stated as a residual risk regardless of outcome.
+
+**Not yet read at time of writing:** any allele-substituted mappability result, and the per-sample
+depth profile around `chrY:13782251`.
