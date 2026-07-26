@@ -1219,3 +1219,124 @@ study is `PRJNA608699`. It would have failed loudly rather than fetched wrong da
 is affected, but it did not reproduce. Related: the earlier session queried
 `haplogroup.info/all-ancient-dna.txt` without keeping a copy, so the claims resting on it were not
 re-runnable; a dated copy is now kept at `/mnt/AncientDNA/all-ancient-dna.2026-07-26.txt`.
+
+---
+
+## The Unhedged `G-L166` Set: The Label Fails In Both Directions (2026-07-26)
+
+Pre-registered in `PREREG_unhedged_L166.md`, committed `e37b8ab` before any read was staged.
+Tables in `results/unhedged/`. Five individuals, three studies, three countries.
+
+**The set is six people, not seven.** `UNTA58_68Sk1` (Mittnik 2019) and `E09538` (Olalde 2018)
+share radiocarbon lab number **MAMS-29075** (3870±30 BP), mtDNA `J1c` and coordinates, and the
+Mittnik identifier decodes to the Olalde colloquial description — "Feature 68 Skeleton 1" is site
+UNTA58, feature 68, skeleton 1. One man, two aggregation IDs. `SX10` was already done, leaving
+five to stage.
+
+**The unhedged label does not verify, and the failures are deep, not marginal.**
+
+| sample | site | chrY DoC | `L166` | `L167` | `FGC5696` | verdict |
+|---|---|---|---|---|---|---|
+| `I14677` | Serra Crabiles, Sardinia | 0.2973x | **anc 11/11** | anc 5/5 | anc 5/5 | `H2_ancestral` |
+| `I14678` | Serra Crabiles, Sardinia | 0.3514x | **anc 8/8** | anc 5/5 | anc 5/5 | `H2_ancestral` |
+| `I15942` | Anghelu Ruju, Sardinia | 0.1013x | anc 2/2 | anc 1 (low power) | — | `H2_ancestral` |
+| `I5118` | Mezőcsát-Hörcsögös, HU | 0.1406x | **der 1** | — | **der 1** | `H1_derived` |
+| `UNTA58_68Sk1` | Augsburg, Bavaria | 0.0597x | — | — | — | `H0_no_power` |
+
+All calls at 0% MQ0 and `site_qc pass`. **42 ancestral reads across the three L166-defining
+transversions in the three Sardinians, zero derived.** These are transversions, so deamination
+cannot manufacture the ancestral allele. This is not a coverage floor: `I14677` carries 11 reads
+at `L166` itself, deeper than any Oberbipp sample managed anywhere.
+
+So the outcome is **H3, the split case registered in advance** — and the split does not run the
+way the hedged/unhedged distinction predicts. Two of three Sardinian individuals carry the
+*unhedged* label at depth sufficient to refute it outright.
+
+**Counting independent lineages, per the registered rule.** `I14677` and `I14678` are from the
+same tomb (Serra Crabiles, Tomb III Cella A, identical coordinates) and were registered in advance
+as **one** observation unless their reads showed otherwise. Their genotypes are identical at every
+informative marker, which is consistent with one patriline and does not distinguish it from two
+men of the same clade — so the rule stands and they count as one. That gives **two independent
+lineages falsifying the label** (`I14677`/`I14678`, `I15942`) against **one verifying it**
+(`I5118`), with one untestable.
+
+**`I5118` verifies, and it is the interesting one.** Hungary, 3300–3000 BCE, near-contemporary
+with the Iceman. Derived at **two** independent L166-defining transversions — `L166` and
+`FGC5696` — one read each, with no conflicting read, which is a `DERIVED_1read_transversion` call
+under the standing rules. Backbone `P15`, `PF3147`, `L91`, `PF3239`, `Z6043` all DERIVED with no
+ancestral read. It is the only sample here that is `L166`-derived, and it is the only
+non-Sardinian, non-Bell-Beaker individual in the set. **Its depth is 1 read per site.** The rule
+permitting that was fixed before any of this data existed and is not being revisited, but the call
+is a single molecule at each site and is reported as exactly that.
+
+**`UNTA58_68Sk1` is H0 and its library is not what the metadata says.** Zero reads at all nine
+L166-defining markers. It retains 14,652 of 15,092 chrY reads at MAPQ≥25 (97%), against 41–43% for
+the four capture libraries — the signature of shotgun rather than capture, corroborating the
+contradictory `Targeted-Capture`/`RANDOM` deposit annotation flagged in the prereg. Several of its
+sites are `MARGINAL_no_unique_reads`, i.e. what little is there is duplicate.
+
+**No `L166*` call is possible here, as registered.** `Z6494` is off-panel; only `Z6215` (a
+transition) carried reads. `I14678` is ancestral 2/2 there, so it is not `G-Z6494`, but the
+exclusion cannot be made to the standard applied to the Iceman.
+
+**No shared novel variant.** Nothing on the 8-site Iceman panel reaches an informative call in any
+sample. `I14678` has 2 mixed reads at `chrY:11414525`, which is inside the declared 11.1–11.7 Mb
+no-go window and flagged `MARGINAL_single_strand`; `I15942` has a `REJECT_mapq(100%_MQ0)` at
+`10964462`. Both are non-findings, as predicted.
+
+### The `Z6219` conflict now has an answer — reached post-hoc, and labelled as such
+
+`PREREG_swiss_neolithic_L166.md` Amendment 2 §C left two explanations for `Z6219` being derived in
+every Oberbipp male while `L166` was ancestral in the same men: **(i)** the catalogue mis-levels
+it and it sits at or above `PF3239`; **(ii)** it marks a real node between `PF3239` and `L166`.
+That test returned H0 exactly as its registered prior predicted.
+
+The Sardinians settle it:
+
+| | `PF3239` | `Z6219` | `L166` |
+|---|---|---|---|
+| `I14677` | **DERIVED 5/5** | **ancestral 4/4** | ancestral 11/11 |
+| `I14678` | **DERIVED 3/3** | **ancestral 2/2** | ancestral 8/8 |
+| Oberbipp (15 samples) | DERIVED | DERIVED 10/10 | ancestral 11/11 |
+| Iceman | DERIVED | DERIVED | DERIVED |
+
+An individual derived at `PF3239` and ancestral at `Z6219` places `Z6219` **below** `PF3239`,
+which **refutes (i)**. Oberbipp places it above `L166`. The consistent topology is
+`PF3239 → Z6219 → L166`, with the Sardinian branch splitting off before `Z6219` and the Oberbipp
+patriline between `Z6219` and `L166` — i.e. **explanation (ii), a real node**, and the Oberbipp
+men sit one node below their published `PF3239` call, closer to the Iceman than the publication
+states and still not `L166`.
+
+The direction of the damage argument favours this reading. `Z6219` is C>T, so deamination converts
+ancestral to derived; it **cannot** manufacture the ancestral `C` observed 4/4 and 2/2 here. The
+weaker link is `PF3239`, also C>T, where the derived call could in principle be damage — but both
+samples are independently `L91`-derived on transversions (6/6 and 10/10), so they are below `L91`
+regardless, and `PF3239` at 5/5 and 3/3 with 0% MQ0 is not a plausible damage artefact.
+
+**This inference was not pre-registered, and the prereg for this very dataset says these samples
+could not do it.** That claim was wrong, and it was wrong for an instructive reason: it assumed
+all five samples were genuinely `L166`-derived *because that is what their published labels say* —
+the very thing under test. The failure of the label is precisely what produced the outgroup I had
+argued did not exist. Registering a prediction on the basis of the labels, in a study whose
+purpose is to check the labels, is a small circularity worth naming.
+
+The registered admissibility gate (Amendment 2 §C) required an outgroup **ancestral** at `PF3239`,
+and discriminated in the opposite direction. The configuration actually observed — **derived** at
+`PF3239`, ancestral at `Z6219` — is equally valid logically but is not the rule that was written
+down. Per the standing caveat in that amendment, this is therefore **a hypothesis about tree
+topology, well supported but resting on one marker, and it requires a pre-registered confirmation
+before it is treated as settled.** It is not being written into `markers/L166_defining.txt` on the
+strength of a post-hoc reading.
+
+### What this does and does not change
+
+- The circulating "7 of 10 Oberbipp are `G-L166`" claim was already refuted by 21 ancestral reads
+  across four independent lineages. Nothing here weakens that.
+- The hedged/unhedged distinction in the compilation **does not carry the read-level meaning this
+  project inferred for it**. Unhedged `G2a2a1a2a1a` samples are ancestral at `L166` at depths of
+  8 and 11 reads. The inference is not merely unconfirmed, it is contradicted, and the
+  reading of the parenthetical convention in earlier notes should be treated as unsupported.
+- Genuine `G-L166` individuals other than the Iceman **do exist** — `I5118`, in Hungary, at
+  near-contemporary date — but on one read per site at two markers.
+- Nothing here speaks to where anyone came from. The geographic spread invites that reading and
+  the prereg refuses it in advance.
