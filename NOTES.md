@@ -2110,3 +2110,54 @@ Registered in advance as the notable outcome, so it is not a post-hoc finding. W
 a test of anything: one refuted marker out of 13 in one individual, and the direction of the
 inference (below rather than parallel) rests on parsimony, not on a sample that carries `Z6499`
 derived and `L166` ancestral. No such sample has been looked for.
+
+## E2: `CGG017683` cannot be placed relative to `Z6219` — H0, as registered (2026-07-26)
+
+Registered as E2 in `PREREG_Z6219_node.md` with the expected result stated in advance as H0 at
+~70–97% depending on the outcome asked for. That is what it returned.
+
+### The result
+
+3 of 20 testable positions covered, all single-read — against 17.5% expected at 0.192x, so **15.0%
+observed**, exactly on model.
+
+| marker | b37 pos | class | reads | call |
+|---|---|---|---|---|
+| `FGC5721` | Y:18,392,335 | T>G transversion | 1 derived | **`DERIVED_1read_transversion`** (a registered call) |
+| `Z6134` | Y:6,702,979 | C>T | 1 derived | `nocall_damage_prone_1read` |
+| `S19530` | Y:17,320,353 | T>C | 1 derived | `nocall_1read_transition` |
+
+**`Z6219`, `L166`, `L167` and `Z6499` are all uncovered.** Not thinly covered — **zero reads**, and
+that was checked with every filter switched off (`samtools view -c`, and `samtools depth -q 0 -Q 0`,
+both returning 0 at all four). This matters because the deposit ran `samtools calmd -Erb` without
+`-A`, so a BAQ-capped base quality could have produced empty pileups that merely looked like absent
+molecules. It did not: there are no molecules there to filter.
+
+**Verdict: H0.** The registered no-power criterion — fewer than 2 reads at `Z6219` *and* no
+registered transversion call at `L166`/`L167` — is met on both limbs. The one registered call,
+`FGC5721` derived, is uninformative for the question: the Iceman is derived at `FGC5721` too, so it
+sits on the shared path and orders nothing.
+
+**This sample cannot answer whether it is on the intermediate branch, and no additional work on
+public data will change that.** The limit is 54,685 chrY reads. The user's observation that YFull
+hangs it at `G-L166` but outside the resolved sub-branches stands unexplained and untestable here;
+"outside the sub-branches" at this depth is equally well explained by missing coverage at the
+defining SNPs, which is the same demotion-toward-the-parent artifact already noted for `ERS257168`.
+
+### Two things worth keeping
+
+**The `S19530` derived read reproduces independently.** The 2026-07-25 screen reported this sample
+derived at `S19530/Z6213` off a single read, via an ad-hoc hg38→hg19 route whose output was never
+committed. It is recovered here by a different chain — `annotate/y_lift_markers.py` against the
+UCSC chain file, then `y_sites_pileup.py` — landing on the same base. That is a positive control on
+the new lift path, obtained for free.
+
+**Two of the 22 positions do not exist in GRCh37.** `FT91632` (hg38 10,756,989) and `FT191098`
+(hg38 10,874,130) fall in no same-strand chain block and are reported `unmapped` rather than given a
+coordinate. This is the concrete form of the loss described under "Every Sample In This Project Came
+From A Mapped-Only Deposit": sequence that exists only in GRCh38 cannot be represented in a GRCh37
+deposit at all, so those positions are permanently untestable in this sample no matter how deep it
+were sequenced. Both were also `untested` in the Iceman on the MQ0 rule, for unrelated reasons.
+
+The other 20 lifted with the hs37d5 reference base matching the expected ancestral allele at
+**every one**, which is the check that would have caught a mis-lift.

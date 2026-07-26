@@ -32,6 +32,20 @@ The genuinely new tables are `*_yfull_L166_defining.tsv` (22 testable positions 
 | `iceman_E1_classification.tsv` | E1: the same table under the counting rule registered before the run |
 | `iceman_E1_read_evidence.txt` | E1: library damage profile, plus per-read evidence at `FGC5671` and `Z6499` |
 | `e1_mappability_{anc,der}.tsv` | E1: allele-aware recovery at `FGC5671` and `Z6499`, 35/45/60/100 bp |
+| `e2_cgg017683_lift_report.tsv` | E2: the 22 hg38 positions lifted to GRCh37, with target-reference-base check |
+| `e2_cgg017683_pileup.tsv` | E2: `CGG017683` genotyped at the 20 that lifted — result H0 |
+
+## Reading the E2 tables
+
+E2 returned **H0** and the tables are committed for that reason, not despite it. `CGG017683` has
+zero reads at `Z6219`, `L166`, `L167` and `Z6499`; the 3 covered positions are single-read. The
+depth limit is now a citable table rather than a recollection, and the sample is closed as not
+retestable with public data.
+
+`e2_cgg017683_lift_report.tsv` carries a `status` column. Only `ref_ok` rows were genotyped.
+`FT91632` and `FT191098` are `unmapped` — they fall in no same-strand GRCh37 chain block, because
+that sequence exists only in GRCh38. They are untestable in this deposit at any depth, which is a
+different thing from uncovered.
 
 ## Reading `iceman_E1_classification.tsv`
 

@@ -412,4 +412,9 @@ position to count. Base qualities are **not** compared against other samples: th
 `samtools calmd -Erb` without `-A`, so whether extended BAQ capped `QUAL` in place is unverified,
 and that check is not part of E2.
 
-**Status.** REGISTERED 2026-07-26.
+**Status.** RUN 2026-07-26. **H0, as predicted.** 3 of 20 lifted positions covered (15.0% vs 17.5%
+expected), all single-read. `Z6219`, `L166`, `L167` and `Z6499` returned **zero** reads, confirmed
+with all filters disabled so the BAQ caveat above is not the cause. The one registered call
+(`FGC5721` derived, 1-read transversion) is uninformative — the Iceman is derived there too. Both
+limbs of the no-power criterion met. Stage 2 not authorised and not run. `CGG017683` is closed as
+depth-limited and not retestable with public data.

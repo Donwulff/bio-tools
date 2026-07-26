@@ -861,3 +861,60 @@ awk -F'\t' '
 
 Result: `FGC5671` **DERIVED** 7/0 at 0% MQ0 — F3 does not obtain. Controls 9/9. Non-control
 block-confirmed 7, **block-refuted 1 (`Z6499`, ancestral 10/0)**, untested 5.
+
+## E2 — `CGG017683` (Crimea) at the YFull `L166` positions (2026-07-26)
+
+Registered in `PREREG_Z6219_node.md` §Extensions before running; result H0, findings in `NOTES.md`.
+Stage 1 only — a remote indexed fetch against the deposited GRCh37 BAM. Stage 2 (full re-map) was
+authorised only on >= 2 reads at a decisive position and is therefore **not** run.
+
+The deposited BAM's index is fetched once and kept outside the repository (it is 6.6 MB of binary
+and `.gitignore` excludes `*.bai`; it briefly sat in the repo root by accident and was moved):
+
+```bash
+SC=<scratchdir>/cgg017683
+curl -o $SC/CGG017683.bam.bai \
+  https://ftp.sra.ebi.ac.uk/vol1/run/ERR147/ERR14752008/CGG017683.bam.bai
+```
+
+Lift the hg38 marker set down to GRCh37. The two `FT*` markers land in no same-strand chain block
+and are excluded rather than given a coordinate; the remaining 20 are checked against the hs37d5
+reference base before they reach a pileup:
+
+```bash
+annotate/y_lift_markers.py \
+  --markers markers/yfull_L166_defining.txt \
+  --index resources/marker_index.tsv.gz \
+  --chain /mnt/GenomicData/OpenSNP/puller/hg38ToHg19.over.chain \
+  --target-ref /mnt/GenomicData/hs37d5/hs37d5.fa --target-chrom Y \
+  --sites-out $SC/sites_b37.tsv \
+  --report-out results/z6219_node/e2_cgg017683_lift_report.tsv
+# 22 markers: 20 lifted and ref-checked, 2 excluded (FT91632, FT191098: unmapped)
+```
+
+Fetch the chrY slice by remote index — 17 s, no bulk download — and genotype:
+
+```bash
+samtools view -b -X https://ftp.sra.ebi.ac.uk/vol1/run/ERR147/ERR14752008/CGG017683.bam \
+  $SC/CGG017683.bam.bai Y -o $SC/chrY.b37.bam
+samtools index $SC/chrY.b37.bam
+samtools idxstats $SC/chrY.b37.bam   # Y 59373566 54685 0
+
+annotate/y_sites_pileup.py --bam $SC/chrY.b37.bam --ref /mnt/GenomicData/hs37d5/hs37d5.fa \
+  --sites $SC/sites_b37.tsv --sample CGG017683 --min-mq 25 --min-bq 20 \
+  > results/z6219_node/e2_cgg017683_pileup.tsv
+```
+
+The zeros at the decisive positions are absence of molecules, not filtering. Checked with every
+filter off, because this deposit ran `samtools calmd -Erb` without `-A` and a BAQ-capped base
+quality would mimic no coverage:
+
+```bash
+for p in 15894131 23989884 23989903 15433259; do   # Z6219, L166, L167, Z6499 in b37
+  samtools view -c $SC/chrY.b37.bam Y:$p-$p; done   # 0 0 0 0
+samtools depth -a -q 0 -Q 0 -r Y:23989884-23989903 $SC/chrY.b37.bam   # 0
+```
+
+Result: 3 of 20 covered (15.0% vs 17.5% expected at 0.192x), all single-read. `FGC5721` derived
+(registered `DERIVED_1read_transversion`, but uninformative — the Iceman is derived there too),
+`Z6134` and `S19530` single-read nocalls. `Z6219`/`L166`/`L167`/`Z6499` zero reads. **H0.**
