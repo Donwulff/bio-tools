@@ -23,6 +23,16 @@
 #            (default: <marker_dir>/iceman_novel_candidates_usable8.tsv)
 #   PREFIX   output filename prefix (default: y)
 #   INDEX    marker coordinate index (default: resources/marker_index.tsv.gz)
+#   MINMQ    minimum MAPQ  (default 25, passed to both pileup tools)
+#   MINBQ    minimum BASEQ (default 20, passed to both pileup tools)
+#   MAXMQ0   pct_mq0 rejection threshold (default 30.0, via Y_MAX_PCT_MQ0)
+#
+# The filter parameters are injectable because a filtering criterion that turns
+# out to be wrong should be re-runnable in one command rather than requiring an
+# edit. MAPQ in particular is known to be allele-biased at some loci (NOTES,
+# 2026-07-26): a uniquely-mapped derived read can fall below 25 purely because a
+# suboptimal hit exists elsewhere. Every run writes <prefix>_params.txt so any
+# table in results/ can be traced to the exact thresholds that produced it.
 #
 # PREFIX exists because this prefix was once hardcoded to "swiss", which would
 # label Hungarian, Sardinian and Bavarian results as Swiss. The tables already
@@ -45,6 +55,10 @@ REF="${REF:?set REF to the reference the BAMs were mapped to}"
 SITES="${SITES:-${MARKERDIR}/iceman_novel_candidates_usable8.tsv}"
 PREFIX="${PREFIX:-y}"
 INDEX="${INDEX:-resources/marker_index.tsv.gz}"
+MINMQ="${MINMQ:-25}"
+MINBQ="${MINBQ:-20}"
+MAXMQ0="${MAXMQ0:-30.0}"
+export Y_MAX_PCT_MQ0="$MAXMQ0"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -95,6 +109,7 @@ for set_file in "${SETS[@]}"; do
     sample="$(basename "$bam" .rmdup.bam)"
     if ! "${HERE}/y_markers_pileup.py" --bam "$bam" --ref "$REF" \
            --marker-file "$set_file" --label "$set_name" \
+           --min-mq "$MINMQ" --min-bq "$MINBQ" \
            --out "${TMP}/one.tsv" >/dev/null 2>"${TMP}/err"; then
       echo "FAIL  ${sample} / ${set_name}: $(tail -1 "${TMP}/err")" >&2
       continue
@@ -115,7 +130,8 @@ if [ -s "$SITES" ]; then
   for bam in "${BAMS[@]}"; do
     sample="$(basename "$bam" .rmdup.bam)"
     if ! "${HERE}/y_sites_pileup.py" --bam "$bam" --ref "$REF" \
-           --sites "$SITES" --sample "$sample" > "${TMP}/one.tsv" 2>"${TMP}/err"; then
+           --sites "$SITES" --sample "$sample" \
+           --min-mq "$MINMQ" --min-bq "$MINBQ" > "${TMP}/one.tsv" 2>"${TMP}/err"; then
       echo "FAIL  ${sample} / novel sites: $(tail -1 "${TMP}/err")" >&2
       continue
     fi
@@ -141,4 +157,24 @@ COV="${OUTDIR}/${PREFIX}_coverage.tsv"
   done
 } > "$COV"
 echo "  ${COV}"
+
+# Provenance: a results table is only reproducible if it records what produced
+# it. Written last so it is absent if the run failed part-way.
+PAR="${OUTDIR}/${PREFIX}_params.txt"
+{
+  echo "generated=$(date -Is)"
+  echo "bam_dir=${BAMDIR}"
+  echo "marker_dir=${MARKERDIR}"
+  echo "ref=${REF}"
+  echo "sites=${SITES}"
+  echo "index=${INDEX}"
+  echo "min_mq=${MINMQ}"
+  echo "min_bq=${MINBQ}"
+  echo "max_pct_mq0=${MAXMQ0}"
+  echo "n_samples=${#BAMS[@]}"
+  echo "marker_sets=$(printf '%s ' "${SETS[@]##*/}")"
+  echo "git_commit=$(git -C "$HERE" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  echo "git_dirty=$(git -C "$HERE" status --porcelain 2>/dev/null | wc -l)"
+} > "$PAR"
+echo "  ${PAR}"
 echo "=== done ==="

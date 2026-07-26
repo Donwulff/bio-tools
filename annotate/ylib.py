@@ -12,6 +12,7 @@ on sys.path, so a plain `import ylib` works regardless of the caller's cwd.
 """
 from __future__ import annotations
 
+import os
 import subprocess
 
 DEAMINATION = {("C", "T"), ("G", "A")}
@@ -125,7 +126,11 @@ NOGO_REGIONS = [
     ("chrY", 56_690_000, 56_880_000, "56.69-56.88Mb_Yq_het/PAR2"),
 ]
 
-MAX_PCT_MQ0 = 30.0
+# Overridable so a dataset can be re-called under a different QC cut without
+# editing code -- but the value used is recorded by y_genotype_batch.sh into
+# <prefix>_params.txt, because a threshold that can change silently is worse
+# than one that cannot change at all.
+MAX_PCT_MQ0 = float(os.environ.get("Y_MAX_PCT_MQ0", "30.0"))
 
 
 def region_flag(chrom: str, pos: int) -> str:

@@ -246,3 +246,28 @@ derived man whose reads were filtered. Every `L166`/`Z6208` derived count in thi
 **lower bound**, and no `no_coverage` at those two sites may be read as evidence of anything.
 
 **Not yet read at time of writing:** the sub-threshold read content at `chrY:21843737` in any sample.
+
+## Amendment 3 (2026-07-26): corrections to §7 power and to the Amendment 1 premise
+
+**The `Z6219` rating was understated, not overstated.** Amendment 1 recorded YFull's 3/5 and I then
+noted that YFull's FAQ deems 2–5 stars "good quality" and uses all of them to build the YTree,
+treating the signal as unremarkable. That reply answered the absolute scale and missed the point
+actually being made: **`Z6219` ranks 26th of the 32 SNPs YFull uses to define `L166`**, ordered by
+reliability, in a set that includes two 1-star markers. Bottom-quartile within its own block is a
+meaningful position regardless of where 3 stars sits on the global scale. The reservation was real.
+
+It does not change the F5 outcome — `Z6219` is 1.000 at both alleles at 35, 45, 60, 100 and 150 bp,
+with zero MQ0 and zero off-target placements, in all references tested. Whatever YFull's rank
+reflects, this project has not reproduced it, and that gap is now itself unexplained rather than
+dismissed.
+
+**§7 Test B power is revised upward.** That section estimated ~20 distinct catalogued positions at
+the `G-L166` node, of which 9 are already tested, leaving ~11. **YFull defines `L166` with 32 SNPs**,
+so our catalogue under-represents the block and the co-segregation scan has more to work with than
+registered. Revised before the scan is run: the marker set for Test B should be sourced from YFull's
+`L166` definition rather than from `resources/marker_index.tsv.gz` alone, and the F3 threshold
+("no other marker co-segregates") must be evaluated over that larger set. Obtaining that list is a
+prerequisite to Test B and has not been done.
+
+No result from Test A, Test B or the F6 recheck influenced this amendment; F6 was the only one run
+at time of writing and it returned "does not obtain".
