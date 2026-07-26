@@ -1571,3 +1571,28 @@ This is a negative result and it was worth obtaining rather than assuming: had `
 earlier it would have been under a near-identical duplicate of itself, and the observed `0% MQ0` at
 that site would have been impossible. It also explains why the empirical `pct_mq0` figures are clean
 — there is no chrY fix-patch sequence anywhere near the sites this project calls.
+
+### Measured: what the alt/fix contigs actually take (2026-07-26)
+
+`bwa aln` never reads the `.alt` file, so alt and fix contigs compete for reads with no ALT-aware
+MAPQ correction. Whether that matters is an empirical question, and the answer is in our own BAMs.
+Read density on the chrY contig family (`samtools idxstats`, reads per kb):
+
+| contig | length | `I14677` | `I14678` | vs chrY primary |
+|---|---|---|---|---|
+| `chrY` (primary) | 57.2 Mb | 2.59 | 2.88 | — |
+| `chrY_KI270740v1_random` | 37 kb | 69.8 | 75.5 | **~27x** |
+| `chrY_KN196487v1_fix` | 101 kb | 15.3 | 16.4 | **~5.7x** |
+| `chrY_KZ208924v1_fix` | 210 kb | 2.89 | 3.31 | 1.12–1.15x |
+| `chrY_KZ208923v1_fix` | 48 kb | 1.63 | 1.47 | 0.55x |
+
+The pull-away is real but lands where it does no harm. The 27x contig is unplaced Yq satellite.
+The 5.7x contig aligns to chrY 56,821,509–56,887,903, which is **inside the already-declared no-go
+region** `56.69–56.88 Mb Yq_het/PAR2`. And `chrY_KZ208924v1_fix` — the only one whose blocks come
+near a marker (15 kb from `L166`) — takes reads at **background density**, i.e. it is carrying its
+own share rather than stealing.
+
+**A gap this exposes in our QC.** `ylib.mapq_audit()` reports `pct_mq0` and `n_mq_top` *at the site*.
+That detects ambiguous reads which **stayed**. It is structurally blind to reads that were **pulled
+away** to another contig, because those never appear in a chrY pileup at all. The table above is the
+missing measurement and it was typed at a prompt, not committed — it belongs in a tool.
