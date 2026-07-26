@@ -1536,3 +1536,38 @@ this sample's base qualities are compared with any other sample's**.
 The submitted BAMs for the Swiss, Sardinian, Hungarian and Bavarian runs are **not** distributed
 (`submitted_ftp` is empty despite `submitted_format=BAM`), so their filter chains cannot be read the
 same way. Their filters are therefore unknown, not assumed equal.
+
+## Reference Composition Audit: No Oral Decoy, And No Marker Under A chrY Fix Patch (2026-07-26)
+
+Prompted by the observation that decoy/alt handling in a reference is designed around ~100 bp reads,
+while ours average ~43 bp. Audited `mapping/index/hg38p14DH3630O.fa` (3.48 Gb) directly.
+
+**No oral decoy is present**, despite the trailing `O` in the build name. Of 26,552 non-`chr*`
+contigs, 26,355 are HLA allele sequences (126 Mb); there is no eHOMD content. `METHODS.md`'s
+recommendation — omit oral decoys for this dataset, since they produced sparse spiky hits after
+human-reference filtering — was in fact followed. Composition: 25 primary, 320 `_alt`, 2,349
+unplaced/random/decoy, 1 EBV, 26,355 HLA.
+
+**The real short-read risk in this build is the alt and fix contigs, not decoys.** `bwa aln` is not
+ALT-aware (recorded in `mapping/map_se_adna.sh`), so the `.alt` companion is never consulted and
+those contigs act as plain extra sequence competing for reads. Fix patches are the worst case: they
+are *corrections* to the primary and therefore near-identical to it, so a read from a patched region
+maps equally well to both and lands at MAPQ 0. At 43 bp there is less sequence to break the tie than
+the reference designers assumed.
+
+chrY carries three of them. `chrY_KZ208924v1_fix` (209,722 bp) aligns to chrY in **four** blocks —
+not, as its 9.1–21.8 Mb min-to-max span suggests, contiguously:
+
+    9,107,609  – ~9,112,000      (~4 kb)
+    21,578,942 – 21,739,558      (160.6 kb)
+    21,741,438 – 21,747,867      (6.4 kb)
+    21,805,281 – 21,828,660      (23.4 kb)
+
+**No marker in any of our three sets falls inside any block.** Nearest approach is `L166`/`L167` at
+**15,077 bp** past the end of the last block; every other marker is ≥396 kb away. `Z6219`, `PF3239`
+and `Z6494` sit in the large gap between blocks 1 and 2 and are 4.4–6.1 Mb clear.
+
+This is a negative result and it was worth obtaining rather than assuming: had `L166` sat 15 kb
+earlier it would have been under a near-identical duplicate of itself, and the observed `0% MQ0` at
+that site would have been impossible. It also explains why the empirical `pct_mq0` figures are clean
+— there is no chrY fix-patch sequence anywhere near the sites this project calls.
