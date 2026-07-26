@@ -1768,3 +1768,75 @@ now resolvable with information the rules do not look at.
 a substitute for having said in advance what would count. The pre-registration should now be written
 knowing this, and should state what would falsify `PF3239 → Z6219 → L166` rather than what would
 confirm it — the failure mode of the last one was assuming the labels it set out to test.
+
+## Allele-Specific Reference Bias: An aDNA-Only Artifact Invisible To Modern Curators (2026-07-26)
+
+Prompted by the observation that FTDNA omits `Z6219` and YFull rates it 3/5. That turned out to be
+a false lead — YFull's own FAQ states that **2–5 stars are all "good quality" and all used to build
+the YTree**, only 1 star being low — so 3 stars is unremarkable, and `Z6219` is clean under every
+test below. The investigation it prompted found a real problem elsewhere.
+
+**A limitation of `results/mappability/` is corrected here.** That sweep tiled reads cut from the
+reference, so every read carried the **ancestral** allele. It measured ancestral-read recovery only.
+`annotate/y_mappability.py --allele der` substitutes the derived base before tiling.
+
+**Derived vs ancestral recovery, `noalt` reference, by read length:**
+
+| marker | 45 bp | 100 bp | 150 bp |
+|---|---|---|---|
+| `Z6219` | +0.000 | +0.000 | +0.000 |
+| `L166` | **−0.800** | +0.000 | +0.000 |
+| `L167` | **−0.778** | +0.000 | +0.000 |
+| `Z6208` | **−0.889** | −0.320 | +0.000 |
+
+At 45 bp a derived read at `L166` is recovered 15.6% of the time against 95.6% for an ancestral
+read. Identical in `working`, `noalt` and `hs37d5`, so it is not the custom reference.
+
+**Mechanism — it is our own threshold, not paralogy.** Single-read diagnostic:
+
+    L166_anc    MAPQ=37  XT=U X0=1 X1=0 NM=0   PASS
+    L166_der    MAPQ=23  XT=U X0=1 X1=1 NM=1   FILTERED
+    Z6208_der   MAPQ=20  XT=U X0=1 X1=2 NM=1   FILTERED
+    Z6219_der   MAPQ=37  XT=U X0=1 X1=0 NM=1   PASS
+
+Every alignment is **unique** — `XT:A:U`, `X0=1`. The derived reads are not ambiguous; they map to
+one place, the correct place. MAPQ falls only because a *suboptimal* hit exists elsewhere (`X1>=1`)
+and the read carries its single mismatch. `bwa aln`'s MAPQ conflates "uniquely placed" with "matches
+perfectly", and our `MAPQ >= 25` cut therefore discards uniquely-mapped derived reads while keeping
+every ancestral one. **The bias is allele-specific and its direction is toward calling ancestral.**
+
+**Why no modern resource can warn about this.** The effect vanishes by 100 bp for `L166`/`L167` and
+by 150 bp for `Z6208`. YFull's ratings are derived from 100–150 bp files and FTDNA's from Big Y; in
+that regime these markers are flawless. This is the **second** independent way modern reference
+resources fail to anticipate ancient data, alongside equivalence blocks that can only be split by a
+sample on an intermediate branch (see the `Z6219` node work). Ancient Y calls are routinely checked
+against trees built in a regime where the relevant failure modes do not occur.
+
+**F6 checked and does not obtain — the Oberbipp result survives.** The obvious danger was that the
+`L166` ancestral calls underpinning the refutation of the "7 of 10" claim were an artifact of
+filtered derived reads. Registered in `PREREG_Z6219_node.md` Amendment 2 before being run, then
+re-examined at `chrY:21843737` across all 15 Swiss BAMs **with no MAPQ floor**:
+
+    14 reads, 8 samples (MX182, MX183, MX187, MX204, MX210, MX211, MX212, MX213)
+    all base C (ancestral), all MAPQ 37, all NM=0, zero derived reads at any MAPQ
+
+Nothing was being filtered. The ancestral calls stand as recorded and are now better established,
+having survived a test designed to break them.
+
+**What must change in interpretation, regardless.** These are arithmetic consequences, not findings:
+
+- Every `L166` and `Z6208` **derived** count in this repository is a **lower bound**. `I5118`'s
+  single derived `L166` read implies of the order of six underlying molecules — the evidence there
+  is stronger than reported, not weaker.
+- **`no_coverage` at `L166` or `Z6208` may not be read as evidence of anything.** A genuinely
+  derived man is expected to show few or no reads at those sites. Several Oberbipp samples are
+  `no_coverage` at `L166` and must not be counted toward the ancestral tally, which they never were.
+- **Ancestral** calls are unaffected in principle: a derived molecule cannot produce an ancestral
+  read, so the filter cannot manufacture the ancestral direction.
+
+**The repair is identified and deliberately not applied.** Filtering on uniqueness (`XT:A:U` and
+`X0=1`) rather than raw MAPQ is allele-neutral and is very likely the correct fix. Adopting it now,
+having just discovered it changes specific results, is the post-hoc rescue this project's protocol
+exists to prevent. It is recorded as a proposal requiring its own pre-registration and a re-run of
+every affected dataset. Note also the tension named at the time: any such change — to the filter or
+to the reference — recovers real signal at the cost of comparability with every other analysis.
