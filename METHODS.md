@@ -336,6 +336,26 @@ Attribution:
   - https://doi.org/10.1101/2024.03.13.584607
 - Parsimonious ancestral/derived path interpretation is in the same spirit as PathPhynder usage in that workflow.
 
+### Optional external haplotypers
+
+The placement logic here is an independent implementation of the approach cited above; PathPhynder
+itself has never been run against these samples. Two external callers are available as cross-checks
+and are installed by `util/build_env.sh` only when `WITH_HAPLOTYPERS=1`:
+
+- **pathPhynder** (`ruidlpm/pathPhynder`, R) with **phynder** (`richarddurbin/phynder`, C). An
+  independent placement of the same BAMs, against its own reference tree. Its R dependencies
+  (`optparse`, `phytools`, `scales`, `ape`) are all packaged on Ubuntu; only phynder needs building,
+  against the static htslib the same script produces.
+- **Yleaf** (`genid/Yleaf`, Python, source only -- not on PyPI). Relevant because the
+  `haplogroup.info` "All Ancient DNA" compilation states Yleaf v2 as its caller, so this is the tool
+  whose output the disputed `G-L166*` labels derive from. **Use the v2 tag when comparing against
+  those labels.** The current release is v4.x, and on v4 any disagreement is equally well explained
+  by four major versions of tree updates -- which would defeat the purpose, since the question is
+  whether the automated caller or the hobbyist re-derivation layered on top introduced the error.
+
+Neither is invoked by any script under `annotate/` or `mapping/`. A tool earns unconditional install
+logic when a committed pipeline script calls it; until then it is recorded, not installed.
+
 Current result snapshot (Iceman):
 - Illumina branch supports `M201`, `L91`, `L166`, and `Z6208` as derived.
 - SOLiD branch remains conflict-heavy/inconclusive for terminal placement with current panel.

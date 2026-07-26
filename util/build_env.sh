@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Debian/Ubuntu only: package installs are `apt` with no distro detection.
+# Developed against Ubuntu 26.04 / gcc 15.2.
+#
+# WITH_HAPLOTYPERS=1 additionally installs the optional Y-haplogroup cross-check
+# tools at the end of this script. Off by default; see that section for why.
+
 set -e
 
 # Last one to work with old glibc in RHEL7
@@ -182,3 +188,57 @@ make
 sudo cp k8 /usr/local/bin
 cd ..
 cd ..
+
+# --- Optional: Y-haplogroup cross-check tools (WITH_HAPLOTYPERS=1) ---
+#
+# Off by default. Nothing under annotate/ or mapping/ invokes these yet, and the
+# rule is that a tool earns install logic when a committed pipeline script calls
+# it. Until then this section records how, without running.
+#
+# These are correctness cross-checks, not throughput tools, so they build with
+# stock flags rather than the -march=native -flto=8 set used above. Wall-clock is
+# irrelevant here and the aggressive flags are not worth the risk.
+if [ "${WITH_HAPLOTYPERS:-0}" = "1" ]; then
+
+# pathPhynder's R stack and Yleaf's aligner are all packaged; nothing to build
+sudo apt install -y r-base-core r-cran-optparse r-cran-phytools r-cran-scales \
+                    r-cran-ape minimap2 python3-pandas python3-numpy
+
+HAPLO_CFLAGS_SAVE=$CFLAGS
+HAPLO_LIBS_SAVE=$LIBS
+unset CFLAGS CPPFLAGS CXXFLAGS LDFLAGS LIBS AR RANLIB
+
+# Build phynder (the placement engine pathPhynder drives). Its Makefile expects a
+# static htslib at ../htslib, which the htslib build above leaves in place.
+cd htslib
+make lib-static htslib_static.mk
+cd ..
+git_clone_or_pull https://github.com/richarddurbin/phynder.git phynder
+cd phynder
+make
+sudo make install
+cd ..
+
+# pathPhynder is an R script with no build step -- it is invoked via Rscript
+git_clone_or_pull https://github.com/ruidlpm/pathPhynder.git pathPhynder
+echo "pathPhynder: run as 'Rscript $PWD/pathPhynder/pathPhynder.R'"
+
+# Yleaf is not on PyPI (404 for both casings); source install only.
+# NOTE: current release is v4.x, but the haplogroup.info compilation this project
+# checks its calls against used Yleaf v2. Check out the v2 tag before comparing
+# labels -- on v4, tree updates alone would explain any disagreement, so a v4 run
+# cannot isolate the automated caller from the hobbyist re-call layered on top.
+git_clone_or_pull https://github.com/genid/Yleaf.git Yleaf
+cd Yleaf
+pip install -e . --break-system-packages
+cd ..
+
+export CFLAGS="$HAPLO_CFLAGS_SAVE"
+export CPPFLAGS="$HAPLO_CFLAGS_SAVE"
+export CXXFLAGS="$HAPLO_CFLAGS_SAVE"
+export LDFLAGS="$HAPLO_CFLAGS_SAVE"
+export LIBS="$HAPLO_LIBS_SAVE"
+export AR="gcc-ar"
+export RANLIB="gcc-ranlib"
+
+fi
