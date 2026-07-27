@@ -36,7 +36,7 @@
 #
 # PREFIX exists because this prefix was once hardcoded to "swiss", which would
 # label Hungarian, Sardinian and Bavarian results as Swiss. The tables already
-# committed under results/swiss/ and results/swiss15/ were produced with that
+# committed under iceman-y/results/swiss/ and iceman-y/results/swiss15/ were produced with that
 # hardcoded value and are reproduced by passing PREFIX=swiss explicitly.
 #
 # Not every .txt in the marker directory is a marker set -- markers/ also holds

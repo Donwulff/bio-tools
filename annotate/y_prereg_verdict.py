@@ -2,7 +2,7 @@
 """Apply the registered H1/H2/H0 decision to per-sample genotype tables.
 
 Reads the tables written by annotate/y_genotype_batch.sh and emits one verdict
-row per sample, following PREREG_swiss_neolithic_L166.md. The point of doing
+row per sample, following iceman-y/prereg/swiss_neolithic_L166.md. The point of doing
 this in code is that the H0/H2 distinction survives contact with a results
 table:
 
@@ -15,7 +15,7 @@ blank rows and one lone ancestral read reads as "ancestral" unless something
 refuses to let it. This script refuses.
 
 Usage:
-  annotate/y_prereg_verdict.py --dir results/swiss [--coverage results/swiss/swiss_coverage.tsv]
+  annotate/y_prereg_verdict.py --dir iceman-y/results/swiss [--coverage iceman-y/results/swiss/swiss_coverage.tsv]
 """
 from __future__ import annotations
 

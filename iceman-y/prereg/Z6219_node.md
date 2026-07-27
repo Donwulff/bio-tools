@@ -1,7 +1,7 @@
 # Pre-registration: is `Z6219` a real node between `PF3239` and `L166`?
 
 Written 2026-07-26, **before** any of the tests below were run. Inherits by reference from
-`PREREG_swiss_neolithic_L166.md`: the per-SNP output rule, the MAPQ 30% rejection threshold, the
+`iceman-y/prereg/swiss_neolithic_L166.md`: the per-SNP output rule, the MAPQ 30% rejection threshold, the
 no-go regions, the coverage-denominator rule, the pooling prohibition, and the rule that a
 documented patriline counts as one observation. Where this document is silent, that one governs.
 
@@ -34,7 +34,7 @@ were correct — the very thing under test. The evidence to date, all post-hoc:
   `I14678` 3/3 and 2/2. An ancestral call at a C>T site is damage-robust by direction, since
   deamination cannot manufacture the ancestral `C`.
 - **Mappability is not a confound.** `Z6219` and `PF3239` both return `frac_recovered = 1.000` at
-  45 bp in all four references tested (`results/mappability/`), and all reads at both sites are
+  45 bp in all four references tested (`iceman-y/results/mappability/`), and all reads at both sites are
   0% MQ0.
 
 Strength of evidence is not a substitute for having said in advance what would count. Hence this
@@ -107,7 +107,7 @@ some ancestral. Uniformity in either direction is uninformative rather than conf
 ## 7. Data and power, fixed before looking
 
 **Test A — the F1 check.** `Z6219` is already in `markers/L166_defining.txt`, so its call for every
-sample in `results/unhedged/` and `results/swiss15/` **already exists in committed tables**. See the
+sample in `iceman-y/results/unhedged/` and `iceman-y/results/swiss15/` **already exists in committed tables**. See the
 declaration in §9.
 
 **Test B — co-segregation scan.** The catalogue holds **25 entries at `yfull_node = G-L166`**,
@@ -138,8 +138,8 @@ exercise requiring its own power statement, and nothing in this document authori
 
 ## 9. Peeking declaration
 
-The `Z6219` genotype for `I5118`, and for every other sample in `results/unhedged/`, is present in
-`results/unhedged/unhedged_L166_defining.tsv`, which is already committed. **I have not read those
+The `Z6219` genotype for `I5118`, and for every other sample in `iceman-y/results/unhedged/`, is present in
+`iceman-y/results/unhedged/unhedged_L166_defining.tsv`, which is already committed. **I have not read those
 values, and P1 is registered above without knowledge of them.** The Oberbipp and Sardinian `Z6219`
 values *have* been read and are quoted in §2; they are the post-hoc observation that motivated this
 document and are not evidence for it.
@@ -166,7 +166,7 @@ not relied on. What matters is that two independent curators have either exclude
 marker, which is a reason to look for an artifact this project has not yet tested for.
 
 **A limitation of the evidence in §2 is acknowledged.** The mappability sweep
-(`results/mappability/`) tiled reads cut **from the reference**, so every read carried the
+(`iceman-y/results/mappability/`) tiled reads cut **from the reference**, so every read carried the
 **ancestral** allele. `Z6219 frac_recovered = 1.000` therefore establishes only that an *ancestral*
 read returns. It says nothing about a read carrying the derived `T`, which has a lower alignment
 score against this locus and may score better against a paralogous one. §2's claim that "mappability
@@ -276,15 +276,15 @@ at time of writing and it returned "does not obtain".
 
 ## Extensions
 
-Registered under `PROTOCOL_extending_analyses.md`. Each is a test of a hypothesis already stated
+Registered under `iceman-y/PROTOCOL_extending_analyses.md`. Each is a test of a hypothesis already stated
 above, using the five-line form; the rules of §8 govern all of them unchanged.
 
 ### E1 — Is `FGC5671` derived in the Iceman? [2026-07-26]
 
 **Prior state.** I have read every `FGC5671` value this project has produced: the 15 Swiss samples
-in `results/testB/swiss_yfull_L166_defining.tsv` (`MX210` DERIVED 2 derived / 0 ancestral; `MX213`,
+in `iceman-y/results/testB/swiss_yfull_L166_defining.tsv` (`MX210` DERIVED 2 derived / 0 ancestral; `MX213`,
 `SX10`, `MX209` each `nocall_damage_prone_1read`, derived direction; the remaining 11 `no_coverage`),
-both Sardinians in `results/testB_unhedged/` (`I14677` 1 ancestral, `I14678` 3 ancestral), the Test B
+both Sardinians in `iceman-y/results/testB_unhedged/` (`I14677` 1 ancestral, `I14678` 3 ancestral), the Test B
 verdict `splits_with_Z6219`, the allele-aware mappability (1.000 at both alleles at 35/45/60 bp,
 zero MQ0), and the read-terminus and damage-profile forensics at the site. I have **not** looked at
 any Iceman read, pileup, call or coverage figure at `chrY:7,784,648`. The marker is absent from
@@ -343,7 +343,7 @@ not I intend to. Their meaning is therefore fixed here, before the run:
 positions of a library that deaminates at 0.02% there. **F3 does not obtain.** Controls 9/9.
 Secondary scan: block-confirmed 7, **block-refuted 1 (`Z6499`, ancestral 10/0)**, untested 5 — the
 `block-refuted > 0` outcome flagged above as the interesting one did occur. Results in `NOTES.md`,
-commands in `RUNLOG.md`, tables in `results/z6219_node/iceman_E1_*`.
+commands in `RUNLOG.md`, tables in `iceman-y/results/z6219_node/iceman_E1_*`.
 
 ### E2 — Where does `CGG017683` (Crimea) sit relative to `Z6219` and `L166`? [2026-07-26]
 
@@ -356,7 +356,7 @@ single-read**, derived at `S19530/Z6213` and at `Z6504` (the latter treated as d
 of the Iceman's novel candidate sites and is **ancestral at all three**; `CGG017682` from the same
 site is R1a and was used as a method positive control. The 11 covered markers were never enumerated
 in a committed table — the only per-site `CGG017683` data in the repository is the
-`CGG017683_b37` column of `results/iceman_y_novel_branch_candidates.tsv`, which holds Iceman-private
+`CGG017683_b37` column of `iceman-y/results/iceman_y_novel_branch_candidates.tsv`, which holds Iceman-private
 positions only. **I have not read this sample's state at `Z6219`, `L166`, `L167` or `Z6499`**, and
 no committed table contains any of them; checked by grep before writing this.
 

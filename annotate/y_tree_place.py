@@ -19,8 +19,8 @@ read counts, only at calls, so it cannot quietly relax that rule.
 
 Example:
   python3 annotate/y_tree_place.py \\
-      --pileup results/testC/testC_*.tsv \\
-      --out results/testC/testC_placement.tsv
+      --pileup iceman-y/results/testC/testC_*.tsv \\
+      --out iceman-y/results/testC/testC_placement.tsv
 """
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def read_pileup(path: Path, scorers: Dict[str, ytree.TreeScorer],
         idx = {name: i for i, name in enumerate(h.strip() for h in header)}
         missing = [c for c in REQUIRED if c not in idx]
         if missing:
-            # Skip rather than abort: `--pileup results/testC/testC_*.tsv` is the
+            # Skip rather than abort: `--pileup iceman-y/results/testC/testC_*.tsv` is the
             # natural invocation and those directories also hold coverage,
             # verdict and params tables. Reported so a renamed column in a real
             # pileup cannot vanish quietly.

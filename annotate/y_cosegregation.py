@@ -43,9 +43,9 @@ members are excluded by naming the pool rather than the men.
 Usage
 -----
     annotate/y_cosegregation.py \\
-        --calls results/testB/swiss_yfull_L166_defining.tsv \\
-        --calls results/testB/swiss_yfull_pooled.tsv \\
-        --calls results/testB_unhedged/unhedged_yfull_L166_defining.tsv \\
+        --calls iceman-y/results/testB/swiss_yfull_L166_defining.tsv \\
+        --calls iceman-y/results/testB/swiss_yfull_pooled.tsv \\
+        --calls iceman-y/results/testB_unhedged/unhedged_yfull_L166_defining.tsv \\
         --upstream MX210,MX213,SX10,FamilyA \\
         --outgroup I14677,I14678 \\
         --ref-marker Z6219 \\

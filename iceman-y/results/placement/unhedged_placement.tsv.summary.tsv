@@ -1,0 +1,6 @@
+sample	terminal	terminal_status	def_derived	def_derived_transversion	caveats	excluded	conflicts	unpublished_on_path	path
+I14677	G-PF3239	published	1	0	single_marker	G-Z6219,G-L166	-	-	G-P287(D) > G-P15(N) > G-M3308(D) > G-PF3147(N) > G-PF3148(N) > G-PF3177(N) > G-L91(D) > G-Z6488(N) > G-PF3239(D)
+I14678	G-PF3239	published	1	0	single_marker	G-Z6219,G-L166,G-Z6494	-	-	G-P287(D) > G-P15(D) > G-M3308(D) > G-PF3147(D) > G-PF3148(N) > G-PF3177(N) > G-L91(D) > G-Z6488(N) > G-PF3239(D)
+I15942	G-L91	published	1	1	single_marker	G-Z6219,G-L166	-	-	G-P287(D) > G-P15(N) > G-M3308(N) > G-PF3147(N) > G-PF3148(N) > G-PF3177(D) > G-L91(D)
+I5118	G-L166	published	1	1	single_marker	-	-	G-Z6219	G-P287(N) > G-P15(D) > G-M3308(D) > G-PF3147(D) > G-PF3148(N) > G-PF3177(N) > G-L91(D) > G-Z6488(N) > G-PF3239(D) > G-Z6219*(N) > G-L166(D)
+UNTA58_68Sk1	-	-	0	0	-	-	-	-	-

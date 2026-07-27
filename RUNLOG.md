@@ -188,8 +188,8 @@ Observed Iceman A/B results:
   - notable confidence shift at `Z6208`: `GQ 39 -> 19`, `QUAL 38.5 -> 18.9`.
 
 Saved result artifacts:
-- `results/iceman_smallmodel_compare.summary.tsv`
-- `results/iceman_smallmodel_compare.y_markers.tsv`
+- `iceman-y/results/iceman_smallmodel_compare.summary.tsv`
+- `iceman-y/results/iceman_smallmodel_compare.y_markers.tsv`
 
 ## Y Haplogroup Comparison Run
 ### Input branches compared
@@ -341,8 +341,8 @@ all three of its defining SNPs. The published `G2a2a1a2a1a1b (G-Z6208*)` label f
 provisional (`~`) placement of `Z6208`, which the read data contradicts. See NOTES.md.
 
 Saved artifacts:
-- `results/iceman_y_L166_evidence.tsv`
-- `results/iceman_y_deep_G_subtree.tsv`
+- `iceman-y/results/iceman_y_L166_evidence.tsv`
+- `iceman-y/results/iceman_y_deep_G_subtree.tsv`
 
 ## FTDNA Block Tree Walk (2026-07-25)
 
@@ -387,15 +387,15 @@ annotate/y_haplo_from_markers.py -i iceman.chrY.vcf.gz --markers resources/snps_
 ```
 
 Saved artifacts:
-- `results/iceman_y_ftdna_block_evidence.tsv`
-- `results/iceman_y_unlabelled_derived_markers.tsv`
+- `iceman-y/results/iceman_y_ftdna_block_evidence.tsv`
+- `iceman-y/results/iceman_y_unlabelled_derived_markers.tsv`
 
 Still upstream of `L166` (`PF3239` = `G2a2a1a2a1`, `L166` = `G2a2a1a2a1a`). Open: what `G-L166` splits
 into on FTDNA's tree.
 
 ## Swiss Neolithic L166 Test (2026-07-25)
 
-Pre-registered in `PREREG_swiss_neolithic_L166.md` before any read of this dataset was examined.
+Pre-registered in `iceman-y/prereg/swiss_neolithic_L166.md` before any read of this dataset was examined.
 Tests whether the Oberbipp/Rapperswil Horgen-context males published as terminal `PF3239` are in
 fact derived at `L166` — i.e. whether the "7 of 10 are Ötzi's clade" claim circulating online is
 a real result or an aggregator relabelling one node too deep.
@@ -420,9 +420,9 @@ annotate/fetch_ena_runs.sh PRJNA608699 /mnt/AncientDNA/SwissLN-2020 \
 BAM=<analysis_dir>/dedup_out50/iceman.oetzi.UDG_merge_combined.mapped_rmdup.pair.prim_rmdup.sort_rmdup.coord.bam
 annotate/y_sites_pileup.py --bam "$BAM" --ref mapping/index/hg38p14DH3630O.fa \
   --sites markers/iceman_novel_candidates_all21.tsv --sample Iceman \
-  > results/iceman_y_novel_candidates_regen.tsv
+  > iceman-y/results/iceman_y_novel_candidates_regen.tsv
 ```
-Reproduces `results/iceman_y_novel_branch_candidates.tsv` at **21/21 verdicts**, REJECT/MARGINAL
+Reproduces `iceman-y/results/iceman_y_novel_branch_candidates.tsv` at **21/21 verdicts**, REJECT/MARGINAL
 classification included. Five cells differed; all five were errors in the older hand-built table
 and have been corrected in it. See `NOTES.md` for the specifics. The prereg commits to this gate
 being blocking: a failure to reproduce would have been the finding, and nothing downstream would
@@ -440,7 +440,7 @@ REF=$PWD/mapping/index/hg38p14DH3630O.fa \
 Genotyping, once BAMs exist (marker sets committed under `markers/`):
 ```bash
 REF=$PWD/mapping/index/hg38p14DH3630O.fa \
-  annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam results/swiss
+  annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam iceman-y/results/swiss
 ```
 Runs every marker set and the novel-site list across every BAM, adding the sample column neither
 pileup tool emits on its own, and collates `swiss_coverage.tsv` with chrY DoC on the 12.57 Mb
@@ -465,7 +465,7 @@ sample's calls can be read against a chain that is known to work rather than one
 
 Verdict:
 ```bash
-annotate/y_prereg_verdict.py --dir results/swiss
+annotate/y_prereg_verdict.py --dir iceman-y/results/swiss
 ```
 Applies the registered H1/H2/H0 rule per sample. Non-informative calls cannot produce H2 — only
 ≥2 ancestral reads at a site can — so an uncovered sample lands on H0 by construction rather than
@@ -479,7 +479,7 @@ moves. This is the reason the validation gate is run against a known answer befo
 
 ### Extension to 15 samples (2026-07-26) — `Z6219` localisation and Family A pooling
 
-Registered first, in `PREREG_swiss_neolithic_L166.md` **Amendment 2**, sections C–E, written and
+Registered first, in `iceman-y/prereg/swiss_neolithic_L166.md` **Amendment 2**, sections C–E, written and
 committed before any of the added BAMs existed.
 
 Staging (6 runs, 132 MB, MD5-verified):
@@ -519,7 +519,7 @@ REF=$PWD/mapping/index/hg38p14DH3630O.fa \
 
 ### Unhedged `G-L166` set (2026-07-26)
 
-Pre-registered in `PREREG_unhedged_L166.md`, committed `e37b8ab` **before any read was staged**.
+Pre-registered in `iceman-y/prereg/unhedged_L166.md`, committed `e37b8ab` **before any read was staged**.
 Five individuals from three unrelated studies, all carrying the *unhedged* ISOGG longhand
 `G2a2a1a2a1a` with bare `G-L166` in the YFull and Y-Haplotree columns.
 
@@ -527,18 +527,18 @@ The compilation returns seven such rows; two of them are one man. `UNTA58_68Sk1`
 (MittnikScience2019) and `E09538` (OlaldeNature2018) share radiocarbon lab number **MAMS-29075**
 (3870±30 BP), mtDNA `J1c` and coordinates, and the Mittnik ID decodes to the Olalde colloquial
 description ("Feature 68 Skeleton 1" = site UNTA58, feature 68, skeleton 1). `SX10` is the
-seventh and was already genotyped in `results/swiss15/`. **Any tally over that list is one high
+seventh and was already genotyped in `iceman-y/results/swiss15/`. **Any tally over that list is one high
 unless the duplicate is collapsed.**
 
 Panel membership was settled before staging, from the panel definition rather than from the data
-(`results/panel/1240k_marker_membership.tsv`):
+(`iceman-y/results/panel/1240k_marker_membership.tsv`):
 
 ```bash
 annotate/panel_membership.py \
   --panel /mnt/MyGenome/Genos/FuQ/51.2.2M.snp \
   --markers markers/L166_defining.txt markers/Z6494_exclusion.txt markers/backbone_control.txt \
   --chain /mnt/GenomicData/OpenSNP/puller/hg38ToHg19.over.chain \
-  --out results/panel/1240k_marker_membership.tsv
+  --out iceman-y/results/panel/1240k_marker_membership.tsv
 ```
 
 18 of 22 markers on-panel. `L166`, `L167`, `Z6219` and `PF3239` are deliberate targets; `Z6494`,
@@ -607,9 +607,9 @@ MAPQ at the site and is therefore blind to reads that left for another contig.
       --target chm13=mapping/index/chm13v2.0_maskedY_rCRSDH3630O.fa \
       --target hs37d5=/mnt/GenomicData/hs37d5/bwa/hs37d5.fa \
       --read-lengths 35,45,60,90 --threads 4 \
-      --out results/mappability/y_marker_mappability.tsv
+      --out iceman-y/results/mappability/y_marker_mappability.tsv
 
-Output: `results/mappability/y_marker_mappability.tsv` (352 rows), `run.log`. Runtime ~25 min under
+Output: `iceman-y/results/mappability/y_marker_mappability.tsv` (352 rows), `run.log`. Runtime ~25 min under
 load average ~10; four index loads, one per reference.
 
 Reference notes recorded at the time:
@@ -680,7 +680,7 @@ build a 45 bp read centred on each marker, substitute the derived base, then
 
     REF=mapping/index/hg38p14DH3630O.fa PREFIX=swiss \
       annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam <outdir> markers
-    diff results/swiss15/swiss_*.tsv <outdir>/swiss_*.tsv    # all 5 IDENTICAL, 2026-07-26
+    diff iceman-y/results/swiss15/swiss_*.tsv <outdir>/swiss_*.tsv    # all 5 IDENTICAL, 2026-07-26
 
 ### Not done, and explicitly outstanding
 
@@ -692,21 +692,21 @@ build a 45 bp read centred on each marker, substitute the derived base, then
 - ~~**Test A (F1 check) — not run.**~~ **Run 2026-07-26; F1 does not obtain.**
 - ~~**Test B (co-segregation scan) — not run.**~~ **Run 2026-07-26; F3 does not obtain**, on one
   marker (`FGC5671`), whose status as a shared branch marker was settled by E1.
-- ~~**The registered outcome of `PREREG_Z6219_node.md` has never been recorded.**~~ **Recorded
+- ~~**The registered outcome of `iceman-y/prereg/Z6219_node.md` has never been recorded.**~~ **Recorded
   2026-07-26 as `H1 supported`**; see §Registered outcome in that document.
 - **`Z6219`'s YFull rank (26/32) is not reproduced** by anything measured here: it is 1.000 at both
   alleles at 35/45/60/100/150 bp with zero MQ0 and zero off-target in every reference tested, and
   E3 confirmed this holds under a uniqueness criterion as well.
 - ~~**Uniqueness-based filtering is a proposal, not applied.**~~ **Tested and rejected 2026-07-26**
-  (`PREREG_uniqueness_filter.md`): it fails U1 and U2. `MAPQ >= 25` stands and the lower-bound
+  (`iceman-y/prereg/uniqueness_filter.md`): it fails U1 and U2. `MAPQ >= 25` stands and the lower-bound
   caveat on every `L166`/`Z6208` derived count is now permanent.
 - **F2 is untested, not passed.** `MX210`, `MX213` and `SX10` have no `PF3239` coverage. Closing it
   requires either deeper data at `PF3239` in those three or an explicit statement that it cannot be
   closed with the libraries in hand.
 - ~~**Test C (21 hedged Aesch/Muttenz individuals) — not run**, and out of scope until it has its
-  own power statement.~~ **Power statement written 2026-07-26**, `PREREG_testC_aesch_muttenz.md`.
+  own power statement.~~ **Power statement written 2026-07-26**, `iceman-y/prereg/testC_aesch_muttenz.md`.
   The cohort is **15 individuals, not 21** — the other 6 hedged `G-L166*` are the Oberbipp men
-  already in `results/swiss15/`. **No read has been staged.** Registered expectation: ~4.0 callable
+  already in `iceman-y/results/swiss15/`. **No read has been staged.** Registered expectation: ~4.0 callable
   at `Z6219`, ~2.1 callable at both `Z6219` and `L166`, split power 0.79 at best and 0.23 at the
   lower bound of the marker-rate interval. Still the only registered test bearing on the
   single-site limitation of the current verdict.
@@ -716,16 +716,16 @@ build a 45 bp read centred on each marker, substitute the derived base, then
 - **Test C's cohort is not the set P3 named.** P3 says "published-`PF3239` males"; the registered
   cohort is defined by the compilation's re-derived `G-L166*` label. Furtwängler 2020 Supplementary
   Table 1 has **not** been re-read for Aesch, so the overlap is unknown. Listed as a required
-  pre-staging check in `PREREG_testC_aesch_muttenz.md` §7.
+  pre-staging check in `iceman-y/prereg/testC_aesch_muttenz.md` §7.
 
-## Tests A and B of `PREREG_Z6219_node.md` (2026-07-26)
+## Tests A and B of `iceman-y/prereg/Z6219_node.md` (2026-07-26)
 
 **Test A — F1 check.** A read of already-committed tables plus the §8 read-terminus evidence.
 
-    awk -F'\t' 'NR==1 || $3=="Z6219" || $3=="L166"' results/unhedged/unhedged_L166_defining.tsv
-    awk -F'\t' 'NR==1 || $3=="Z6219" || $3=="L166"' results/swiss15/swiss_L166_defining.tsv
+    awk -F'\t' 'NR==1 || $3=="Z6219" || $3=="L166"' iceman-y/results/unhedged/unhedged_L166_defining.tsv
+    awk -F'\t' 'NR==1 || $3=="Z6219" || $3=="L166"' iceman-y/results/swiss15/swiss_L166_defining.tsv
 
-Evidence file `results/z6219_node/I5118_read_evidence.txt` regenerated by:
+Evidence file `iceman-y/results/z6219_node/I5118_read_evidence.txt` regenerated by:
 
     REF=mapping/index/hg38p14DH3630O.fa
     BAM=/mnt/AncientDNA/Unhedged-2026/bam/I5118.rmdup.bam
@@ -737,21 +737,21 @@ Evidence file `results/z6219_node/I5118_read_evidence.txt` regenerated by:
 the committed batch script picks it up with no new arguments:
 
     REF=$PWD/mapping/index/hg38p14DH3630O.fa PREFIX=swiss \
-      annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam results/testB markers
+      annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam iceman-y/results/testB markers
     REF=$PWD/mapping/index/hg38p14DH3630O.fa PREFIX=unhedged \
-      annotate/y_genotype_batch.sh /mnt/AncientDNA/Unhedged-2026/bam results/testB_unhedged markers
+      annotate/y_genotype_batch.sh /mnt/AncientDNA/Unhedged-2026/bam iceman-y/results/testB_unhedged markers
 
-    annotate/y_pool_family.py --genotypes results/testB/swiss_yfull_L166_defining.tsv \
+    annotate/y_pool_family.py --genotypes iceman-y/results/testB/swiss_yfull_L166_defining.tsv \
       --members markers/family_a_members.txt --pool-name FamilyA \
-      > results/testB/swiss_yfull_pooled.tsv
+      > iceman-y/results/testB/swiss_yfull_pooled.tsv
 
     annotate/y_cosegregation.py \
-      --calls results/testB/swiss_yfull_L166_defining.tsv \
-      --calls results/testB/swiss_yfull_pooled.tsv \
-      --calls results/testB_unhedged/unhedged_yfull_L166_defining.tsv \
+      --calls iceman-y/results/testB/swiss_yfull_L166_defining.tsv \
+      --calls iceman-y/results/testB/swiss_yfull_pooled.tsv \
+      --calls iceman-y/results/testB_unhedged/unhedged_yfull_L166_defining.tsv \
       --upstream MX210,MX213,SX10,FamilyA --outgroup I14677,I14678 \
       --ref-marker Z6219 --markers markers/yfull_L166_defining.txt \
-      --also I5118,I15942 --out results/z6219_node/cosegregation_yfull32.tsv
+      --also I5118,I15942 --out iceman-y/results/z6219_node/cosegregation_yfull32.tsv
 
 Result: `splits_with_Z6219=2` (`Z6219`, `FGC5671`), `stays_with_block=3`, `uninformative=17`.
 
@@ -777,16 +777,16 @@ Result: `splits_with_Z6219=2` (`Z6219`, `FGC5671`), `stays_with_block=3`, `uninf
 
 **F2 backbone check:**
 
-    annotate/y_pool_family.py --genotypes results/testB/swiss_backbone_control.tsv \
+    annotate/y_pool_family.py --genotypes iceman-y/results/testB/swiss_backbone_control.tsv \
       --members markers/family_a_members.txt --pool-name FamilyA \
-      > results/z6219_node/familyA_backbone_pooled.tsv
+      > iceman-y/results/z6219_node/familyA_backbone_pooled.tsv
 
 **Reproducibility regression, both cohorts.** The Test B batch regenerated every previously
 committed table; all ten are byte-identical:
 
     for f in L166_defining Z6494_exclusion backbone_control coverage novel_sites; do
-      diff -q results/swiss15/swiss_$f.tsv     results/testB/swiss_$f.tsv
-      diff -q results/unhedged/unhedged_$f.tsv results/testB_unhedged/unhedged_$f.tsv
+      diff -q iceman-y/results/swiss15/swiss_$f.tsv     iceman-y/results/testB/swiss_$f.tsv
+      diff -q iceman-y/results/unhedged/unhedged_$f.tsv iceman-y/results/testB_unhedged/unhedged_$f.tsv
     done
 
 ### Still outstanding after Tests A and B
@@ -813,13 +813,13 @@ reaped with its parent shell. Detached properly it takes 199 s.
       --target wholegenome=mapping/index/GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna \
       --target chrYonly=$SC/chrYonly.fa \
       --read-lengths 45 --threads 4 \
-      --out results/mappability/chrYonly_emulation.tsv
+      --out iceman-y/results/mappability/chrYonly_emulation.tsv
 
-Result table committed as `results/mappability/chrYonly_emulation.tsv`.
+Result table committed as `iceman-y/results/mappability/chrYonly_emulation.tsv`.
 
 ## E1 — `FGC5671` in the Iceman (2026-07-26)
 
-Registered in `PREREG_Z6219_node.md` §Extensions before running; findings in `NOTES.md`.
+Registered in `iceman-y/prereg/Z6219_node.md` §Extensions before running; findings in `NOTES.md`.
 One BAM only, fixed in the registration:
 
 ```bash
@@ -828,7 +828,7 @@ REF=mapping/index/hg38p14DH3630O.fa
 
 annotate/y_markers_pileup.py --bam "$BAM" --ref "$REF" \
   --marker-file markers/yfull_L166_defining.txt --label Iceman \
-  --out results/z6219_node/iceman_yfull_L166_defining.tsv
+  --out iceman-y/results/z6219_node/iceman_yfull_L166_defining.tsv
 ```
 
 Read-level and library evidence, required by §8 at any decisive C>T/G>A site. Note that
@@ -839,7 +839,7 @@ two are separate invocations:
 annotate/y_read_evidence.py --bam "$BAM" --ref "$REF" --damage-profile --region chrY --max-reads 200000
 annotate/y_read_evidence.py --bam "$BAM" --ref "$REF" --site chrY:7784648  --anc G --der A
 annotate/y_read_evidence.py --bam "$BAM" --ref "$REF" --site chrY:13321379 --anc C --der T
-# > results/z6219_node/iceman_E1_read_evidence.txt
+# > iceman-y/results/z6219_node/iceman_E1_read_evidence.txt
 ```
 
 Allele-aware mappability, run at `Z6499` because an unmappable derived allele produces the same
@@ -851,7 +851,7 @@ for al in anc der; do
   annotate/y_mappability.py --markers /tmp/e1_markers.txt \
     --source mapping/index/hg38p14DH3630O.fa \
     --target noalt=mapping/index/GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna \
-    --read-lengths 35,45,60,100 --threads 4 --allele $al --out results/z6219_node/e1_mappability_$al.tsv
+    --read-lengths 35,45,60,100 --threads 4 --allele $al --out iceman-y/results/z6219_node/e1_mappability_$al.tsv
 done
 ```
 
@@ -875,8 +875,8 @@ awk -F'\t' '
   }
   END{ printf "#\n# control: %d/%d DERIVED at site_qc pass (run valid iff 9/9)\n", ctrlok, nctrl
        printf "# block-confirmed=%d  block-refuted=%d  untested=%d  (of %d non-control)\n", conf, ref, unt, conf+ref+unt }
-' /tmp/e1_control.txt results/z6219_node/iceman_yfull_L166_defining.tsv \
-  > results/z6219_node/iceman_E1_classification.tsv
+' /tmp/e1_control.txt iceman-y/results/z6219_node/iceman_yfull_L166_defining.tsv \
+  > iceman-y/results/z6219_node/iceman_E1_classification.tsv
 ```
 
 Result: `FGC5671` **DERIVED** 7/0 at 0% MQ0 — F3 does not obtain. Controls 9/9. Non-control
@@ -884,7 +884,7 @@ block-confirmed 7, **block-refuted 1 (`Z6499`, ancestral 10/0)**, untested 5.
 
 ## E2 — `CGG017683` (Crimea) at the YFull `L166` positions (2026-07-26)
 
-Registered in `PREREG_Z6219_node.md` §Extensions before running; result H0, findings in `NOTES.md`.
+Registered in `iceman-y/prereg/Z6219_node.md` §Extensions before running; result H0, findings in `NOTES.md`.
 Stage 1 only — a remote indexed fetch against the deposited GRCh37 BAM. Stage 2 (full re-map) was
 authorised only on >= 2 reads at a decisive position and is therefore **not** run.
 
@@ -908,7 +908,7 @@ annotate/y_lift_markers.py \
   --chain /mnt/GenomicData/OpenSNP/puller/hg38ToHg19.over.chain \
   --target-ref /mnt/GenomicData/hs37d5/hs37d5.fa --target-chrom Y \
   --sites-out $SC/sites_b37.tsv \
-  --report-out results/z6219_node/e2_cgg017683_lift_report.tsv
+  --report-out iceman-y/results/z6219_node/e2_cgg017683_lift_report.tsv
 # 22 markers: 20 lifted and ref-checked, 2 excluded (FT91632, FT191098: unmapped)
 ```
 
@@ -922,7 +922,7 @@ samtools idxstats $SC/chrY.b37.bam   # Y 59373566 54685 0
 
 annotate/y_sites_pileup.py --bam $SC/chrY.b37.bam --ref /mnt/GenomicData/hs37d5/hs37d5.fa \
   --sites $SC/sites_b37.tsv --sample CGG017683 --min-mq 25 --min-bq 20 \
-  > results/z6219_node/e2_cgg017683_pileup.tsv
+  > iceman-y/results/z6219_node/e2_cgg017683_pileup.tsv
 ```
 
 The zeros at the decisive positions are absence of molecules, not filtering. Checked with every
@@ -941,12 +941,12 @@ Result: 3 of 20 covered (15.0% vs 17.5% expected at 0.192x), all single-read. `F
 
 ## E3 — uniqueness filter vs `MAPQ >= 25` (2026-07-26)
 
-Registered in `PREREG_uniqueness_filter.md` before running; **rejected**, findings in `NOTES.md`.
+Registered in `iceman-y/prereg/uniqueness_filter.md` before running; **rejected**, findings in `NOTES.md`.
 
 `y_mappability.py` gained two **reported-only** columns, `n_unique` and `frac_recovered_unique`,
 counting what `XT:A:U && X0 == 1` would have kept. They sit behind the same correct-contig and
 exact-CIGAR gates as `n_mq_ge_min`, so the two criteria share a denominator. Existing columns are
-computed exactly as before; no call changes by running this. `results/mappability/y_marker_mappability.tsv`
+computed exactly as before; no call changes by running this. `iceman-y/results/mappability/y_marker_mappability.tsv`
 predates the new columns and was **not** regenerated — its values are unaffected and no claim needs it.
 
 ```bash
@@ -957,7 +957,7 @@ for al in anc der; do
     --target working=mapping/index/hg38p14DH3630O.fa \
     --target noalt=mapping/index/GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna \
     --read-lengths 35,45,60,100 --threads 4 --allele $al \
-    --out results/mappability/e3_uniqueness_$al.tsv
+    --out iceman-y/results/mappability/e3_uniqueness_$al.tsv
 done
 ```
 
@@ -978,7 +978,7 @@ awk -F'\t' '
    if(A_off[k]+0>0 && A_un[k]>A_mq[k]) u2++                          # U2, ancestral tile
    if($c["n_offtarget"]+0>0 && $c["frac_recovered_unique"]>$c["frac_recovered"]) u2++
  } END{print "U1 fails:",u1+0,"  U1 derived-worse:",u1b+0,"  U2 fails:",u2+0}
-' results/mappability/e3_uniqueness_anc.tsv results/mappability/e3_uniqueness_der.tsv
+' iceman-y/results/mappability/e3_uniqueness_anc.tsv iceman-y/results/mappability/e3_uniqueness_der.tsv
 ```
 
 Result over 176 marker/length/target cells: **U1 fails 18** (28 were asymmetric under MAPQ, so the
@@ -989,7 +989,7 @@ already determined by U1 and U2.
 
 ## Test C power statement (2026-07-26) — no read staged
 
-Pre-registered in `PREREG_testC_aesch_muttenz.md`, committed together with the tables below.
+Pre-registered in `iceman-y/prereg/testC_aesch_muttenz.md`, committed together with the tables below.
 **Nothing here touches Aesch or Muttenz sequence data**; the whole estimate is built from read
 counts, an external coverage proxy, and the marker rates already measured on the Oberbipp cohort.
 
@@ -1003,10 +1003,10 @@ Cohort enumeration from the All Ancient DNA compilation. The file is latin1 with
       $c["Location"] ~ /Aesch|Muttenz/ && $c["Y-Haplotree-Variant"]=="G-L166*" {
         id=$c["Object-ID"]; ena=id; sub(/^Aes/,"Aesch",ena); sub(/^RA/,"SNPRA",ena)
         print ena,$c["NRY"],"compilation_id="id";site="$c["Location"]";published_Y="$c["Y-DNA"] }' \
-      "$F" | sort -t$'\t' -k1,1V > results/testC_power/candidates.tsv
+      "$F" | sort -t$'\t' -k1,1V > iceman-y/results/testC_power/candidates.tsv
 
 Calibration proxy (same columns, `Location ~ /Oberbipp|Rapperswil/`) →
-`results/testC_power/proxy_calibration.tsv`. `results/testC_power/candidates_lineage.tsv` is hand-
+`iceman-y/results/testC_power/proxy_calibration.tsv`. `iceman-y/results/testC_power/candidates_lineage.tsv` is hand-
 built from the compilation's `Kinship-Notes` and applies the §8 pooling rule: only the documented
 1st-degree male–male pair `Aes12`–`Aes19` is merged.
 
@@ -1021,21 +1021,21 @@ and instrument as the calibration cohort, which is what licenses transferring th
 Power:
 
     annotate/y_power_estimate.py \
-      --calib-genotypes results/testB/swiss_yfull_L166_defining.tsv \
-      --calib-coverage  results/swiss15/swiss_coverage.tsv \
-      --candidates      results/testC_power/candidates_lineage.tsv \
-      --proxy-calibration results/testC_power/proxy_calibration.tsv \
-      --markers Z6219,L166 --out-prefix results/testC_power/testC_lineage
+      --calib-genotypes iceman-y/results/testB/swiss_yfull_L166_defining.tsv \
+      --calib-coverage  iceman-y/results/swiss15/swiss_coverage.tsv \
+      --candidates      iceman-y/results/testC_power/candidates_lineage.tsv \
+      --proxy-calibration iceman-y/results/testC_power/proxy_calibration.tsv \
+      --markers Z6219,L166 --out-prefix iceman-y/results/testC_power/testC_lineage
 
 and once more over the unpooled 15 with all four markers that attract any reads, which is what
-produces `results/testC_power/testC_{calibration,candidates,power}.tsv`:
+produces `iceman-y/results/testC_power/testC_{calibration,candidates,power}.tsv`:
 
     annotate/y_power_estimate.py \
-      --calib-genotypes results/testB/swiss_yfull_L166_defining.tsv \
-      --calib-coverage  results/swiss15/swiss_coverage.tsv \
-      --candidates      results/testC_power/candidates.tsv \
-      --proxy-calibration results/testC_power/proxy_calibration.tsv \
-      --markers Z6219,L166,FGC5671,L167 --out-prefix results/testC_power/testC
+      --calib-genotypes iceman-y/results/testB/swiss_yfull_L166_defining.tsv \
+      --calib-coverage  iceman-y/results/swiss15/swiss_coverage.tsv \
+      --candidates      iceman-y/results/testC_power/candidates.tsv \
+      --proxy-calibration iceman-y/results/testC_power/proxy_calibration.tsv \
+      --markers Z6219,L166,FGC5671,L167 --out-prefix iceman-y/results/testC_power/testC
 
 Self-check — the same command with `--candidates` pointing at the calibration cohort predicts
 **2.08** callable at `Z6219` (observed **2**) and **3.15** at `L166` (observed **4**).
@@ -1063,7 +1063,7 @@ art%3A10.1038%2Fs41467-020-15560-x/MediaObjects/41467_2020_15560_MOESM1_ESM.pdf"
 
 25 pp., 631 lines of extracted text. Supplementary Table 1 (Y haplogroup for all male individuals)
 and Table 5 (relatedness, first and second degree) are the two read. Outcome in
-`PREREG_testC_aesch_muttenz.md` §"§7 checks — completed" and `NOTES.md`: all three checks pass, the
+`iceman-y/prereg/testC_aesch_muttenz.md` §"§7 checks — completed" and `NOTES.md`: all three checks pass, the
 cohort is a superset of the published-`PF3239` set, and the registered `Aes12`–`Aes19` pooling is
 the only male–male first-degree pair the publication documents among the candidates.
 
@@ -1164,7 +1164,7 @@ PDF's Y-haplogroup table for eight of the fifteen candidates; and the `1st degre
 confirms `Aes12`–`Aes19` as the only within-cohort male–male first-degree pair, independently of
 Supplementary Table 5.
 
-`PREREG_testC_aesch_muttenz.md` §7 check 3 was run against the PDF's Y table and **stands unamended**.
+`iceman-y/prereg/testC_aesch_muttenz.md` §7 check 3 was run against the PDF's Y table and **stands unamended**.
 The `.xlsx` files are not committed, for the same reason the PDF is not: publisher artefacts,
 reachable from the article's supplementary section, quoted where used.
 
@@ -1187,7 +1187,7 @@ The gate was run against a marker directory containing **only** `backbone_contro
 ```bash
 G=<scratch>/markers_gate; mkdir -p "$G"; cp markers/backbone_control.txt "$G/"
 REF=$PWD/mapping/index/hg38p14DH3630O.fa PREFIX=testC SITES= \
-  annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam-testC results/testC "$G"
+  annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam-testC iceman-y/results/testC "$G"
 ```
 
 150 cells (15 samples x 10 markers):
@@ -1234,7 +1234,7 @@ neither allele (`other_allele`, transversion, `pct_mq0 = 0%`).
 
 ```bash
 REF=$PWD/mapping/index/hg38p14DH3630O.fa PREFIX=testC \
-  annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam-testC results/testC
+  annotate/y_genotype_batch.sh /mnt/AncientDNA/SwissLN-2020/bam-testC iceman-y/results/testC
 ```
 
 Four marker sets across 15 samples: `testC_L166_defining.tsv` (135 rows),
@@ -1254,12 +1254,12 @@ for s in Aesch12 Aesch13 Aesch23 SNPRA61 SNPRA62; do
 done
 ```
 
-Outcome in `PREREG_testC_aesch_muttenz.md` §"Registered outcome": PC1 met, FC1 and FC2 not triggered,
+Outcome in `iceman-y/prereg/testC_aesch_muttenz.md` §"Registered outcome": PC1 met, FC1 and FC2 not triggered,
 FC3 not evaluable, PC3 holds.
 
 **Two gotchas, both mine, both recorded because each produced plausible output rather than an error.**
 
-*The shell's working directory persists between tool calls.* A `cd results/testC` from an earlier
+*The shell's working directory persists between tool calls.* A `cd iceman-y/results/testC` from an earlier
 command was still in effect when a later block set `R=$PWD/mapping/index/...`, which expanded to a
 path that does not exist. `samtools faidx` failed, `ref_base()` returned its `"?"` fallback, and the
 run printed `ref=?` and silently dropped the damage-pattern tag from every verdict. The per-read
@@ -1299,16 +1299,16 @@ scorer reads only marker names — so they can disagree, which is the point.
 ```bash
 python3 annotate/test_ytree.py            # 40 checks, no pytest, no fixtures on disk
 
-mkdir -p results/placement
+mkdir -p iceman-y/results/placement
 python3 annotate/y_tree_place.py --sample Iceman \
-  --pileup results/iceman_y_L166_evidence.tsv results/z6219_node/iceman_yfull_L166_defining.tsv \
-  --out results/placement/iceman_placement.tsv
-python3 annotate/y_tree_place.py --pileup results/swiss15/swiss_*.tsv \
-  --out results/placement/oberbipp15_placement.tsv
-python3 annotate/y_tree_place.py --pileup results/testC/testC_*.tsv \
-  --out results/placement/aesch_muttenz_placement.tsv
-python3 annotate/ytree.py --newick results/placement/tree_local.nwk \
-  --markers-out results/placement/tree_local_markers.tsv
+  --pileup iceman-y/results/iceman_y_L166_evidence.tsv iceman-y/results/z6219_node/iceman_yfull_L166_defining.tsv \
+  --out iceman-y/results/placement/iceman_placement.tsv
+python3 annotate/y_tree_place.py --pileup iceman-y/results/swiss15/swiss_*.tsv \
+  --out iceman-y/results/placement/oberbipp15_placement.tsv
+python3 annotate/y_tree_place.py --pileup iceman-y/results/testC/testC_*.tsv \
+  --out iceman-y/results/placement/aesch_muttenz_placement.tsv
+python3 annotate/ytree.py --newick iceman-y/results/placement/tree_local.nwk \
+  --markers-out iceman-y/results/placement/tree_local_markers.tsv
 ```
 
 **The ladder now comes out of a tool instead of a paragraph.** The Iceman is `G-L166`, on two
@@ -1338,3 +1338,45 @@ placement. `Aesch7` is the only sample in either cohort carrying that caveat.
 `G2a2a1a2a1a1b (G-Z6208*)` treats `Z6208` as a node below `L166`. The marker is real and the Iceman
 is derived at it; the node is not. A `refuted` row keeps both facts — the call is scored and printed,
 and the node can never appear on a path, be a terminal placement, or reach the Newick export.
+
+## The investigation gets a directory, and a verdict page (2026-07-27)
+
+The Iceman work had no home. Five pre-registrations, a protocol doc and eleven results directories
+sat in the repository root beside `README.md`, `AGENTS.md` and `TODO.md`, which are tooling. That is
+why a findings page had no good name: there was no context for it to sit in.
+
+`iceman-y/` now holds the case-specific material — `prereg/` (the five registrations, `PREREG_`
+prefix dropped since the directory says it), `PROTOCOL_extending_analyses.md`, and `results/` with
+every table the verdict cites. Root `results/` keeps only the three QC PDFs, which are mapping-side.
+`iceman-y/README.md` is the verdict, and needs no generic filename because the directory names it.
+
+`NOTES.md`, `METHODS.md` and `RUNLOG.md` deliberately stayed at root. `AGENTS.md` describes them as
+remapping methods and pairing/EAGER gotchas; they predate this investigation and are shared with the
+mapping work. `NOTES.md` carries no `##` heading until line 1244. Splitting them would mean choosing
+a boundary that is not there, across 110 cross-references, and the loss would be the mapping notes'
+continuity rather than the Iceman notes' findability.
+
+The move was `git mv` (history preserved by rename detection) plus a scripted rewrite of every path
+reference across `*.md`, `*.py` and `*.sh` outside `DeDup/`. Root-relative paths were used
+throughout rather than paths relative to each document, because every one of these references is a
+backticked path or a shell command run from the repository root — there were **zero** markdown links
+among them, checked before rewriting. 18 files, 199 lines.
+
+Verified afterwards: no stale reference to any moved path remains; `annotate/test_ytree.py` passes
+40/40; `y_tree_place.py` reproduces the Aesch/Muttenz placements from the new locations.
+
+**One new table, and it closes the ladder.** The unhedged cohort had never been run through the
+placement tool:
+
+```bash
+python3 annotate/y_tree_place.py \
+  --pileup iceman-y/results/unhedged/unhedged_*.tsv \
+           iceman-y/results/testB_unhedged/unhedged_*.tsv \
+  --out iceman-y/results/placement/unhedged_placement.tsv
+```
+
+`I5118` places at `G-L166` — the only individual other than the Iceman that does. `I14677` and
+`I14678` place at `G-PF3239` and `I15942` at `G-L91` on coverage, and **all three are excluded from
+`G-Z6219` as well as `G-L166`**, which is stronger than the earlier prose, which only recorded the
+`L166` exclusion. `UNTA58_68Sk1` returns no placement. Every rung of the ladder in
+`iceman-y/README.md` now comes from a committed table through a committed script.

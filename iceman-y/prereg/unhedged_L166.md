@@ -6,7 +6,7 @@ fixed as of that date. Results go in `RUNLOG.md` and `NOTES.md`; this file is no
 to match them.
 
 This is a **separate document rather than a fourth amendment** to
-`PREREG_swiss_neolithic_L166.md` because the dataset has left Switzerland: the samples are
+`iceman-y/prereg/swiss_neolithic_L166.md` because the dataset has left Switzerland: the samples are
 Hungarian, Sardinian and Bavarian, from three unrelated publications. It **inherits by
 reference** and does not restate: the decision rules, the MAPQ audit and its 30% cut, the no-go
 regions, the per-SNP output rule, the coverage-denominator rule, and the standing prohibition on
@@ -19,7 +19,7 @@ label: the compilation at haplogroup.info writes ISOGG `G2a2a1a2a1(a)` — paren
 provisional — for 21 Swiss Late Neolithic males, and a claim in circulation reads seven of the
 Oberbipp subset as `G-L166`. Fifteen Oberbipp-area samples have now been genotyped. Across four
 mutually independent Y lineages, the two defining transversions returned **21 reads, all
-ancestral, none derived** (`results/swiss15/`, `NOTES.md` 2026-07-26). The hedged label does not
+ancestral, none derived** (`iceman-y/results/swiss15/`, `NOTES.md` 2026-07-26). The hedged label does not
 verify.
 
 That leaves the complementary question, and it is the one with the sharper edge. A smaller set
@@ -87,7 +87,7 @@ whether a specific site was interrogated: on capture data, depth at an off-panel
 whatever off-target carryover delivers, so a 3.9x sample can still carry zero reads at the one
 transversion the test turns on. Panel membership was therefore resolved first, from the panel
 definition itself, by `annotate/panel_membership.py` — committed tooling, not a hand lookup —
-with the result kept as `results/panel/1240k_marker_membership.tsv`.
+with the result kept as `iceman-y/results/panel/1240k_marker_membership.tsv`.
 
 Panel: `51.2.2M.snp` (EIGENSTRAT, 2,144,502 sites, 32,681 on chrY; md5 `6389a9c8…`), lifted
 GRCh38→GRCh37 from `hg38ToHg19.over.chain`.
@@ -130,7 +130,7 @@ Three consequences are registered as predictions:
 
 ## The `Z6219` conflict — what this dataset can and cannot do
 
-`PREREG_swiss_neolithic_L166.md` Amendment 2 §C left `Z6219` unresolved: derived in every
+`iceman-y/prereg/swiss_neolithic_L166.md` Amendment 2 §C left `Z6219` unresolved: derived in every
 Oberbipp male while `L166` was ancestral in the same individuals, with two live explanations —
 **(i)** the catalogue mis-levels `Z6219`, which actually sits at or above `PF3239`; **(ii)**
 `Z6219` marks a real node between `Z6488`/`PF3239` and `L166`. Test C returned H0 exactly as its
@@ -200,13 +200,13 @@ The remaining three are from different countries and unrelated publications and 
 Marker sets are unchanged and are the committed files `markers/L166_defining.txt`,
 `markers/Z6494_exclusion.txt`, `markers/backbone_control.txt` — with the `Z6494` degradation
 declared above. Reference, aligner, deduplication and pileup settings are inherited unchanged
-from `PREREG_swiss_neolithic_L166.md` so that results are comparable to `results/swiss15/`:
+from `iceman-y/prereg/swiss_neolithic_L166.md` so that results are comparable to `iceman-y/results/swiss15/`:
 `mapping/index/hg38p14DH3630O.fa`, `bwa aln`/`samse` at nf-core/eager 2.5.0 defaults,
 mandatory `samtools markdup -r`, pileup at `-q 25 -Q 20 -d 1000 --no-BAQ`.
 
 Staging by `annotate/fetch_ena_runs.sh`, mapping by `mapping/map_se_batch.sh`, genotyping by
 `annotate/y_genotype_batch.sh`, verdicts by `annotate/y_prereg_verdict.py`. Outputs to
-`results/unhedged/`. `results/swiss/` and `results/swiss15/` are not to be modified.
+`iceman-y/results/unhedged/`. `iceman-y/results/swiss/` and `iceman-y/results/swiss15/` are not to be modified.
 
 The backbone control (`P15 → M3308 → PF3147 → PF3148 → PF3177 → L91 → PF3239 → P287`, all
 on-panel except `Z6488`) governs as before: a sample failing it is excluded from interpretation
@@ -238,7 +238,7 @@ rather than reported as a negative.
 
 ## Out of scope
 
-Unchanged from `PREREG_swiss_neolithic_L166.md`: this tests Y-chromosome marker status and cannot
+Unchanged from `iceman-y/prereg/swiss_neolithic_L166.md`: this tests Y-chromosome marker status and cannot
 establish origin, migration or cultural affiliation for any individual, including the Iceman. The
 geographic spread of this set — Hungary, Sardinia, Bavaria — makes that temptation larger, not
 smaller, and no result here will be presented as bearing on where anyone came from.

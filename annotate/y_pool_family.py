@@ -3,7 +3,7 @@
 
 Why this is not the pooling the pre-registration refuses
 -------------------------------------------------------
-``PREREG_swiss_neolithic_L166.md`` declines to pool reads across the Oberbipp
+``iceman-y/prereg/swiss_neolithic_L166.md`` declines to pool reads across the Oberbipp
 males, and the reason it gives is specific: combining unrelated men to ask "are
 they L166" assumes they share a branch, which is the hypothesis under test.
 
@@ -31,7 +31,7 @@ undo the pooling and check it.
 Example
 -------
     annotate/y_pool_family.py \\
-        --genotypes results/swiss15/swiss_L166_defining.tsv \\
+        --genotypes iceman-y/results/swiss15/swiss_L166_defining.tsv \\
         --members markers/family_a_members.txt \\
         --pool-name FamilyA
 """

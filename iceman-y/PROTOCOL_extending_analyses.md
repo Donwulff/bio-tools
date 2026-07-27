@@ -1,6 +1,6 @@
 # Protocol: extending an analysis past its pre-registered tests
 
-Written 2026-07-26, after Tests A and B of `PREREG_Z6219_node.md` returned results that immediately
+Written 2026-07-26, after Tests A and B of `iceman-y/prereg/Z6219_node.md` returned results that immediately
 suggested three follow-up tests none of which were registered. That situation is the normal one, not
 an exception, and it needs a rule rather than a judgement call each time.
 
@@ -119,6 +119,6 @@ allele he carries is the test.
 |---|---|---|---|
 | E1 | `FGC5671` in the Iceman | Would resolve whether the second `Z6219`-block SNP is real or a private Oberbipp variant. I want it derived. | **RUN 2026-07-26**, prediction held; F3 does not obtain |
 | E2 | `CGG017683` (Crimea), genotyped at the YFull `L166` positions | Asymmetric falsifier: could exclude the sample, could not support it. | **RUN 2026-07-26**, H0 — zero reads at every decisive position; closed as depth-limited |
-| E3 | Uniqueness filtering (`XT:A:U`, `X0=1`) replacing `MAPQ >= 25` | Changes a rule governing every call; promoted to its own document, `PREREG_uniqueness_filter.md` | **RUN 2026-07-26, NOT ADOPTED** — U1 and U2 both fail; it rescues the paralogue at `FGC5687` |
-| C | `Z6219` and `L166` in the Aesch/Muttenz cohort | A cohort with its own power question, so a new document rather than an extension: `PREREG_testC_aesch_muttenz.md` | **RUN 2026-07-27. PC1 met**, FC1/FC2 not triggered, PC3 holds; FC3 not evaluable and left unpatched |
+| E3 | Uniqueness filtering (`XT:A:U`, `X0=1`) replacing `MAPQ >= 25` | Changes a rule governing every call; promoted to its own document, `iceman-y/prereg/uniqueness_filter.md` | **RUN 2026-07-26, NOT ADOPTED** — U1 and U2 both fail; it rescues the paralogue at `FGC5687` |
+| C | `Z6219` and `L166` in the Aesch/Muttenz cohort | A cohort with its own power question, so a new document rather than an extension: `iceman-y/prereg/testC_aesch_muttenz.md` | **RUN 2026-07-27. PC1 met**, FC1/FC2 not triggered, PC3 holds; FC3 not evaluable and left unpatched |
 | D | Do `Z6219`, `Z6135` and `Z6209` form a block below `PF3239` and above `L166`? | The markers were chosen after seeing which had coverage in Test C, so this is a new hypothesis and not an extension of it. Needs its own power statement and its own falsifiers | **NOT REGISTERED.** Post-hoc observation only |

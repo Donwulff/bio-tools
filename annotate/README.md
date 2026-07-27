@@ -73,8 +73,8 @@ output), rather than from VCF-derived label tables. This is the path used by the
 Iceman/Oberbipp/Aesch work.
 
 ```bash
-python3 annotate/y_tree_place.py --pileup results/testC/testC_*.tsv \
-    --out results/placement/aesch_muttenz_placement.tsv
+python3 annotate/y_tree_place.py --pileup iceman-y/results/testC/testC_*.tsv \
+    --out iceman-y/results/placement/aesch_muttenz_placement.tsv
 ```
 - columns are found by name; files without them are skipped with a note, so a whole
   results directory can be globbed

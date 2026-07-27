@@ -1,10 +1,10 @@
 # Test C power estimate — inputs and outputs
 
-Produced 2026-07-26 for `PREREG_testC_aesch_muttenz.md`. Commands in `RUNLOG.md`.
+Produced 2026-07-26 for `iceman-y/prereg/testC_aesch_muttenz.md`. Commands in `RUNLOG.md`.
 
 **No Aesch or Muttenz sequence data exists in this repository or on this machine.** Everything here
 was computed from published read counts, an external coverage proxy, and marker rates measured on
-the Oberbipp cohort in `results/swiss15/` and `results/testB/`. These are the numbers the test was
+the Oberbipp cohort in `iceman-y/results/swiss15/` and `iceman-y/results/testB/`. These are the numbers the test was
 registered against, committed before it ran so that the registered expectation can be checked
 against the outcome rather than recalled.
 

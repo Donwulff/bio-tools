@@ -47,7 +47,7 @@ Usage
         --target chm13=mapping/index/chm13v2.0_maskedY_rCRSDH3630O.fa \\
         --target hs37d5=/mnt/GenomicData/hs37d5/bwa/hs37d5.fa \\
         --read-lengths 35,45,60,90 \\
-        --out results/mappability/y_marker_mappability.tsv
+        --out iceman-y/results/mappability/y_marker_mappability.tsv
 
 The source reference supplies the truth coordinates and must be the build our
 marker index is in (GRCh38). Targets are ``label=path`` and are processed one at
@@ -302,7 +302,7 @@ def main() -> int:
                 # counts what a uniqueness filter *would* have kept, so the two
                 # can be compared on tiles whose truth is known by construction.
                 # Adopting it is registered separately in
-                # PREREG_uniqueness_filter.md and is not done here.
+                # iceman-y/prereg/uniqueness_filter.md and is not done here.
                 xt = next((x[5:] for x in f[11:] if x.startswith("XT:A:")), None)
                 x0 = next((int(x[5:]) for x in f[11:] if x.startswith("X0:i:")),
                           None)

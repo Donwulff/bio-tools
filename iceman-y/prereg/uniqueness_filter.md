@@ -1,11 +1,11 @@
 # Pre-registration: should `MAPQ >= 25` be replaced by a uniqueness criterion?
 
 Written 2026-07-26, **before** the measurement below was run. This is E3 of
-`PROTOCOL_extending_analyses.md`, promoted from an extension to its own document because it is not
-a test of any hypothesis in `PREREG_Z6219_node.md` — it is a change to a rule that governs **every**
+`iceman-y/PROTOCOL_extending_analyses.md`, promoted from an extension to its own document because it is not
+a test of any hypothesis in `iceman-y/prereg/Z6219_node.md` — it is a change to a rule that governs **every**
 call this repository has ever made, and it therefore needs its own scope and its own decision rule.
 
-Amendment 2 of `PREREG_Z6219_node.md` registered this as a proposal and explicitly refused to act on
+Amendment 2 of `iceman-y/prereg/Z6219_node.md` registered this as a proposal and explicitly refused to act on
 it: *"adopting it after discovering that it alters a specific finding is exactly the post-hoc rescue
 this project's protocol exists to prevent."* This document exists to make the adoption decision
 **before** the effect on any finding is known.

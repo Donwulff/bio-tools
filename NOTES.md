@@ -12,7 +12,7 @@ Cell Genomics 2023 short article (Sep 13, 2023): "High-coverage genome of the Ty
 **Data Policy**
 - Ancient/public sample results are in-scope for repository docs and commits.
 - Modern/private sample IDs and per-sample outputs are out-of-scope for committed docs; keep them in external analysis directories and use placeholders in tracked notes.
-- Naming gotcha: `.gitignore` has a broad `*private*` guard for personal analysis outputs. In Y phylogenetics "private variant/branch" is standard terminology, so a legitimately committable file can be silently ignored. `results/iceman_y_private_branch_candidates.tsv` was invisible to git for this reason; renamed to `..._novel_branch_candidates.tsv`. Prefer "novel" in filenames and leave the guard alone.
+- Naming gotcha: `.gitignore` has a broad `*private*` guard for personal analysis outputs. In Y phylogenetics "private variant/branch" is standard terminology, so a legitimately committable file can be silently ignored. `iceman-y/results/iceman_y_private_branch_candidates.tsv` was invisible to git for this reason; renamed to `..._novel_branch_candidates.tsv`. Prefer "novel" in filenames and leave the guard alone.
 
 **Findings**
 - EAGER/AdapterRemoval BAMs can be merged and mate-stripped. MarkDuplicates will treat singletons as single-end and can over-mark duplicates in repetitive regions.
@@ -267,7 +267,7 @@ resolves the terminal node. Filters: `-q 25 -Q 20 --no-BAQ`, hg38.
   Its subclades are ancestral too (`Z6211` DP 11, `Z6495/FGC5722` DP 10, `FT84409`).
 - All ~25 markers under the provisional ISOGG `G2a2a1a2a1a1b1/b2/b2b` labels are ancestral at DP 3-13.
 - Conclusion: the sample is **G-L166\*** (ISOGG-style `G2a2a1a2a1a*`).
-- Evidence tables: `results/iceman_y_L166_evidence.tsv`, `results/iceman_y_deep_G_subtree.tsv`.
+- Evidence tables: `iceman-y/results/iceman_y_L166_evidence.tsv`, `iceman-y/results/iceman_y_deep_G_subtree.tsv`.
 
 **Z6208 Placement Discrepancy vs Published Label (2026-07-25)**
 - Nature Communications 2025 (`s41467-025-61601-8`) reports `G2a2a1a2a1a1b (G-Z6208*)`.
@@ -413,7 +413,7 @@ a Migration Period Germanic dataset. Candidate pools:
 - Published Neolithic G2a series (LBK, Anatolian farmers, Iberian/French/Balkan Neolithic), which are
   G2a-rich by comparison.
 Requirement: enough chrY depth to cover the 8 usable candidates in
-`results/iceman_y_novel_branch_candidates.tsv` — the MAPQ-filtered set described under
+`iceman-y/results/iceman_y_novel_branch_candidates.tsv` — the MAPQ-filtered set described under
 "Novel-Branch Candidates Re-derived With MAPQ Filtering", of which only 1 is a transversion. The
 site list is committed as `markers/iceman_novel_candidates_usable8.tsv`. At `CGG017683`-level 0.192x the expected
 yield is ~1-2 informative sites, so target samples above ~1x chrY.
@@ -448,7 +448,7 @@ searches missed them:
 
 Systematic re-count over the 835 derived panel markers passing GQ>=20/DP>=3: **125 carry an
 uninformative ISOGG label on *every* alias**, 107 of them at sane depth (DP 4-20). Written to
-`results/iceman_y_unlabelled_derived_markers.tsv` with hg38 + hg19 coordinates, DP, GQ, and the raw
+`iceman-y/results/iceman_y_unlabelled_derived_markers.tsv` with hg38 + hg19 coordinates, DP, GQ, and the raw
 YBrowse `HG`/`ISOGG` strings.
 
 Count definition matters: a first pass flagged 252, but that counted any marker with *at least one*
@@ -482,7 +482,7 @@ the ~8x chrY mean. Positional clusters at ~11.5 Mb and ~26.6 Mb are likewise sus
 
 Regression check: re-running every hand-built pileup from this session through
 `y_markers_pileup.py` reproduced all depths and calls exactly. Consolidated in
-`results/iceman_y_ftdna_block_evidence.tsv`.
+`iceman-y/results/iceman_y_ftdna_block_evidence.tsv`.
 
 **FTDNA Block Walk: G-PF3239 vs G-FGC2315 (2026-07-25)**
 All 24 names in FTDNA's `G-PF3239` block resolved in the catalogue — **22 DERIVED, 0 ancestral**, plus
@@ -591,7 +591,7 @@ This is the best-powered living-carrier test available: every sampled branch of 
 modern representatives, and the Iceman is on none of them. Caveat: public project entries only, so it
 is a subset of FTDNA's L166 testers.
 
-Saved: `results/iceman_y_ftdna_project_terminals.tsv` (SNP names + the Iceman's own calls only).
+Saved: `iceman-y/results/iceman_y_ftdna_project_terminals.tsv` (SNP names + the Iceman's own calls only).
 
 **Handling note — the source page must not be committed.** These pages carry `Kit Number`,
 `Last Name`, and `Paternal Ancestor Name` columns for living project members. The file was moved to
@@ -901,7 +901,7 @@ independent reasons for caution, both observed here rather than assumed:
 literal-string search corrected immediately above. Aesch and Muttenz are present in the compilation
 in quantity — as `Aes1`–`Aes25` and `RA42`–`RA64`, IDs that no search for the strings "Aesch" or
 "Muttenz" will match. Between them they carry **15 `G-L166*` rows**, which are the Test C cohort
-registered in `PREREG_testC_aesch_muttenz.md`. What is true is the narrower statement: neither site
+registered in `iceman-y/prereg/testC_aesch_muttenz.md`. What is true is the narrower statement: neither site
 appears under a `G-PF3239` query, because the compilation does not label them `G-PF3239`.*
 
 Aggregator coverage is therefore partial and its labels drift downward — the same failure mode
@@ -988,7 +988,7 @@ Aesch's ten, so "Horgen is special" fails under H1 as well as under H2.
 Found by running the first Swiss sample through it. `y_markers_pileup.py` called any site with
 `der > 0, anc == 0` **DERIVED** and any site with `anc > 0, der == 0` **ancestral**, with no depth
 threshold and no damage rule. Both contradict the decision rules in
-`PREREG_swiss_neolithic_L166.md`, and one of them contradicts the point of writing that document:
+`iceman-y/prereg/swiss_neolithic_L166.md`, and one of them contradicts the point of writing that document:
 
 > Ancestral call: >=2 independent reads. A site with 1 ancestral read is reported as `low_power`,
 > **not** as ancestral.
@@ -1027,7 +1027,7 @@ single most consequential result in the project could not be regenerated by anyo
 author. `annotate/y_sites_pileup.py` now does it. Re-run over all 21 sites
 (`markers/iceman_novel_candidates_all21.tsv`) against the same Iceman BAM it reproduces
 **21/21 verdicts**, REJECT/MARGINAL classification included. Output:
-`results/iceman_y_novel_candidates_regen.tsv`.
+`iceman-y/results/iceman_y_novel_candidates_regen.tsv`.
 
 Five cells differed, and in every case the committed tool is right and the hand-built table wrong:
 
@@ -1061,7 +1061,7 @@ Depth alone cannot catch this: these sites have unremarkable DP (4-12) and only 
 MAPQ distribution. The chrY:11.1-11.7 Mb window is particularly bad and should be treated as a
 no-go zone alongside 56.69-56.88 Mb and ~26.6 Mb.
 
-Surviving set in `results/iceman_y_novel_branch_candidates.tsv` — **8 usable, 3 marginal**:
+Surviving set in `iceman-y/results/iceman_y_novel_branch_candidates.tsv` — **8 usable, 3 marginal**:
 - Best single site: `chrY:7885869 T>A`, a transversion at DP 9, both strands, **0% MAPQ-0 and 10/10
   reads at MQ60**. This is the strongest private-variant candidate in the dataset.
 - Also clean: `7899558 A>G`, `8808031 C>T`, `10964462 T>C`, `11667647 T>C`, `19647870 C>T`,
@@ -1118,7 +1118,7 @@ Kept for the reasoning; the numbers here are stale.
 **SWISS NEOLITHIC L166 TEST — RESULT (2026-07-26)**
 All 9 samples mapped (`mapped=9 skipped=0 failed=0`), genotyped by
 `annotate/y_genotype_batch.sh`, verdicts by `annotate/y_prereg_verdict.py`.
-Tables: `results/swiss/`.
+Tables: `iceman-y/results/swiss/`.
 
 | sample | chrY DoC | verdict |
 |---|---|---|
@@ -1175,7 +1175,7 @@ transversions are observed, and that the compiler's own `G2a2a1a2a1(a)` hedge wa
 
 **Extension To 15 Samples: Four Independent Lineages, Still Zero Derived Reads (2026-07-26)**
 Six further Oberbipp runs staged from `PRJNA608699` and genotyped under `PREREG` Amendment 2.
-Results in `results/swiss15/`; the 9-sample tables in `results/swiss/` are left untouched as the
+Results in `iceman-y/results/swiss15/`; the 9-sample tables in `iceman-y/results/swiss/` are left untouched as the
 record of what was published from the first pass.
 
 *The kin structure is richer than the earlier note assumed.* `Kinship-Notes` in the compilation
@@ -1243,8 +1243,8 @@ re-runnable; a dated copy is now kept at `/mnt/AncientDNA/all-ancient-dna.2026-0
 
 ## The Unhedged `G-L166` Set: The Label Fails In Both Directions (2026-07-26)
 
-Pre-registered in `PREREG_unhedged_L166.md`, committed `e37b8ab` before any read was staged.
-Tables in `results/unhedged/`. Five individuals, three studies, three countries.
+Pre-registered in `iceman-y/prereg/unhedged_L166.md`, committed `e37b8ab` before any read was staged.
+Tables in `iceman-y/results/unhedged/`. Five individuals, three studies, three countries.
 
 **The set is six people, not seven.** `UNTA58_68Sk1` (Mittnik 2019) and `E09538` (Olalde 2018)
 share radiocarbon lab number **MAMS-29075** (3870±30 BP), mtDNA `J1c` and coordinates, and the
@@ -1305,7 +1305,7 @@ no-go window and flagged `MARGINAL_single_strand`; `I15942` has a `REJECT_mapq(1
 
 ### The `Z6219` conflict now has an answer — reached post-hoc, and labelled as such
 
-`PREREG_swiss_neolithic_L166.md` Amendment 2 §C left two explanations for `Z6219` being derived in
+`iceman-y/prereg/swiss_neolithic_L166.md` Amendment 2 §C left two explanations for `Z6219` being derived in
 every Oberbipp male while `L166` was ancestral in the same men: **(i)** the catalogue mis-levels
 it and it sits at or above `PF3239`; **(ii)** it marks a real node between `PF3239` and `L166`.
 That test returned H0 exactly as its registered prior predicted.
@@ -1494,7 +1494,7 @@ neutral branching process, not a signal of anything. Most patrilines leave no ma
 within a few generations. "Absent from moderns" is therefore the expected state of an arbitrary
 Neolithic lineage and is **not** evidence of demographic replacement, violence, or anything else.
 Note also that `G-L166` itself is *not* extinct — FTDNA has L166 testers
-(`results/iceman_y_ftdna_project_terminals.tsv`). Whatever is missing is sub-branch structure, not
+(`iceman-y/results/iceman_y_ftdna_project_terminals.tsv`). Whatever is missing is sub-branch structure, not
 the clade.
 
 ## Every Sample In This Project Came From A Mapped-Only Deposit (2026-07-26)
@@ -1618,7 +1618,7 @@ missing measurement and it was typed at a prompt, not committed — it belongs i
 
 ## Sensitivity Test: What Fraction Of Reads Can Even Come Back (2026-07-26)
 
-`annotate/y_mappability.py`, results in `results/mappability/y_marker_mappability.tsv`. Every read of
+`annotate/y_mappability.py`, results in `iceman-y/results/mappability/y_marker_mappability.tsv`. Every read of
 length L overlapping each marker is cut from GRCh38 and mapped back with the pipeline's own
 `bwa aln` options; `frac_recovered` is the fraction returning to the right locus at MAPQ>=25. Reads
 are exact reference copies, so a failure is pure mappability with no sequencing error or damage
@@ -1794,7 +1794,7 @@ a false lead — YFull's own FAQ states that **2–5 stars are all "good quality
 the YTree**, only 1 star being low — so 3 stars is unremarkable, and `Z6219` is clean under every
 test below. The investigation it prompted found a real problem elsewhere.
 
-**A limitation of `results/mappability/` is corrected here.** That sweep tiled reads cut from the
+**A limitation of `iceman-y/results/mappability/` is corrected here.** That sweep tiled reads cut from the
 reference, so every read carried the **ancestral** allele. It measured ancestral-read recovery only.
 `annotate/y_mappability.py --allele der` substitutes the derived base before tiling.
 
@@ -1832,7 +1832,7 @@ against trees built in a regime where the relevant failure modes do not occur.
 
 **F6 checked and does not obtain — the Oberbipp result survives.** The obvious danger was that the
 `L166` ancestral calls underpinning the refutation of the "7 of 10" claim were an artifact of
-filtered derived reads. Registered in `PREREG_Z6219_node.md` Amendment 2 before being run, then
+filtered derived reads. Registered in `iceman-y/prereg/Z6219_node.md` Amendment 2 before being run, then
 re-examined at `chrY:21843737` across all 15 Swiss BAMs **with no MAPQ floor**:
 
     14 reads, 8 samples (MX182, MX183, MX187, MX204, MX210, MX211, MX212, MX213)
@@ -1909,13 +1909,13 @@ than the ~11 estimated in the prereg, but the F3 threshold must be evaluated aga
 absence of co-segregation among markers that cannot be called is not evidence.
 
 **Reproducibility check passed.** After making the filter parameters injectable, re-running
-`y_genotype_batch.sh` at defaults reproduced **all five** `results/swiss15/` tables byte-identically,
+`y_genotype_batch.sh` at defaults reproduced **all five** `iceman-y/results/swiss15/` tables byte-identically,
 and wrote `swiss_params.txt` recording thresholds, reference, inputs and git commit `44c6bdd` with a
 clean tree.
 
 ---
 
-## Tests A and B of `PREREG_Z6219_node.md`, run 2026-07-26
+## Tests A and B of `iceman-y/prereg/Z6219_node.md`, run 2026-07-26
 
 Both registered tests were run in the order A then B. Neither falsifier fired, and the co-segregation
 scan returned one additional marker — but the power is thin enough that the qualifier matters more
@@ -1932,7 +1932,7 @@ either cohort**, and he is derived at `Z6219` rather than ancestral:
 | `L166` chrY:21,843,737 | C>A | 0 | 1 | `DERIVED_1read_transversion` |
 
 Both at MAPQ 37, 0% MQ0, `site_qc pass`, and on **different molecules** (`ERR2207344.6856395`,
-`ERR2207344.6878821`). Across all 20 individuals in `results/testB/` and `results/testB_unhedged/`,
+`ERR2207344.6878821`). Across all 20 individuals in `iceman-y/results/testB/` and `iceman-y/results/testB_unhedged/`,
 **no sample is `L166`-derived and `Z6219`-ancestral**. F1 had a real opportunity to fire and did not.
 
 Per prereg §8 the C>T site requires read-terminus evidence, and it is decisive here: the derived read
@@ -2003,8 +2003,8 @@ man, and `I5118` — the only one available — has **no coverage at `FGC5671`**
 ### Reproducibility
 
 The Test B run regenerated every previously committed table as a side effect. **All ten** tables in
-`results/swiss15/` and `results/unhedged/` reproduce byte-identically from
-`results/testB/` and `results/testB_unhedged/`, at `git_commit=96de9d7`.
+`iceman-y/results/swiss15/` and `iceman-y/results/unhedged/` reproduce byte-identically from
+`iceman-y/results/testB/` and `iceman-y/results/testB_unhedged/`, at `git_commit=96de9d7`.
 
 ## chrY-only references manufacture confident false calls (2026-07-26)
 
@@ -2039,7 +2039,7 @@ load". It was killed when its parent shell exited, at 53% of the BWT after about
 
 ## E1: `FGC5671` is derived in the Iceman — and `Z6499` is not (2026-07-26)
 
-Registered as E1 in `PREREG_Z6219_node.md` under `PROTOCOL_extending_analyses.md`, before any
+Registered as E1 in `iceman-y/prereg/Z6219_node.md` under `iceman-y/PROTOCOL_extending_analyses.md`, before any
 Iceman read at either position was seen. Predicted outcome: derived at `FGC5671`. It is.
 
 ### The primary result
@@ -2121,7 +2121,7 @@ derived and `L166` ancestral. No such sample has been looked for.
 
 ## E2: `CGG017683` cannot be placed relative to `Z6219` — H0, as registered (2026-07-26)
 
-Registered as E2 in `PREREG_Z6219_node.md` with the expected result stated in advance as H0 at
+Registered as E2 in `iceman-y/prereg/Z6219_node.md` with the expected result stated in advance as H0 at
 ~70–97% depending on the outcome asked for. That is what it returned.
 
 ### The result
@@ -2172,7 +2172,7 @@ The other 20 lifted with the hs37d5 reference base matching the expected ancestr
 
 ## E3: the uniqueness filter is rejected — it trades an ancestral bias for a paralogue (2026-07-26)
 
-Registered in `PREREG_uniqueness_filter.md` with the adoption criterion fixed before the measurement.
+Registered in `iceman-y/prereg/uniqueness_filter.md` with the adoption criterion fixed before the measurement.
 **U1 fails and U2 fails. `MAPQ >= 25` stands.**
 
 Measured on simulated tiles cut from the reference — exact copies, no error, no damage — so any
@@ -2250,7 +2250,7 @@ temptation the firewall exists to block. Not computing it is the safer choice an
 choice, not an omission.
 
 **`Z6219` is untouched either way.** It recovers 1.000 / 1.000 at 35, 45, 60 and 100 bp under both
-criteria, with zero off-target placements. The central evidence of `PREREG_Z6219_node.md` does not
+criteria, with zero off-target placements. The central evidence of `iceman-y/prereg/Z6219_node.md` does not
 depend on this filter question at all — which is worth stating precisely because the outcome was not
 known when the measurement was registered.
 
@@ -2259,7 +2259,7 @@ whether the alternative locus is a real paralogue or a chance similarity — whi
 discard by construction. That is a different aligner's problem, not a threshold change, and nothing
 here authorises attempting it.
 
-## Registered outcome of `PREREG_Z6219_node.md`: H1 supported (2026-07-26)
+## Registered outcome of `iceman-y/prereg/Z6219_node.md`: H1 supported (2026-07-26)
 
 The verdict §8 demanded had never been written down. It is now recorded in the pre-registration
 itself: **H1 supported**, F1/F3/F4 do not obtain, **F2 untested**.
@@ -2279,15 +2279,15 @@ discriminate H1 from H3 is a second population, registered as P3 and not run.
 
 ## Test C is Registered, and the Power Analysis Changed What It Is (2026-07-26)
 
-`PREREG_testC_aesch_muttenz.md`, written before any Aesch or Muttenz read was staged. Tables in
-`results/testC_power/`. Test C is the only registered test that separates H1 (a real node between
+`iceman-y/prereg/testC_aesch_muttenz.md`, written before any Aesch or Muttenz read was staged. Tables in
+`iceman-y/results/testC_power/`. Test C is the only registered test that separates H1 (a real node between
 `PF3239` and `L166`) from H3 (homoplasy, or a variant private to the Oberbipp patriline), because
 everything supporting the current `H1 supported` verdict is one patriline at one site.
 
 **The cohort named in the earlier documents does not exist.** "The 21 hedged Aesch/Muttenz
-individuals", used in `PREREG_Z6219_node.md` §7 and in `RUNLOG.md`, conflates two sets. There are
+individuals", used in `iceman-y/prereg/Z6219_node.md` §7 and in `RUNLOG.md`, conflates two sets. There are
 exactly 21 individuals labelled `G-L166*` in the compilation, but **6 of them are the Oberbipp men
-already genotyped in `results/swiss15/`**. The untested cohort is **13 Aesch + 2 Muttenz = 15**.
+already genotyped in `iceman-y/results/swiss15/`**. The untested cohort is **13 Aesch + 2 Muttenz = 15**.
 
 **Aesch has Oberbipp's kinship problem, and that is the real result of the power analysis.** The 13
 Aesch candidates are not 13 observations: six of them (`Aes1`, `Aes12`, `Aes19`, `Aes20`, `Aes21`,
@@ -2382,7 +2382,7 @@ observation noted before the alleles are read means something a coverage observa
 does not.
 
 The first two Test C libraries to finish give the first out-of-sample test of the proxy calibration
-in `PREREG_testC_aesch_muttenz.md` §4. Predicted chrY reads are the compilation's `NRY` value times
+in `iceman-y/prereg/testC_aesch_muttenz.md` §4. Predicted chrY reads are the compilation's `NRY` value times
 the fitted ratio 0.6514; observed are reads on `chrY` at `MAPQ >= 25` in the `.rmdup.bam`:
 
 | sample | `NRY` proxy | predicted chrY | observed chrY @ MQ25 | obs/pred |
@@ -2405,9 +2405,9 @@ was predicted. What changes is only the interpretation: `expected_callable = 4.0
 now known to be an *under*-estimate, because one candidate registered at essentially zero power has a
 chrY yield in the cohort's upper half. Re-fitting the proxy now and quoting the larger number as the
 registered power would be exactly the rule change after seeing its effect that
-`PROTOCOL_extending_analyses.md` prohibits.
+`iceman-y/PROTOCOL_extending_analyses.md` prohibits.
 
-`PREREG_testC_aesch_muttenz.md` §7 check 4 required `Aesch13` to be reported and not quietly dropped,
+`iceman-y/prereg/testC_aesch_muttenz.md` §7 check 4 required `Aesch13` to be reported and not quietly dropped,
 on the expectation that it would return no power. That rule was written to stop a null being hidden.
 It has instead retained one of the cohort's better libraries — which is the argument for the rule,
 not against it: the same discipline that forbids dropping an inconvenient sample forbids dropping a
@@ -2445,7 +2445,7 @@ exactly: `PF3239` for ten Aesch individuals and both Muttenz individuals, `PF314
 and 275 of the extracted text.
 
 What is new is where the compilation's `published_Y = low coverage` values came from: **the summary
-spreadsheet's column, not the Y table**. `results/testC_power/candidates.tsv` carries that value for
+spreadsheet's column, not the Y table**. `iceman-y/results/testC_power/candidates.tsv` carries that value for
 six of the fifteen, sourced to the compilation. It is the publication's own inconsistency propagating,
 not an error introduced downstream — but it does mean "published as low coverage" and "published as
 `PF3239`" are both quotable about the same individual from the same paper, and any statement of the
@@ -2480,7 +2480,7 @@ position.
 
 ## Test C: the `Z6219` Node Is Not an Oberbipp Property (2026-07-27)
 
-The `H1 supported` verdict in `PREREG_Z6219_node.md` carried one limitation that mattered more than
+The `H1 supported` verdict in `iceman-y/prereg/Z6219_node.md` carried one limitation that mattered more than
 the rest: everything supporting it was one patriline at one site, so an Oberbipp-private variant or a
 homoplasy explained the data equally well. Test C was registered to separate those, and it did.
 
@@ -2548,6 +2548,6 @@ thesis this whole project has been circling: a block collapsed into a single nod
 the Iceman's label was one node too deep for exactly that reason.
 
 It is a scan result over 22 positions and it is labelled post-hoc, not predicted. It is queued as
-**D** in `PROTOCOL_extending_analyses.md` and is **not registered** — the markers were picked after
+**D** in `iceman-y/PROTOCOL_extending_analyses.md` and is **not registered** — the markers were picked after
 seeing which ones had coverage, so it needs its own document, its own power statement and its own
 falsifiers before any of it counts.

@@ -1,13 +1,13 @@
-# Outputs of Tests A and B, `PREREG_Z6219_node.md`
+# Outputs of Tests A and B, `iceman-y/prereg/Z6219_node.md`
 
 Run 2026-07-26. Commands in `RUNLOG.md`, findings in `NOTES.md`.
 
 ## Which directory is canonical
 
-`results/swiss15/` and `results/unhedged/` remain the canonical genotype tables. They are not
+`iceman-y/results/swiss15/` and `iceman-y/results/unhedged/` remain the canonical genotype tables. They are not
 superseded by anything here.
 
-`results/testB/` and `results/testB_unhedged/` are the full output of one `y_genotype_batch.sh`
+`iceman-y/results/testB/` and `iceman-y/results/testB_unhedged/` are the full output of one `y_genotype_batch.sh`
 invocation each. They exist because the YFull 32-SNP marker set needed genotyping and the batch
 script processes every marker set in `markers/` in one pass — so re-running it for Test B
 regenerated the older tables as a by-product. Those by-products were kept rather than deleted

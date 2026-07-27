@@ -7,7 +7,7 @@ decision rules and declared limitations below are fixed as of that date. Results
 ## Background
 
 The Tyrolean Iceman is terminal at `G-L166` by read-level evidence
-(`results/iceman_y_L166_evidence.tsv`): derived at all nine L166-defining SNPs with zero
+(`iceman-y/results/iceman_y_L166_evidence.tsv`): derived at all nine L166-defining SNPs with zero
 ancestral reads, and ancestral at all `G-Z6494`-defining SNPs with zero derived reads —
 including the transversion `Z6494/FGC5674` (chrY:17131187 G>T) at 10 ancestral / 0 derived.
 
@@ -60,7 +60,7 @@ commitment in this document.
    males carry 50–391 Mbp each, more than `SX10`'s 79 Mbp in six of seven cases.
 
 2. **The novel-variant test is predicted to fail for lack of power, in advance.** The Iceman's
-   eight usable novel candidates (`results/iceman_y_novel_branch_candidates.tsv`) are
+   eight usable novel candidates (`iceman-y/results/iceman_y_novel_branch_candidates.tsv`) are
    uncatalogued by construction, therefore not 1240k targets, therefore reachable only by
    off-target reads. `SX10` has 79 Mbp of total sequence against `CGG017683`'s 1.18 Gbp, which
    itself yielded only 3 informative sites of 8 at 0.192x chrY. Expected informative sites here:
@@ -92,7 +92,7 @@ Staged at `/mnt/AncientDNA/SwissLN-2020/`, MD5-verified against the ENA manifest
 
 ## Marker sets
 
-All coordinates GRCh38, from `results/iceman_y_L166_evidence.tsv`.
+All coordinates GRCh38, from `iceman-y/results/iceman_y_L166_evidence.tsv`.
 
 **Positive control — `PF3239` block.** The publication states these samples are derived here.
 Recovering that independently validates download, alignment and pileup against a published
@@ -170,9 +170,9 @@ rather than in transcribed shell history.
 
 **Tool validation, performed before any Swiss read was mapped.** `annotate/y_sites_pileup.py`
 was run against the Iceman BAM at all 21 sites in `markers/iceman_novel_candidates_all21.tsv`
-and reproduced `results/iceman_y_novel_branch_candidates.tsv` — **21/21 verdicts**, including
+and reproduced `iceman-y/results/iceman_y_novel_branch_candidates.tsv` — **21/21 verdicts**, including
 the exact REJECT/MARGINAL classification. Output kept as
-`results/iceman_y_novel_candidates_regen.tsv`. Two discrepancies against the older hand-built
+`iceman-y/results/iceman_y_novel_candidates_regen.tsv`. Two discrepancies against the older hand-built
 table were found, both errors in that table rather than in the tool, and are recorded in
 `NOTES.md`. Had the tool not reproduced those numbers, that would itself have been the finding
 and this analysis would not have proceeded.

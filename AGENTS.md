@@ -7,7 +7,9 @@
 - `util/`: Helper utilities and environment setup (`build_env.sh`, Perl helpers such as `bindex.pl` and `cigar-hist.pl`, Python tools such as `eager_repair_bam.py`, `is_stats.py`, and `samtools_if.sh`). Running the build populates large `util/src/` trees containing full source + build artifacts for samtools, bcftools, bwa, htslib, bedtools, etc.
 - `resources/`: Fetched public reference data such as YBrowse marker sets (`snps_hg38.vcf.gz` + `.gff3`), liftover chains, and staged reference FASTAs (populated by scripts like `fetch_ybrowse_markers.sh`, `prepare_y_refs.sh`, `fetch_liftover_chains.sh`). Can be redirected via config.
 - `notebooks/`: Jupyter analysis templates (e.g. `otzi_reanalysis_template.ipynb`).
-- `results/`: Example outputs (PDFs for QC, summary TSVs from marker comparisons) for reference/comparison.
+- `iceman-y/`: The Ötzi Y-haplogroup investigation — the public case this tooling is developed against, kept together so the tooling repo does not carry one analysis's paperwork in its root. `README.md` is the verdict; `prereg/` holds the pre-registrations; `results/` holds every table the verdict cites. Nothing here is a dependency of `annotate/`, `mapping/` or `util/` — the arrow runs the other way.
+- `markers/`: Marker name lists, site tables, and `tree_local.tsv` — the machine-readable local Y tree (node, parent, status, defining/equivalent markers). Read by `annotate/ytree.py`; see `annotate/README.md`.
+- `results/`: Example outputs (PDFs for QC) for reference/comparison. Iceman analysis output lives under `iceman-y/results/`.
 
 Scripts are standalone and typically run from their own (sub)directory. Large/generated content lives under `mapping/index/`, `resources/`, `util/src/`, and `__pycache__/` (see the root `.gitignore` for the full maintained list). The DeDup/ third-party tree is fully ignored. Avoid committing or editing generated/vendored content unless explicitly required.
 
@@ -55,6 +57,9 @@ In addition to this file:
 - `NOTES.md` — findings, gotchas, troubleshooting (pairing, MarkDuplicatesSpark, EAGER interaction, etc.).
 - `RUNLOG.md` — run history.
 - `TODO.md` — specific improvement items.
+- `iceman-y/README.md` — the Ötzi Y verdict, and the only page written to be read on its own. `NOTES.md`
+  and `RUNLOG.md` deliberately still carry the Iceman working notes and commands: they predate this
+  investigation, they are shared with the mapping work, and there is no clean line to cut them on.
 - `mapping/CLAUDE.md` — older Claude-oriented overview (complements this file).
 
 ## Y/Liftover Guardrails (Important)

@@ -1,20 +1,20 @@
 # Pre-registration: Test C — does the `Z6219` node recur outside Oberbipp?
 
 Written 2026-07-26, **before any Aesch or Muttenz read has been staged, mapped or genotyped**.
-This is the "own power statement" that `PREREG_Z6219_node.md` §7 requires before Test C may run:
+This is the "own power statement" that `iceman-y/prereg/Z6219_node.md` §7 requires before Test C may run:
 
 > **Test C — new samples.** Out of scope for this registration. The 21 hedged Aesch/Muttenz
 > individuals are named in P3 as the natural cohort, but selecting and staging them is a separate
 > exercise requiring its own power statement, and nothing in this document authorises it.
 
 It is a new registration rather than an extension because it introduces a cohort with its own power
-question, which is the third row of the table in `PROTOCOL_extending_analyses.md`.
+question, which is the third row of the table in `iceman-y/PROTOCOL_extending_analyses.md`.
 
 ---
 
 ## 1. Why this test exists
 
-The registered verdict of `PREREG_Z6219_node.md` (2026-07-26) is **H1 supported**, recorded together
+The registered verdict of `iceman-y/prereg/Z6219_node.md` (2026-07-26) is **H1 supported**, recorded together
 with the limit that makes it fragile:
 
 > **One site.** All four "independent lineages" are Oberbipp. H3 predicts the pattern is confined to
@@ -28,7 +28,7 @@ of what else it produces.
 
 ## 2. The cohort, and three corrections it forced
 
-**The phrase "21 hedged Aesch/Muttenz individuals", used in `PREREG_Z6219_node.md` §7 and in
+**The phrase "21 hedged Aesch/Muttenz individuals", used in `iceman-y/prereg/Z6219_node.md` §7 and in
 `RUNLOG.md`, is wrong, and this document does not inherit it.** Enumerating the All Ancient DNA
 compilation (`/mnt/AncientDNA/all-ancient-dna.2026-07-26.txt`, 16,972 rows) for
 `Y-Haplotree-Variant == "G-L166*"` gives **21 individuals** — but they are:
@@ -37,7 +37,7 @@ compilation (`/mnt/AncientDNA/all-ancient-dna.2026-07-26.txt`, 16,972 rows) for
 |---|---|---|
 | Aesch (CH) | 13 | untested |
 | Muttenz (CH) | 2 | untested |
-| Oberbipp Horgen (CH) | 6 | **already genotyped**, in `results/swiss15/` |
+| Oberbipp Horgen (CH) | 6 | **already genotyped**, in `iceman-y/results/swiss15/` |
 
 So the 21 is a real count, but 6 of them are the Oberbipp men this project has already tested, and
 the new cohort is **15 individuals, not 21**. The error was reading "21 hedged" and "Aesch/Muttenz"
@@ -59,7 +59,7 @@ directions. The compilation's own `Y-DNA` column is likewise re-derived, not pub
 publication's Supplementary Table 1 has not been re-read for Aesch at the time of writing. See §7.
 
 The cohort, its per-sample coverage proxy and its kin-group assignment are committed in
-`results/testC_power/candidates.tsv` and `results/testC_power/candidates_lineage.tsv`, both
+`iceman-y/results/testC_power/candidates.tsv` and `iceman-y/results/testC_power/candidates_lineage.tsv`, both
 regenerable from the compilation file by the command in `RUNLOG.md`.
 
 ### The cohort is not 15 independent observations
@@ -101,7 +101,7 @@ H0 and is committed for that reason.
 ## 4. Power, fixed before any read is staged
 
 Computed by `annotate/y_power_estimate.py`, committed before it was run against the candidates.
-Outputs in `results/testC_power/`. The estimate is empirical throughout: no model of capture
+Outputs in `iceman-y/results/testC_power/`. The estimate is empirical throughout: no model of capture
 efficiency, probe design or mappability appears anywhere in it. Whatever those contribute is already
 inside the measured per-marker read rate, which is the point of measuring rather than modelling.
 
@@ -201,7 +201,7 @@ haplotree.
 ## 7. Required checks before any genotype is read
 
 Each of these can invalidate the cohort, and each is a provenance or staging check, which
-`PROTOCOL_extending_analyses.md` explicitly exempts from registration. They are listed here so that
+`iceman-y/PROTOCOL_extending_analyses.md` explicitly exempts from registration. They are listed here so that
 skipping one is visible.
 
 1. **ID mapping.** The compilation uses `Aes12`; ENA uses `Aesch12`; the compilation uses `RA61`,
@@ -222,7 +222,7 @@ skipping one is visible.
 - **Depth threshold is unchanged**: ≥ 2 independent reads for a call in either direction. `Z6219` is
   a C>T deamination-prone transition, so a single derived read is `nocall_damage_prone_1read` and
   **is not evidence**. `L166` and `L167` are transversions and damage-immune.
-- **`MAPQ ≥ 25` stands**, and with it the consequence registered in `PREREG_uniqueness_filter.md`:
+- **`MAPQ ≥ 25` stands**, and with it the consequence registered in `iceman-y/prereg/uniqueness_filter.md`:
   every `L166` derived count is a **lower bound**, and `no_coverage` at `L166` is not evidence of
   anything. Uniqueness filtering was tested and rejected on 2026-07-26; it is not revisited here.
 - **Pooling.** Only documented **1st-degree male–male** pairs may be pooled, because only those
@@ -233,16 +233,16 @@ skipping one is visible.
   families at one Neolithic village can share a patriline beyond the resolution of READ/lcMLkin.
   Counts of "independent lineages" in any write-up must carry that caveat. This is why FC3 exists.
 - **Any decisive C>T or G>A call requires read-terminus and library damage-profile evidence**
-  (`annotate/y_read_evidence.py`), per `PREREG_Z6219_node.md` §8. That is protocol, not a rescue
+  (`annotate/y_read_evidence.py`), per `iceman-y/prereg/Z6219_node.md` §8. That is protocol, not a rescue
   applied when a result depends on it. Note `--damage-profile` is a *mode switch* that suppresses
   the per-read dump, so it takes two invocations.
-- **`untested` is not `negative`.** The failure mode named in `PROTOCOL_extending_analyses.md` §2.
+- **`untested` is not `negative`.** The failure mode named in `iceman-y/PROTOCOL_extending_analyses.md` §2.
 
 ## 9. Decision rules
 
 Outcome to be recorded as exactly one of:
 
-- **FC1 obtains → H1 weakened, H3 favoured.** The `H1 supported` verdict in `PREREG_Z6219_node.md`
+- **FC1 obtains → H1 weakened, H3 favoured.** The `H1 supported` verdict in `iceman-y/prereg/Z6219_node.md`
   is amended, not deleted, and the amendment names this test.
 - **FC2 obtains → the node order is falsified.** This overrides everything else in the document.
 - **PC1 met → H1 supported at a second site.** The single-site limitation recorded in the verdict is
@@ -258,8 +258,8 @@ No terminal haplogroup label is assigned to any individual by this analysis. Per
 **Read before writing this document**, and it is why the document exists: the compilation's
 `Y-Haplotree-Variant`, `NRY`, `Location` and `Kinship-Notes` columns for all Aesch and Muttenz rows;
 ENA read counts, library strategy and instrument for all 97 runs of `PRJNA608699`; and the per-marker
-**depths** in `results/testB/swiss_yfull_L166_defining.tsv`. Depths were read to establish whether
-the test is possible at all, which `PROTOCOL_extending_analyses.md` permits explicitly.
+**depths** in `iceman-y/results/testB/swiss_yfull_L166_defining.tsv`. Depths were read to establish whether
+the test is possible at all, which `iceman-y/PROTOCOL_extending_analyses.md` permits explicitly.
 
 **The Oberbipp and Rapperswil allele calls at `Z6219` and `L166` have been read** — they are the
 result this test exists to check, quoted throughout `NOTES.md`, and were read long before this
@@ -271,7 +271,7 @@ from read counts, an external coverage proxy and the Oberbipp marker rates.
 
 ## 11. What this analysis will not claim
 
-- Nothing about the Iceman's own placement. `PREREG_Z6219_node.md` §10 governs and is unchanged.
+- Nothing about the Iceman's own placement. `iceman-y/prereg/Z6219_node.md` §10 governs and is unchanged.
 - Nothing about the Horgen culture, or about any site's cultural attribution. The compilation's
   `Culture_Grouping` assigns "Horgen culture" to Aesch, Muttenz, Oberbipp and Rapperswil alike, which
   the publication does not support, and this document uses it for nothing.
@@ -435,7 +435,7 @@ what is observed is absence of contradiction, not demonstrated sameness.
 
 **Recorded as: FC3 not evaluable.** The outcome is *not* being routed to H0 on it, and equally the
 independence it was written to protect is *not* claimed. The registration is not amended to repair
-FC3 — under `PROTOCOL_extending_analyses.md` a rule found wanting after seeing its effect gets its own
+FC3 — under `iceman-y/PROTOCOL_extending_analyses.md` a rule found wanting after seeing its effect gets its own
 registration and a re-run, never a patch applied to the run that exposed it.
 
 ### Outcome under §9
