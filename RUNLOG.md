@@ -1380,3 +1380,76 @@ python3 annotate/y_tree_place.py \
 `G-Z6219` as well as `G-L166`**, which is stronger than the earlier prose, which only recorded the
 `L166` exclusion. `UNTA58_68Sk1` returns no placement. Every rung of the ladder in
 `iceman-y/README.md` now comes from a committed table through a committed script.
+
+## 2026-07-27 — parked: open threads and two corrections
+
+No analysis run. Session was review and course-correction; both corrections are recorded in place
+(`NOTES.md`, `METHODS.md`) rather than only here.
+
+**Corrections made**
+
+- `NOTES.md`: the chrY-only emulation measured *recovery*, not *contamination*. `Z6215`/`Z6208`
+  are not the same artifact as `FGC5687` — they show zero MQ0 and zero off-target under a
+  whole-genome reference, so no read moved. The reverse simulation (tile reads from the paralogue,
+  count how many land on chrY) has never been run and is the half that decides the question.
+- `METHODS.md`: the "decoys can remove real signal" consequence is **aDNA-scoped**. The `-k101`
+  collision filter plus a complete-Y reference plus a same-assembly collision index close the
+  mechanism for modern saliva. Longer reads make the filter more conservative, not less.
+
+**Open threads, roughly by value**
+
+1. `iceman-y/prereg/Z6219_node.md` — registered outcome still reads "one site … no second
+   population has been tested" and names P3 as unrun. Test C ran it at two further sites. The same
+   amendment can discharge **F2**: across the five `Z6219`-derived Aesch/Muttenz men there is not
+   one ancestral read anywhere on the backbone, and four are positively derived at `Z6043`
+   (transversion). Caveat to state: `Z6043` is an `equivalent` marker on `G-PF3239`, so it
+   establishes block membership rather than `PF3239` itself.
+2. **Test B** — the co-segregation scan. Amendment 2 requires its marker set to come from YFull's
+   32-SNP `L166` definition rather than `resources/marker_index.tsv.gz`; obtaining that list is a
+   prerequisite and has not been done.
+3. **Reverse mappability simulation** — see the NOTES entry above. Cheap, and it bounds a finding
+   already committed.
+4. **`Z6499` direction** — below vs parallel rests on parsimony alone; no sample derived at
+   `Z6499` and ancestral at `L166` has been searched for.
+5. **Protocol item D** (`Z6135`/`Z6209`) — post-hoc scan result, unregistered, needs its own
+   document or an explicit decision to drop it.
+6. **FC3 repair** — needs registration and a re-run; deliberately not patched into Test C.
+7. **Furtwängler supplements via `openpyxl`** — check on the hand-rolled xlsx parser's numbers.
+8. `annotate/y_novel_scan.py` — unbuilt. `WITH_HAPLOTYPERS=1` in `util/build_env.sh` untested past
+   `bash -n`. `TODO.md` 1-5 unrelated mapping chores.
+9. **Branch** — `tooling/se-adna-y-pipeline` sits well ahead of `master`, unpushed, with nothing
+   else in flight. Recommended merging; not done.
+
+**Self-control on a modern sample (planned, not started)**
+
+The idea is a positive control: run the placement stack against a modern sample whose Y-SNP call is
+already known from a commercial pipeline, at high coverage and with no deamination — the regime
+where the call rules should be trivially right, which is what makes a failure informative. Design
+notes that survive without reference to any particular sample:
+
+- **What it does and does not exercise.** It tests `y_sites_pileup.py` -> `ylib.site_call()` ->
+  `y_path_rank.py` end to end. It does **not** touch `ytree.py`: `markers/tree_local.tsv` is
+  G-L166-only, so the tree machinery stays idle unless a second tree file is written for the
+  sample's own branch. `y_tree_place.py --tree` already takes a path, so that costs nothing
+  structurally; such a file names a living person's clade and belongs outside this repository.
+- **Registrable prediction.** A commercial Y-only pipeline should disagree with a
+  whole-genome-referenced call at X-homologous sites. The sites can be named in advance from
+  `results/mappability/`, which makes this a real pre-registration rather than a comparison.
+- **Reference mismatch is the practical obstacle.** Marker catalogues are GRCh38; a CHM13-based
+  callset needs coordinate resolution first. No chain file is required — `y_mappability.py`
+  discovers cross-build coordinates by modal implied position (`annotate/y_mappability.py:24`).
+- **Archive the gVCF, not the VCF.** This method turns on ancestral and no-call states; a
+  variants-only VCF discards exactly the rows that separate "tested and ancestral" from "never
+  covered". `y_haplo_from_markers.py` reads gVCF for that reason.
+- **Decoy cost measurement** (see METHODS.md) rides along on the same run at no extra cost.
+
+Per-sample paths, identifiers and results stay outside this repository per AGENTS.md.
+
+**Ideas parked**
+
+- Custom metagenome decoy paper; eHOMD cherry-picking (`METHODS.md` records why the subset idea was
+  rejected once already).
+- Long-read data exists for at least one modern sample; **re-assembling parts of the Y scaffolding**
+  from it is a separate project, noted so it is not lost.
+- Broad/WARP vs nf-core/eager: still deferred, still awaiting a concrete trigger. `annotate/` is
+  downstream of both and consumes BAMs and pileup tables, so nothing in flight is blocked.

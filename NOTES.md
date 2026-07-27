@@ -2551,3 +2551,42 @@ It is a scan result over 22 positions and it is labelled post-hoc, not predicted
 **D** in `iceman-y/PROTOCOL_extending_analyses.md` and is **not registered** — the markers were picked after
 seeing which ones had coverage, so it needs its own document, its own power statement and its own
 falsifiers before any of it counts.
+
+## The chrY-only finding measured recovery, not contamination (2026-07-27)
+
+Refines "chrY-only references manufacture confident false calls" above. The table stands; the
+sentence "None of the three 'improvements' above is real; each is the same artifact at a different
+magnitude" does not. Re-reading `iceman-y/results/mappability/chrYonly_emulation.tsv` column by
+column, the three changed markers are two different situations:
+
+| marker | whole-genome | chrY-only | mechanism |
+|---|---|---|---|
+| `FGC5687` | 0.000, **45/45 MQ0, 29 off-target** | 1.000, 0 MQ0 | reads scatter to chrX/2/6; deleting the paralogue invents the call |
+| `Z6215` | 0.778, **0 MQ0, 0 off-target** | 1.000 | all 45 reads at the exact correct position, 10 below MAPQ threshold |
+| `Z6208` | 0.933, **0 MQ0, 0 off-target** | 1.000 | same |
+
+`FGC5687` is invention and the original wording is right for it. `Z6215` and `Z6208` are not: no
+read moved, nothing landed off-target, and the only thing the chrY-only reference changed was
+lifting a MAPQ penalty imposed by a paralogue that never donated a read in the simulation.
+
+**The structural limit is larger than the overstatement.** `y_mappability.py` tiles reads *out of
+the marker locus* and asks whether they return, so `frac_recovered` is a power statistic. It never
+generates reads from the paralogue and asks whether they land on chrY — and that is the direction
+that decides whether a Y-only reference is safe. The emulation cannot distinguish "recovered 10 real
+reads" from "will also accept 10 reads from chrX", because it never simulated the second.
+
+Two consequences:
+
+- **The untested half is cheap to run.** Reverse the simulation: tile reads from the X/autosomal
+  paralogue and count how many land on chrY under each reference. Until that exists, neither the
+  optimistic nor the pessimistic reading of `Z6215`/`Z6208` is evidenced.
+- **Y-only mapping is not per se a defect.** It is coherent when paired with a mappability mask
+  derived from a whole-genome reference, which is what `results/mappability/` already holds. What it
+  cannot do is police itself: the act of removing the paralogue destroys `pct_mq0`, the statistic
+  that would catch the problem. Y-only *plus* an external mask is a design; Y-only alone is not.
+
+This matters beyond our own tooling because Y-only mapping is standard in commercial Y pipelines
+(YFull filters to chrY in the same EAGER-like way). Any comparison of our whole-genome-referenced
+calls against such a pipeline should therefore *predict* disagreement at X-homologous sites rather
+than treat it as a discrepancy to reconcile — and that prediction is registrable in advance from the
+mappability table, before any comparison is run.

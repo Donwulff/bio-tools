@@ -101,11 +101,33 @@ supporting literature establishes the problem and recommends the remedy rather t
   species falsely associated with sex. Constructs no decoy; recommends masking the
   problematic k-mers instead.
 
-Consequence for Y work: with bacterial decoys present, genuine chrY reads from poorly
-catalogued regions have somewhere wrong to go, so decoys can *remove real signal*, not just
-noise. This is an independent, published account of the same artifact class documented in
-NOTES.md (MAPQ-0 pileups, the chrY:11.1-11.7 Mb no-go zone, collapsed repeats near 56.7 Mb),
-and it is a second reason to keep oral decoys off for the Iceman analysis.
+Consequence for Y work, **and the conditions under which it applies**: with bacterial decoys
+present, genuine chrY reads from poorly catalogued regions have somewhere wrong to go, so decoys
+can *remove real signal*, not just noise. This is an independent, published account of the same
+artifact class documented in NOTES.md (MAPQ-0 pileups, the chrY:11.1-11.7 Mb no-go zone, collapsed
+repeats near 56.7 Mb), and it is a second reason to keep oral decoys off for the Iceman analysis.
+
+The mechanism needs Y sequence that is *missing from the reference*: the `-k101` collision filter in
+`mapping/GRCh38_bwa_index.sh` drops any decoy colliding with the assembly over >=101 bp, so it
+cannot see a collision with sequence the assembly does not contain. Chrisman's premise is that only
+about half of chrY is in GRCh38. Two conditions therefore close it, and both hold for a modern
+saliva WGS mapped by this repo's chm13 build:
+
+- **A complete-Y reference.** CHM13v2.0 carries chrY in full, so there is little uncatalogued Y
+  sequence left for a decoy to capture.
+- **A collision index built from the same base assembly.** `COLLISION_INDEX` is assembled from
+  `${VERSION_BASE}${VERSION_PATCH}` (see the `chm13` branch), so decoys in a chm13 build were
+  filtered against CHM13's complete Y, not GRCh38's partial one.
+
+Read length works the same direction: the filter's threshold is 101 bp of contiguous identity, and a
+longer read needs *more* contiguous identity to be pulled off-target, so a decoy that survived the
+filter is less able to steal a long read than the filter's own test assumed.
+
+**So this is an aDNA finding, not a general one.** Ancient libraries are the case where it bites:
+short fragments, no saliva to decoy against, a GRCh38-era reference missing half of chrY, and every
+read carrying weight. For a modern saliva sample the decoys are doing the job the literature above
+describes, and the expected chrY cost is near zero. That expectation is **untested** — see the
+measurement noted under "Interpretation Boundaries".
 
 ### Read pre-filtering vs decoy-in-reference
 An, Z., Cha, J. H., Lee, K. H. & Lee, I. Metagenome-assembled genomes enhance bacterial read
@@ -141,6 +163,32 @@ removed is simpler and has no selection bias to defend.
 Because the input is already human-filtered:
 - Absence of strong microbial signal does not prove absence in the original sample.
 - The practical conclusion is low impact on human analysis, not biological absence.
+
+### The reference catalogue bounds what can be said at all
+Nothing in this repository can make a claim about a Y variant that is absent from GRCh38, and in
+practice the ceiling is lower than that. Two independent filters stack:
+
+- **Ancient data arrives pre-filtered.** Published aDNA is generally distributed already reduced to
+  a GRCh37-equivalent coordinate space, so positions that exist only in later builds were dropped
+  upstream, before this repository ever sees the reads.
+- **Haplogroup catalogues are GRCh38-based.** YBrowse, YFull and FTDNA marker definitions are
+  expressed in GRCh38 coordinates, so a variant has to survive *both* the GRCh37-era filtering of
+  the sample and the GRCh38 catalogue's coverage to be nameable.
+
+The intersection, not either build alone, is the real analysable space. This is why a CHM13 or
+graph-based reference cannot simply be swapped in and expected to extend the analysis: it would add
+sequence for which no marker catalogue exists, and the extra reads would map to positions no
+published tree can name. It is also the standing reason novel-site work (`y_novel_scan.py`,
+`iceman-y/results/*_novel_sites.tsv`) is reported separately from placement — a novel site is by
+construction outside the catalogue that placement depends on.
+
+### Not yet measured: what oral decoys cost on chrY
+The decoy rationale above is literature-supported but, for chrY specifically, **unmeasured** — Kumar
+2023 recommends the practice without testing it, and no publication was found that constructs and
+evaluates an oral-specific set. The cheap measurement is a modern saliva WGS with an external truth
+(a commercial Y-SNP call on the same individual): run placement against decoy-bearing and
+decoy-free builds and compare marker-level no-call rates. Near zero is the expected result and is
+worth recording as a number either way. Per-sample outputs stay outside this repository.
 
 ## Current Experiment Snapshot (Otzi D2049 Combined)
 Dataset path used for baseline:
