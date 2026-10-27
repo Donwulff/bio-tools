@@ -155,6 +155,9 @@ read; commit timestamps are what makes that claim checkable. They are not requir
 - [`prereg/uniqueness_filter.md`](prereg/uniqueness_filter.md) — a filter tested and rejected
 - [`PROTOCOL_extending_analyses.md`](PROTOCOL_extending_analyses.md) — how a new question gets added
 
+For choosing follow-up work and checking new candidate assignments, see
+[`research/priorities_and_source_watch.md`](research/priorities_and_source_watch.md).
+
 Working notes, gotchas and the full command history stay in the repository root
 ([`NOTES.md`](../NOTES.md), [`RUNLOG.md`](../RUNLOG.md), [`METHODS.md`](../METHODS.md)). Those files
 predate this investigation and are shared with the mapping work; there is no clean line to split
