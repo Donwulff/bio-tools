@@ -30,13 +30,17 @@ See also `TODO.md` for pending improvements to build scripts.
 - No repo-wide formatter is enforced; match existing script style and prefer clear, inline comments only where needed.
 
 ## Testing Guidelines
-- There is no centralized test runner in the repository.
+- There is no repository-wide test runner. `sh annotate/run_tests.sh` runs the focused annotation
+  suites (synthetic comparator/reference/resolver tests and the local-tree checks).
 - Validate changes by running the affected script on representative data and checking outputs with domain tools (e.g., `samtools`, `bcftools`).
 - Use `results/` PDFs as qualitative comparisons where relevant.
 - Synthetic marker regressions: `python3 annotate/test_y_haplo_from_markers.py`; local-tree checks:
   `python3 annotate/test_ytree.py`. Neither requires opening private sample files.
 
 ## Commit & Pull Request Guidelines
+- Standing user instruction: commit completed, validated work automatically in focused patches or
+  batches. Leave unfinished work uncommitted and never mix unrelated user edits into a batch.
+  Do not push or merge remote PRs unless explicitly requested.
 - Existing history favors short, imperative summaries (sometimes with `fix:` prefixes). Keep the first line concise and scoped.
 - PRs should include:
   - A brief description of the workflow impact.
@@ -77,13 +81,19 @@ In addition to this file:
   - hg38: `GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna`
 - Extended references (`*H3630*`, `*DH3630*`, `*O1102*`, `hs38d1`, oral/metagenome additions) are valid for some mapping tasks but are easy to misuse for marker liftover experiments.
 - Picard/GATK liftover requires both `.fai` and `.dict` sidecars.
-- Verify sidecar contents and FASTA compatibility; current shell helpers check existence only.
-  `.gz` does not prove BGZF. Rebuild byte-offset indexes when staged FASTA bytes change.
+- Sidecar checks share `annotate/reference_utils.py` across marker queries and shell liftover
+  helpers. Invalid existing sidecars fail without replacement; `.gz` does not prove BGZF.
+  Defaults check metadata and small probes, not whole-sequence identity. Use
+  `annotate/check_reference.py --check-md5` for an explicit full sequence/layout check.
+- Use a fresh staging directory for changed/copied/subset references. Unchanged source symlinks
+  may be reused; copied byte-offset indexes must not be reused after a layout change.
 - For compressed FASTA (`.fa.gz` / `.fna.gz`), keep dictionary naming compatible:
   - `<ref_without_fasta_suffix>.dict` (e.g. `x.fa.gz -> x.dict`)
   - and alias `<ref_without_last_suffix>.dict` when needed (e.g. `x.fa.dict`)
 - For modern/private samples: keep run outputs outside repo and do not commit sample IDs or per-sample results.
 - Do not treat reject-heavy Picard gVCF output as validated block conversion; see `annotate/LIFTOVER.md`.
+- Comparator IDs across assemblies need a verified crosswalk. Complement permission is not
+  identity verification; callable agreement is not accuracy and alias counts are not molecules.
 - VCF label rankings are heuristic. For the Iceman verdict use committed read-level evidence and
   `markers/tree_local.tsv`; a derived SNP is not by itself a separate downstream node.
 - Preserve dated corrections and preregistered outcomes. Record PR-only work as pending integration;

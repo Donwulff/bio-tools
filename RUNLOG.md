@@ -1614,3 +1614,84 @@ Rechecked all 41 synthetic tests, all 40 tree checks, shell syntax, local Markdo
 whitespace. The four public placement datasets and their summaries still reproduce byte-for-byte.
 Added-text privacy/path checks passed; no private sample files were used. No changes were pushed
 and no remote PR was merged. Comparator safeguards and gVCF block conversion remain open tasks.
+
+## 2026-10-29 - comparator safeguards and shared reference validation
+
+Resumed reusable-tooling work after the commit checkpoint. All inputs in the tests below are
+fabricated tables/FASTA in temporary directories; no private sample files, large references or
+new claim-bearing experiments were used. This follow-up was initially left uncommitted; the user
+subsequently requested automatic local commits for finished, validated batches (checkpoint below).
+
+**Comparator**
+
+- Reproduced the old conflicting-key overwrite before changing it. Duplicate dataset names,
+  malformed rows, duplicate keys, incompatible allele definitions and conflicting same-locus
+  aliases now fail before report creation. Explicit `collapse-identical` accepts only exact rows.
+- Added shared `marker_schema.py` so resolver and comparator use one derived-allele interpretation.
+  REF/ALT swaps preserving ancestral/derived alleles are compatible. Reverse complements require
+  explicit ID-mode permission and are limited to single-base definitions; coordinate identity
+  still needs an independently checked crosswalk.
+- Retained legacy matrix/summary columns and appended diagnostic context. Added `.pairwise.tsv`
+  with explicit callable denominators, `NA` when no pair is callable, and distinct coordinate-pair
+  counts so aliases are not mistaken for independent loci or molecules. Legacy all-row agreement
+  is still available but is not an accuracy estimate.
+- Optional expected-ID/state panels include absent/filtered/unresolved markers in their full
+  denominator. Ancestral-versus-derived disagreements are conflicts, not generic no-calls. Panels
+  are supplied by the analyst; no new tree, clade prior or expected private genotype was inferred.
+- Output paths preserve dotted prefixes and refuse existing reports without `--force`; input
+  files cannot be replaced. Stale expected reports require the option or a fresh prefix. Later
+  I/O failure is not transactional. AD and actual reject provenance remain absent from this schema.
+
+**References and staging**
+
+- `reference_utils.py` and read-only `check_reference.py` now serve both marker queries and the
+  shared liftover shell helper. Checks cover FASTA/BGZF format, FAI/GZI structure, dictionary
+  names/lengths/order, alias M5 consistency and small indexed-access probes. Invalid existing
+  metadata is not silently overwritten. Default checks are not proof of whole-sequence identity.
+- `--check-md5` explicitly scans sequence bytes, compares dictionary M5 values and verifies actual
+  FAI layout (GZI remains structural/probe-checked). It retains a FASTA line and metadata; an unwrapped chromosome
+  line can still be large. Multi-block BGZF is included in the synthetic checks.
+- `prepare_y_refs.sh` uses absolute source links, preserves GZI/canonical dictionaries for unchanged
+  byte copies, and rebuilds metadata for subsets. Existing targets and orphaned sidecars are
+  refused except unchanged source symlink reuse. Normalized output names cannot alias each other.
+  Failed subset extraction leaves no partial target FASTA. No production reference was staged.
+- Resource discovery, config handling and backend execution are still duplicated in drivers;
+  Picard gVCF block conversion and batch-output transaction handling remain separate open work.
+
+**Validation**
+
+```bash
+sh annotate/run_tests.sh
+git diff --check
+```
+
+Passed 29 comparator, 27 reference and 41 resolver unittest cases, plus the 40 existing tree checks.
+Reference preparation tests use a tiny stand-in GATK command backed by `samtools dict`, not a real
+Java/Picard run. The suite also exercises both shell helper reuse and fresh subset index layout.
+The last line-ending regression initially exposed an overly strict validator: faidx's nominal
+EOL width at an unterminated final sequence is valid. Corrected the check without relaxing the
+stale-layout tests; CRLF/EOF and multi-block BGZF cases now pass.
+All four public placement datasets and their summaries still reproduce byte-for-byte. Markdown,
+privacy/path and whitespace checks passed; no new ShellCheck diagnostics were introduced (the
+batch driver retains one existing diagnostic). No result tables, marker definitions or registrations
+were changed. The local commit checkpoint below records the completed batches; nothing was pushed.
+
+### Automatic Commit Checkpoint
+
+The user requested automatic local commits whenever a coherent batch is finished and validated.
+Recorded this standing instruction in `AGENTS.md`; pushing and remote PR merges still require an
+explicit request. Unfinished work and unrelated user edits must not be folded into those batches.
+
+- `8164a88` - comparator safeguards, shared marker schema and callable/expected-panel reports.
+  Validated an exported staged snapshot independently with 29 comparator tests, the 41 existing
+  resolver tests and 40 tree checks; it does not depend on the later reference-validator code.
+- `f66ae50` - shared reference/index/dictionary checks, safe staging, reference regressions and
+  the focused runner. Its exported staged snapshot passes all 97 unittest cases and 40 tree
+  checks from a temporary external working directory.
+- The accompanying documentation patch records this standing instruction, the validated local
+  checkpoint and remaining work. Partial staging kept the shared resolver/documentation edits
+  with the appropriate feature; no working-tree edits were discarded to split the patches.
+
+Full gVCF block conversion, remaining config/backend consolidation and AD/reject provenance are
+still open. No private inputs, marker definitions, registrations, sample result tables or reviewed
+research snapshots were added or altered by this commit checkpoint. No changes were pushed.

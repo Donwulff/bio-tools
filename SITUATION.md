@@ -8,24 +8,30 @@ excluded.
 
 ## Compact Handoff
 
-Updated **2026-10-29** for the local commit checkpoint. The review and remote inventory below
-retain their 2026-10-28 date; remote status was not rechecked as part of committing local work.
+Updated **2026-10-29** for the local checkpoint and reusable-tooling follow-up. The remote inventory below
+retains its 2026-10-28 date; remote status was not rechecked as part of committing local work.
 
 - The documentation reconciliation, reviewed Work research snapshots and marker-resolver
   corrections are preserved in local commits. No push or remote PR merge was performed.
+- Subsequent comparator and shared-reference safeguards are preserved in focused local commits.
+  These use 29 comparator, 27 reference and 41 resolver synthetic tests plus 40 tree checks;
+  no sample analysis or registered outcome was rerun.
 - Completed tooling: native gVCF block-base lookup, all-state quality thresholds, explicit filtered
   evidence and backward-compatible status-table consumption. Validation: 41 synthetic tests,
   40 tree checks and four public placement datasets reproduced without changed results.
-- Recheck with `python3 annotate/test_y_haplo_from_markers.py`,
-  `python3 annotate/test_ytree.py` and `git diff --check`. Details are in
-  [the resolver follow-up](RUNLOG.md#2026-10-28---native-gvcf-resolver-and-quality-filter-regressions).
-- Next reusable-tooling priorities: comparator duplicate/identity safeguards and callable-only
-  metrics; reference/resource validation and consolidation. Full gVCF block liftover is separate
+- Recheck with `sh annotate/run_tests.sh` and `git diff --check`. Details are in
+  [the resolver follow-up](RUNLOG.md#2026-10-28---native-gvcf-resolver-and-quality-filter-regressions)
+  and [the comparator/reference checkpoint](RUNLOG.md#2026-10-29---comparator-safeguards-and-shared-reference-validation).
+- Comparator duplicate/allele safeguards, callable/expected-panel metrics and shared reference
+  validation are implemented below. Next: resource/config/backend consolidation, panel provenance
+  and AD/liftover-loss evidence. Full gVCF block liftover is separate
   and is **not** repaired by the native-query correction.
 - Research decisions remain in the open-work table below. Do not relaunch experiments, change
   registrations or use private sample data as an implicit continuation of a tooling fix.
-- The user clarified that the next request was to **commit existing work**, not to start comparator
-  safeguards or full gVCF block liftover. Both implementations remain pending.
+- The commit clarification applied to the previous checkpoint; the subsequent request resumed
+  reusable-tooling work. Research extensions still need their own decisions and registrations.
+- Standing user instruction: commit finished, validated batches automatically; do not push or
+  merge remote PRs unless requested. This checkpoint does not implement the remaining research tasks.
 
 ## Start Here
 
@@ -175,13 +181,18 @@ comparison. Three callsets made from the same reads are correlated. Concordance 
 markers is a useful control, while agreeing no-calls over millions of catalogue records is not a
 general accuracy score. The VCF and gVCF marker panels and callable denominators must be matched.
 Picard's treatment of gVCF blocks is an implementation limitation, not just a difficult reference
-transition. Consolidation is partial: shared shell helpers exist, but the drivers still duplicate
-reference discovery and execution logic.
+transition. Consolidation remains partial: validation/naming now share one implementation across
+marker queries and shell preparation; reference discovery and backend execution remain duplicated.
 
 The subsequent 2026-10-28 code follow-up adds indexed native-reference lookup and all-state
 quality filtering to the marker resolver, with synthetic regression tests. Drivers use that same
 engine; old sample outputs were not regenerated. This does not repair Picard gVCF block conversion,
 validate the preliminary modern comparison, or alter registered read-level outcomes.
+
+The 2026-10-29 follow-up adds comparator duplicate/allele guards, callable-only agreement, explicit
+expected-panel QC and safe reference staging/validation. Default reference checks are metadata and
+small probes; full M5/byte-layout verification is opt-in. Synthetic tests validate these operations,
+not any sample placement or the correctness of a supplied expected panel.
 
 ## Open Work, Without Reopening Completed Experiments
 
@@ -214,8 +225,8 @@ rule after its outcome is known.
 | Z6135/Z6209 (protocol D) | Post-hoc observation; prospective validation or explicit disposition remains required |
 | FC3, supplement parsing | FC3 repair needs a separate registration/rerun; independent spreadsheet-parser check remains unrecorded |
 | Modern three-way QC | Repeat with identical marker definitions, native gVCF evidence, explicit missingness and trusted expected-path definitions; keep every result external |
-| Liftover tooling | Consolidate shared reference/tool/config handling; validate gVCF handling before advertising it as reference-confidence conversion |
-| Marker comparator | Detect duplicate IDs/loci/alleles and conflicts; report callable-only and expected-path comparisons rather than only all-row agreement |
+| Liftover tooling | Reference/sidecar checks and staging guards implemented; resource/config/backend consolidation and transaction safety remain open, as does gVCF block conversion |
+| Marker comparator | Duplicate/allele guards and callable/expected-panel reports implemented; verified crosswalks, AD and exact reject provenance remain open |
 | Marker resolution/quality | Native-reference block lookup and all-state thresholds implemented with synthetic tests; matched-panel sample QC, panel hashes and broader allele validation remain pending |
 | Ranking output | Separate marker evidence from clade placement; retain current heuristic weights as descriptive, not learned probabilities |
 | Novel scan and external callers | `y_novel_scan.py` is still absent; PathPhynder/Yleaf cross-checks and optional installs have no recorded end-to-end validation |
