@@ -254,13 +254,53 @@ Useful for side-by-side checks such as:
 - hs1 native vs hs1->hg38 liftover vs direct hg38 callset
 - filtered marker subsets (e.g. terminal/trunk SNP IDs)
 Outputs:
-- `<prefix>.matrix.tsv` row-wise status/GT/DP/GQ/HG across datasets
-- `<prefix>.summary.tsv` per-dataset status counts + pairwise agreement/flip counts
+- `<prefix>.matrix.tsv`: original status/GT/DP/GQ/HG columns plus per-dataset coordinates,
+  marker alleles, source and reason; ID-mode rows therefore retain both assemblies' positions.
+- `<prefix>.summary.tsv`: per-dataset status counts and the legacy global-union agreement/flip
+  table; optional expected-panel totals precede that final table.
+- `<prefix>.pairwise.tsv`: explicit global/pair unions, shared keys, jointly callable counts,
+  callable agreement percentage, distinct callable locus-pair counts and allele-check diagnostics.
+- `<prefix>.expected.tsv`: only with `--expected-states`, one row per expected ID and dataset,
+  including missing panel markers, filtered calls and ancestral/derived conflicts.
 
 Use `--key-mode locusid` only on a common assembly; `--key-mode id` needs verified marker identities
-across assemblies. Current duplicate keys silently keep the last row. All-row agreement includes
-no-call/missing pairs and is not an accuracy metric. The [comparison guide](LIFTOVER.md#comparing-native-hs1-lifted-hg38-and-direct-hg38)
-states what is still required for callable and expected-path QC.
+across assemblies. Duplicate dataset names, malformed rows and duplicate comparison keys are
+rejected before reports are opened. `--duplicate-policy collapse-identical` permits only exact
+duplicate rows, reports the collapse and never chooses between conflicting calls. Conflicting
+alias calls for the same locus and ancestral/derived contrast are also rejected.
+
+Allele checks use the same ancestral/derived rule as the resolver (`marker_schema.py`). REF/ALT
+swaps preserving biological alleles are allowed. Complemented **single-base** definitions require
+`--key-mode id --allow-reverse-complement`; this is not proof of cross-assembly coordinate identity.
+Incompatible definitions fail even if their reported statuses agree. Callable rows with unknown
+allele definitions are rejected; unresolved rows remain visible as unverified evidence.
+
+`callable_both` includes only derived/ancestral states on both sides. Filtered, missing, ambiguous,
+unknown and other states do not enter that denominator; zero callable pairs give `NA`, not 100%.
+Counts are per comparison key and may include aliases; `callable_unique_locus_pairs` exposes the
+number of distinct coordinate pairs, not independent molecules. All-row agreement still includes
+matching no-calls and missing/missing pairs and must not be presented as accuracy.
+
+For expected-path QC use a user-supplied TSV with `id` and `status` columns, where status is
+`derived` or `ancestral`. The full supplied panel is the denominator, even when an ID is absent.
+Ambiguous multi-locus IDs and expected IDs excluded by other filters are rejected. The tool does
+not infer a path, decide equivalence, or validate the expected panel as ground truth. Expected
+totals count supplied IDs, not independent loci: equivalent aliases can represent the same allele. Keep modern
+expected panels and every per-sample report outside the repository.
+
+```bash
+python3 "$REPO_ROOT/annotate/compare_marker_status_sets.py" \
+  --input "native=$ANALYSIS_DIR/native.marker_status.tsv" \
+  --input "lifted=$ANALYSIS_DIR/lifted.marker_status.tsv" \
+  --key-mode id --expected-states "$ANALYSIS_DIR/expected-path.tsv" \
+  --out-prefix "$ANALYSIS_DIR/comparison"
+```
+
+Existing reports are refused unless `--force` is explicit; input files can never be overwritten.
+An old expected-state report requires the matching option or a fresh prefix to prevent stale
+partial reruns. Validation precedes report creation, but later I/O failure is not transactional.
+AD and definitive liftover-loss provenance are not available in the current input schema; see the
+[comparison guide](LIFTOVER.md#comparing-native-hs1-lifted-hg38-and-direct-hg38) for remaining limits.
 
 ### genos_annotate.sh
 Genos Research provided exome VCF's have weird format which cointains NT=Not Targeted Regions and NC=No Call.

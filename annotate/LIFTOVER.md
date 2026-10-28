@@ -155,9 +155,25 @@ This fixes native marker interpretation, **not Picard gVCF block liftover**.
 
 `compare_marker_status_sets.py --key-mode locusid` is for a common coordinate system. Across
 assemblies use verified marker identities with `--key-mode id`, or a validated coordinate/allele
-crosswalk. The comparator currently keeps the last row for a duplicate key without detecting
-conflicting loci or alleles. Its all-row agreement includes pairs of no-calls/missing rows. Report
-both that matrix and a callable-on-both matrix; do not interpret all-row agreement as accuracy.
+crosswalk. The comparator now rejects conflicting/duplicate keys, contradictory aliases and
+incompatible biological allele definitions. Exact duplicate rows can be collapsed only by an
+explicit policy. Complemented SNP definitions need explicit ID-mode permission and still require
+an independently verified identity/coordinate crosswalk; this is not general indel normalization.
+
+Use the new `.pairwise.tsv` callable-on-both denominator alongside the retained legacy all-row
+summary. Only derived/ancestral pairs are callable; zero callable evidence yields `NA`. Matching
+no-calls or missing/missing rows can still dominate all-row agreement. The legacy global-union
+counts also include keys seen only in a third dataset; global and per-pair unions are now explicit.
+Per-key counts may include aliases; distinct coordinate-pair counts expose that duplication without
+claiming to count independent molecules. Neither agreement statistic establishes accuracy.
+
+Optional `--expected-states` takes a trusted ID/state panel and reports the entire panel per dataset,
+including IDs missing from the input. Filtered/ambiguous/no-call states remain unresolved, not
+ancestral conflicts. This is an explicit expected-panel comparison, not automatic tree/path
+construction or proof of the expected states. Missing marker rows alone do not prove liftover
+rejection: unqueried panel entries and rejected coordinates still need separate provenance.
+The input schema has no allele-specific AD, so the comparator does not invent supporting-read
+counts. See [the comparator options](README.md#compare_marker_status_setspy).
 
 Within a trusted expected Y path, review ancestral/derived conflicts, equivalent-marker support,
 DP, allele-specific AD, GQ and BAM-level MAPQ/strand evidence. Count unique loci and molecules rather

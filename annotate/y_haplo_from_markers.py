@@ -23,10 +23,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
+from marker_schema import OUTPUT_COLUMNS, derived_allele
+
 
 ReferenceFetch = Callable[[str, int, int], str]
-OUTPUT_COLUMNS = ("chrom", "pos", "id", "ref", "alt", "aa", "hg", "isogg",
-                  "gt", "gq", "dp", "source", "status", "reason")
 
 
 @contextmanager
@@ -276,13 +276,7 @@ def classify_marker(
     if called == aa:
         return source, "ancestral", "."
 
-    der = marker.der
-    if not der or der == ".":
-        marker_alt = marker.alt.split(",")[0]
-        if aa == marker.ref:
-            der = marker_alt
-        elif aa == marker_alt:
-            der = marker.ref
+    der = derived_allele(marker.ref, marker.alt, aa, marker.der)
 
     if der and der != "." and called == der:
         return source, "derived", "."

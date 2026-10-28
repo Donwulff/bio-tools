@@ -17,13 +17,15 @@ registered thresholds or rerun sample analyses.
 7. gVCF: separate ordinary variant conversion from reference-block transformation. Picard block
    preservation is unvalidated; require a block-aware implementation and meaningful fixtures before
    advertising that capability. See [annotate/LIFTOVER.md](annotate/LIFTOVER.md).
-8. `compare_marker_status_sets.py`: reject or explicitly reconcile duplicate identities/loci/alleles;
-   add callable-on-both and expected-path denominators, allele depths, and lost-liftover accounting.
-   Validate cross-assembly comparisons by verified identity, not coordinate equality or ID alone.
+8. Comparator: duplicate/conflict safeguards, callable-only metrics and explicit expected-panel
+   denominators are implemented and synthetic-tested. Remaining: allele-depth export (not in the
+   status schema), trusted coordinate/allele crosswalks and exact panel hashes, and actual
+   liftover-reject provenance. Missing table IDs must not be labelled rejected loci automatically.
 9. Marker resolution: interior gVCF lookup and all-state quality filtering are implemented with
    synthetic regressions (`annotate/test_y_haplo_from_markers.py`). Existing sample outputs were
    not regenerated. Remaining: exact panel hashes, broader reference/allele-orientation validation,
    and matched-panel expected-path QC; block-indel interpretation remains unsupported.
-10. Ranking/reports: reduce stale partial reruns and output-schema drift; separate descriptive
+10. Ranking/reports: comparator output/stale-report guards are implemented; other drivers still
+    need stronger rerun freshness and schema tracking. Separate descriptive
     label/marker scores from topology-based placement. Do not present DP sums as supporting-molecule
     counts or tune scores on a known sample and report that as independent validation.
