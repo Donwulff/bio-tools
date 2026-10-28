@@ -12,7 +12,6 @@ import argparse
 import bisect
 from collections import Counter
 from contextlib import contextmanager
-from functools import lru_cache
 import gzip
 import re
 import shutil
@@ -24,6 +23,7 @@ from pathlib import Path
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 from marker_schema import OUTPUT_COLUMNS, derived_allele
+from reference_utils import ReferenceError, indexed_reference
 
 
 ReferenceFetch = Callable[[str, int, int], str]
@@ -34,24 +34,11 @@ def open_reference(path: Optional[Path]) -> Iterator[Optional[ReferenceFetch]]:
     if path is None:
         yield None
         return
-    for required in (path, Path(f"{path}.fai")):
-        if not required.is_file() or required.stat().st_size == 0:
-            raise SystemExit(f"ERROR: reference requires a nonempty file: {required}")
-    if is_gzip(path):
-        gzi = Path(f"{path}.gzi")
-        if not gzi.is_file() or gzi.stat().st_size == 0:
-            raise SystemExit(f"ERROR: compressed reference requires BGZF and a .gzi index: {path}")
     try:
-        import pysam
-    except ImportError:
-        raise SystemExit("ERROR: --reference requires pysam (python3 -m pip install pysam)")
-    try:
-        fasta = pysam.FastaFile(str(path))
-    except (OSError, ValueError) as exc:
-        raise SystemExit(f"ERROR: cannot open indexed reference {path}: {exc}")
-    with fasta:
-        # Nearby aliases and block anchors are reused without loading a chromosome.
-        yield lru_cache(maxsize=4096)(fasta.fetch)
+        with indexed_reference(path) as fetch:
+            yield fetch
+    except (ReferenceError, OSError, UnicodeError) as exc:
+        raise SystemExit(f"ERROR: {exc}") from None
 
 
 def is_gzip(path: Path) -> bool:

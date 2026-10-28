@@ -41,11 +41,10 @@ Notes:
 - No sample analyses were rerun for this correction. Use a fresh output prefix for new results;
   see [LIFTOVER.md](LIFTOVER.md#comparing-native-hs1-lifted-hg38-and-direct-hg38).
 
-Synthetic regression checks (no sample inputs):
+Focused annotation regression checks (no sample inputs; indexed-reference checks need pysam):
 
 ```bash
-python3 annotate/test_y_haplo_from_markers.py
-python3 annotate/test_ytree.py
+sh annotate/run_tests.sh
 ```
 
 ### y_clade_consistency.py
@@ -173,13 +172,38 @@ Shared shell helpers used by liftover drivers (`prepare_y_refs.sh`,
 - compressed-FASTA dictionary alias handling (`ref.dict` and `ref.fa.dict`)
 
 This is partial consolidation: reference search and Picard execution remain duplicated in drivers.
-Sidecar checks currently test file existence, not validity. See [LIFTOVER.md](LIFTOVER.md).
+Sidecar validation now uses the same `reference_utils.py` implementation as marker queries. Empty,
+malformed or mismatching existing sidecars fail rather than being overwritten. Set `SCRIPT_DIR`
+to the annotate directory before sourcing the library. See [LIFTOVER.md](LIFTOVER.md).
+
+### check_reference.py / reference_utils.py
+Read-only checks for FASTA format, FAI structure, BGZF/GZI compatibility, dictionary names/lengths/
+order, dictionary-alias consistency and indexed boundary access. Requires pysam for indexed probes;
+plain gzip is rejected, regardless of the filename suffix. The shell helper creates missing
+sidecars with existing backends, then validates them; this checker never rebuilds an invalid one.
+
+```bash
+python3 annotate/check_reference.py /path/to/native.fa
+python3 annotate/check_reference.py /path/to/native.fa --check-md5
+```
+
+Default checks do not prove whole-sequence identity. `--check-md5` explicitly scans every sequence
+to verify dictionary M5 values and FAI byte layout, so it costs a full reference read. GZI validation
+remains structural plus access probes, not an exhaustive compressed-offset check. The full scan
+streams lines (memory is bounded by a FASTA line and metadata, not the total genome size). Marker
+queries use the same index checks without requiring a Picard dictionary.
+Canonical dictionary naming is shared here instead of duplicated in shell and Python.
 
 ### prepare_y_refs.sh
 Stages hs1 and hg38 reference FASTAs into `./resources/ref/` and ensures
 required sidecars exist (`.fai`, `.dict`). By default it symlinks source
 FASTA files; use `--copy` to copy. Use `--primary-only` to build staged
 FASTA files containing canonical contigs only (`chr1-22,chrX,chrY,chrM` by default).
+Staging accepts relative source paths, preserves BGZF `.gzi` and canonical dictionary sidecars,
+and does not replace an existing target except to reuse an unchanged source symlink. Use a fresh
+output directory for a new copy/subset; orphaned sidecars are rejected. Subsets get fresh indexes
+for their new byte layout rather than copied source offsets. Failed extraction does not leave a
+partial target FASTA.
 
 ### run_y_dual_liftover_experiment.sh
 Two-branch experiment driver for modern Y analysis:
@@ -202,8 +226,9 @@ Uses `RECOVER_SWAPPED_REF_ALT=true` to retain loci where reference/alternate
 alleles are swapped between assemblies.
 Accepts `--markers-gff3-hg38` to force a specific GFF3 marker file.
 References can be passed explicitly from the index build; prefer the compatible base assembly to
-large appended mapping references. The script ensures `.fai` and `.dict` paths exist, but does not
-fully validate their content or the compression/index format.
+large appended mapping references. The script validates reference sidecars and indexed access, but
+does not establish whole-sequence identity by default; sidecar/probe checks and optional full MD5 validation
+are described above.
 If refs are omitted, the script auto-detects from:
 - `--ref-root` or `BIO_TOOLS_INDEX_DIR`/`INDEX_DIR`
 - `./resources/ref`
@@ -215,7 +240,7 @@ use `--allow-extended-ref` only when you explicitly want that behavior.
 Hard-won operational notes:
 - For routine Y analysis, prefer non-extended refs (`chm13v2.0_maskedY_rCRS.fa(.gz)` and
   `GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna`) to avoid decoy-driven confusion.
-- Picard liftover is strict about reference sidecars; ensure both `.fai` and `.dict` exist.
+- Picard liftover is strict about reference sidecars; shared validation now checks their contents.
 - For `ref.fa.gz`, the canonical dictionary is `ref.dict`; the helper aliases the previously
   miscomputed `ref.fa.dict`. Do not infer validity from the presence of either filename.
 Canonical usage:

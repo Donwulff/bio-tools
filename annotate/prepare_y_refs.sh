@@ -24,6 +24,8 @@ Defaults:
   references are symlinked by default (use --copy to copy files)
   dictionary creation prefers: gatk, auto-detected picard.jar, picard CLI, or PICARD_JAR env
   --primary-only extracts canonical contigs from source FASTA into staged FASTA
+  existing targets are refused except unchanged source symlinks; use a fresh out-dir
+  validation requires python3 + pysam; ordinary gzip must be staged uncompressed or BGZF
 EOF
 }
 
@@ -65,40 +67,64 @@ done
 [ -f "$REF_HG38_SRC" ] || { echo "ERROR: source not found: $REF_HG38_SRC" >&2; exit 1; }
 
 need_cmd samtools
-need_cmd java
+need_cmd python3
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "${SCRIPT_DIR}/lib_liftover.sh"
 if [ -z "$PICARD_JAR" ]; then
   PICARD_JAR="$(detect_picard_jar "$SCRIPT_DIR" || true)"
 fi
 
 mkdir -p "$OUT_DIR"
+OUT_DIR=$(CDPATH='' cd -- "$OUT_DIR" && pwd)
+REF_HS1_SRC=$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).absolute())' "$REF_HS1_SRC")
+REF_HG38_SRC=$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).absolute())' "$REF_HG38_SRC")
+
+check_stage_target() {
+  if [ -e "$2" ] || [ -L "$2" ]; then
+    if [ "$PRIMARY_ONLY" -eq 0 ] && [ "$DO_COPY" -eq 0 ] && [ -L "$2" ] && [ "$1" -ef "$2" ]; then
+      return 0
+    fi
+    echo "ERROR: refusing to replace staged reference $2; use a fresh --out-dir." >&2
+    exit 2
+  fi
+  for side in "$2.fai" "$2.gzi" "$(dict_path_for_ref "$2")" "${2%.*}.dict"; do
+    if [ ! -e "$2" ] && [ ! -L "$2" ] && { [ -e "$side" ] || [ -L "$side" ]; }; then
+      echo "ERROR: orphaned sidecar $side; use a fresh --out-dir." >&2
+      exit 2
+    fi
+  done
+}
 
 stage_ref() {
   stage_src="$1"
   stage_dst="$2"
+  ensure_ref_index "$stage_src"
   if [ "$PRIMARY_ONLY" -eq 1 ]; then
     # Build a staged FASTA containing only canonical contigs present in source.
-    [ -f "${stage_src}.fai" ] || samtools faidx "$stage_src"
-    keep=""
+    set --
     for c in $PRIMARY_CONTIGS; do
       if awk -v cc="$c" '$1==cc{found=1} END{exit found?0:1}' "${stage_src}.fai"; then
-        keep="$keep $c"
+        set -- "$@" "$c"
       fi
     done
-    [ -n "$keep" ] || {
+    [ "$#" -gt 0 ] || {
       echo "ERROR: none of the requested primary contigs were found in $stage_src" >&2
       exit 2
     }
-    # shellcheck disable=SC2086
-    samtools faidx "$stage_src" $keep > "$stage_dst"
+    stage_tmp=$(mktemp "${stage_dst}.tmp.XXXXXX")
+    if samtools faidx "$stage_src" "$@" > "$stage_tmp"; then
+      mv "$stage_tmp" "$stage_dst"
+    else
+      rm -f "$stage_tmp"
+      return 2
+    fi
     return 0
   fi
   if [ "$DO_COPY" -eq 1 ]; then
-    cp -f "$stage_src" "$stage_dst"
+    cp "$stage_src" "$stage_dst"
   else
-    ln -sfn "$stage_src" "$stage_dst"
+    [ -L "$stage_dst" ] || ln -s "$stage_src" "$stage_dst"
   fi
 }
 
@@ -108,10 +134,13 @@ copy_or_link_sidecar() {
   if [ ! -f "$side_src" ]; then
     return 0
   fi
+  if [ -e "$side_dst" ] || [ -L "$side_dst" ]; then
+    return 0
+  fi
   if [ "$DO_COPY" -eq 1 ]; then
-    cp -f "$side_src" "$side_dst"
+    cp "$side_src" "$side_dst"
   else
-    ln -sfn "$side_src" "$side_dst"
+    ln -s "$side_src" "$side_dst"
   fi
 }
 
@@ -128,15 +157,23 @@ prepare_one() {
   if [ "$PRIMARY_ONLY" -eq 0 ]; then
     # Try to reuse existing sidecars from source location.
     copy_or_link_sidecar "${ref_src}.fai" "${ref_dst}.fai"
-    copy_or_link_sidecar "${ref_src%.*}.dict" "${ref_dst%.*}.dict"
-    copy_or_link_sidecar "${ref_src}.dict" "${ref_dst%.*}.dict"
+    copy_or_link_sidecar "${ref_src}.gzi" "${ref_dst}.gzi"
+    copy_or_link_sidecar "$(dict_path_for_ref "$ref_src")" "$(dict_path_for_ref "$ref_dst")"
+    copy_or_link_sidecar "${ref_src%.*}.dict" "$(dict_path_for_ref "$ref_dst")"
   fi
 
   ensure_dict "$ref_dst"
 }
 
-HS1_DST="${OUT_DIR}/${HS1_NAME}"
-HG38_DST="${OUT_DIR}/${HG38_NAME}"
+stage_path() {
+  python3 -c 'from pathlib import Path; import sys; p=Path(sys.argv[1]); print(p.parent.resolve()/p.name)' "$1"
+}
+
+HS1_DST=$(stage_path "${OUT_DIR}/${HS1_NAME}")
+HG38_DST=$(stage_path "${OUT_DIR}/${HG38_NAME}")
+[ "$HS1_DST" != "$HG38_DST" ] || { echo "ERROR: reference output names must differ" >&2; exit 2; }
+check_stage_target "$REF_HS1_SRC" "$HS1_DST"
+check_stage_target "$REF_HG38_SRC" "$HG38_DST"
 
 prepare_one "$REF_HS1_SRC" "$HS1_DST"
 prepare_one "$REF_HG38_SRC" "$HG38_DST"

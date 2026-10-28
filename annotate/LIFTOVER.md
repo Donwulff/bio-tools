@@ -12,7 +12,8 @@ optional validation on informative male samples; it is not a prerequisite for ex
 against native calls, and sample variants lifted to hg38 against hg38 markers. Its optional sample
 gVCF is read on the native hs1 branch; that driver does **not** lift the sample gVCF to hg38.
 
-The shared implementation is currently `lib_liftover.sh` for tool/dictionary helpers, plus
+The shared implementation is `reference_utils.py` / `check_reference.py` for reference validation,
+`marker_schema.py` for allele interpretation, `lib_liftover.sh` for tool/sidecar preparation, plus
 `y_haplo_from_markers.py` for marker states, `y_path_rank.py` for descriptive ranking, and
 `ytree.py` for an explicit topology where one is provided. Reference discovery and Picard invocation
 still occur in multiple drivers. Compatibility warnings on the older scripts do not remove that
@@ -49,10 +50,28 @@ layout; regenerate indexes for the exact staged bytes.
 
 For `x.fa.gz`, the canonical dictionary is `x.dict`. The shared helper also maintains the earlier
 `x.fa.dict` alias. The original failure came from the script's suffix calculation; there was no
-demonstrated need to explain it as inconsistent Picard behavior. Current helpers check existence,
-not dictionary contents or agreement with the FASTA. An empty/stale sidecar can therefore still
-pass their preflight. `prepare_y_refs.sh` links/copies by default; `--primary-only` is required to
-extract canonical contigs. Its output filename alone does not prove a subset was made.
+demonstrated need to explain it as inconsistent Picard behavior. The shared checker now rejects
+empty/malformed indexes, incompatible names/lengths/order, conflicting dictionary aliases, ordinary
+gzip and invalid GZI metadata, then probes indexed boundaries. Invalid existing sidecars are not
+silently rebuilt. The helpers require Python/pysam as well as their existing generation tools.
+
+These checks are deliberately cheaper than a full genome scan. They do **not** establish identity
+of every sequence byte or every index position. Use `python3 annotate/check_reference.py REF
+--check-md5` for an explicit full scan comparing sequence M5 values and actual FAI layout;
+every dictionary entry must carry M5. This reads the full reference, retaining one FASTA line and
+metadata rather than collecting whole sequences. Unwrapped chromosome-sized lines still cost
+memory proportional to their line length. GZI validation remains structural/probe-based even with
+this flag; it does not test every compressed offset.
+The synthetic checks also cover CRLF and a final sequence without a newline: faidx can retain a
+nominal EOL width for that final one-line sequence. The validator accepts this harmless EOF case
+instead of mistaking it for a stale index.
+
+`prepare_y_refs.sh` links/copies by default; `--primary-only` is required to extract canonical
+contigs. Its output filename alone does not prove a subset was made. Use a fresh destination for
+copies or changed subsets: existing targets and orphaned sidecars are refused, while unchanged
+source symlinks can be reused. Relative source links are made absolute; unchanged BGZF copies reuse
+their GZI, and subsets get new indexes rather than source byte offsets. Failed subset extraction
+leaves no partial target FASTA. Staging does not automatically decompress ordinary gzip.
 
 ## Picard gVCF Limitation
 

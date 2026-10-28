@@ -27,51 +27,59 @@ detect_picard_jar() {
 }
 
 dict_path_for_ref() {
-  ref="$1"
-  case "$ref" in
-    *.fa.gz) echo "${ref%.fa.gz}.dict" ;;
-    *.fna.gz) echo "${ref%.fna.gz}.dict" ;;
-    *.fasta.gz) echo "${ref%.fasta.gz}.dict" ;;
-    *.fas.gz) echo "${ref%.fas.gz}.dict" ;;
-    *.fa) echo "${ref%.fa}.dict" ;;
-    *.fna) echo "${ref%.fna}.dict" ;;
-    *.fasta) echo "${ref%.fasta}.dict" ;;
-    *.fas) echo "${ref%.fas}.dict" ;;
-    *) echo "${ref%.*}.dict" ;;
-  esac
+  python3 "${SCRIPT_DIR}/check_reference.py" "$1" --print-dict-path
 }
 
 link_dict_alias() {
   src="$1"
   dst="$2"
   [ -f "$src" ] || return 0
-  [ -f "$dst" ] && return 0
-  ln -sfn "$(basename "$src")" "$dst"
+  if [ -e "$dst" ] || [ -L "$dst" ]; then
+    [ -f "$dst" ] || { echo "ERROR: invalid dictionary alias: $dst" >&2; return 2; }
+    return 0
+  fi
+  ln -s "$(basename "$src")" "$dst"
+}
+
+ensure_ref_index() {
+  ref="$1"
+  python3 "${SCRIPT_DIR}/check_reference.py" "$ref" --format-only >/dev/null || return
+  python3 -c 'import pysam' >/dev/null 2>&1 || {
+    echo "ERROR: reference validation requires pysam (python3 -m pip install pysam)" >&2
+    return 1
+  }
+  if [ ! -e "${ref}.fai" ] && [ ! -L "${ref}.fai" ]; then
+    if [ -e "${ref}.gzi" ] || [ -L "${ref}.gzi" ]; then
+      echo "ERROR: existing .gzi without .fai for $ref; rebuild the reference indexes explicitly." >&2
+      return 2
+    fi
+    samtools faidx "$ref" || return
+  fi
+  python3 "${SCRIPT_DIR}/check_reference.py" "$ref" --index-only >/dev/null || return
 }
 
 ensure_ref_sidecars() {
   ref="$1"
   picard_jar="$2"
   java_opts="$3"
+  ensure_ref_index "$ref" || return
 
-  [ -f "${ref}.fai" ] || samtools faidx "$ref"
-
-  dict_primary="$(dict_path_for_ref "$ref")"
+  dict_primary="$(dict_path_for_ref "$ref")" || return
   dict_alt="${ref%.*}.dict"
-  if [ ! -f "$dict_primary" ] && [ ! -f "$dict_alt" ]; then
+  if [ ! -e "$dict_primary" ] && [ ! -L "$dict_primary" ] && [ ! -e "$dict_alt" ] && [ ! -L "$dict_alt" ]; then
     if command -v gatk >/dev/null 2>&1; then
-      gatk CreateSequenceDictionary -R "$ref" -O "$dict_primary"
+      gatk CreateSequenceDictionary -R "$ref" -O "$dict_primary" || return
     elif [ -n "$picard_jar" ] && [ -f "$picard_jar" ]; then
-      java $java_opts -jar "$picard_jar" CreateSequenceDictionary R="$ref" O="$dict_primary"
+      java $java_opts -jar "$picard_jar" CreateSequenceDictionary R="$ref" O="$dict_primary" || return
     elif command -v picard >/dev/null 2>&1; then
-      picard CreateSequenceDictionary R="$ref" O="$dict_primary"
+      picard CreateSequenceDictionary R="$ref" O="$dict_primary" || return
     else
       echo "ERROR: missing sequence dictionary for $ref and no tool available to create it." >&2
       echo "Install gatk/picard or set --picard-jar." >&2
       exit 2
     fi
   fi
-  # Some tools look for <ref>.dict while others expect <ref-with-fasta-suffix-removed>.dict.
-  link_dict_alias "$dict_primary" "$dict_alt"
-  link_dict_alias "$dict_alt" "$dict_primary"
+  python3 "${SCRIPT_DIR}/check_reference.py" "$ref" >/dev/null || return
+  link_dict_alias "$dict_primary" "$dict_alt" || return
+  link_dict_alias "$dict_alt" "$dict_primary" || return
 }

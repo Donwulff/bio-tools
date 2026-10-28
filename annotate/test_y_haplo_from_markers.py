@@ -326,14 +326,14 @@ class ResolverTest(unittest.TestCase):
         indexed, _ = self.run_cli(prefix="indexed")
         self.assertEqual(self.statuses(plain), self.statuses(indexed))
 
-    def test_plain_gzip_reference_requires_bgzf_index(self):
+    def test_plain_gzip_reference_is_rejected(self):
         ref = self.root / "reference.fa.gz"
         with gzip.open(ref, "wt") as fh:
             fh.write(f">chrY\n{SEQUENCE}\n")
         Path(f"{ref}.fai").write_text("chrY\t16\t6\t16\t17\n")
         self.write_calls(record())
         _, run = self.run_cli("--reference", str(ref), ok=False)
-        self.assertIn(".gzi", run.stderr)
+        self.assertIn("not BGZF", run.stderr)
 
     def test_missing_fasta_index_is_not_silently_created(self):
         self.write_calls(record())

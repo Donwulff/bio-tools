@@ -59,6 +59,7 @@ need_cmd java
 need_cmd bcftools
 need_cmd tabix
 need_cmd samtools
+need_cmd python3
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 . "${SCRIPT_DIR}/lib_liftover.sh"

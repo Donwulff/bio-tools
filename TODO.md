@@ -1,6 +1,6 @@
 # TODO
 
-Status reviewed 2026-10-28. See [SITUATION.md](SITUATION.md) for research/PR status and unresolved
+Status updated 2026-10-29. See [SITUATION.md](SITUATION.md) for research/PR status and unresolved
 registered work. Items below concern reusable tooling; they are not authorization to change
 registered thresholds or rerun sample analyses.
 
@@ -11,9 +11,10 @@ registered thresholds or rerun sample analyses.
 3. `util/build_env.sh`: pass build flags explicitly on `make install` (use `sudo env CFLAGS=... LDFLAGS=... LIBS=...`). Avoid `sudo -E` which drops env and triggers rebuilds without zlib.
 4. `util/build_env.sh`: standardize zlib linking across tools (bedtools/bwa/samtools/bcftools) when using `../zlib/libz.a`.
 5. `util/build_env.sh`: Node build should pin a supported Python (`PYTHON=/usr/bin/python3.11` or `--python=...`) to avoid Python 3.13 configure failures.
-6. Liftover: finish consolidating reference discovery, configuration, Picard/GATK execution and
-   validation. Shared `lib_liftover.sh` exists, but the drivers still duplicate operations. Validate
-   nonempty sidecars, matching dictionaries, staged compression/indexes and per-input output names.
+6. Liftover: shared reference/index/dictionary validation and safe reference staging are implemented
+   with synthetic tests. Remaining consolidation: reference discovery, configuration and backend
+   execution still differ among drivers. Batch liftover outputs/reports still need transactional
+   handling and complete preflight; the new comparator's output guards do not fix that batch path.
 7. gVCF: separate ordinary variant conversion from reference-block transformation. Picard block
    preservation is unvalidated; require a block-aware implementation and meaningful fixtures before
    advertising that capability. See [annotate/LIFTOVER.md](annotate/LIFTOVER.md).
