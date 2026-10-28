@@ -10,14 +10,48 @@ from __future__ import annotations
 
 import argparse
 import bisect
+from collections import Counter
+from contextlib import contextmanager
+from functools import lru_cache
 import gzip
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
+
+
+ReferenceFetch = Callable[[str, int, int], str]
+OUTPUT_COLUMNS = ("chrom", "pos", "id", "ref", "alt", "aa", "hg", "isogg",
+                  "gt", "gq", "dp", "source", "status", "reason")
+
+
+@contextmanager
+def open_reference(path: Optional[Path]) -> Iterator[Optional[ReferenceFetch]]:
+    if path is None:
+        yield None
+        return
+    for required in (path, Path(f"{path}.fai")):
+        if not required.is_file() or required.stat().st_size == 0:
+            raise SystemExit(f"ERROR: reference requires a nonempty file: {required}")
+    if is_gzip(path):
+        gzi = Path(f"{path}.gzi")
+        if not gzi.is_file() or gzi.stat().st_size == 0:
+            raise SystemExit(f"ERROR: compressed reference requires BGZF and a .gzi index: {path}")
+    try:
+        import pysam
+    except ImportError:
+        raise SystemExit("ERROR: --reference requires pysam (python3 -m pip install pysam)")
+    try:
+        fasta = pysam.FastaFile(str(path))
+    except (OSError, ValueError) as exc:
+        raise SystemExit(f"ERROR: cannot open indexed reference {path}: {exc}")
+    with fasta:
+        # Nearby aliases and block anchors are reused without loading a chromosome.
+        yield lru_cache(maxsize=4096)(fasta.fetch)
 
 
 def is_gzip(path: Path) -> bool:
@@ -89,7 +123,7 @@ def parse_gff3_attrs(attr: str) -> Dict[str, str]:
     return out
 
 
-def site_filter_ok(filt: str, mode: str) -> bool:
+def site_filter_ok(filt: str, mode: str, is_block: bool = False) -> bool:
     if mode == "any":
         return True
     if mode == "pass":
@@ -97,7 +131,7 @@ def site_filter_ok(filt: str, mode: str) -> bool:
     if mode == "pass-or-dot":
         return filt in {"PASS", "."}
     if mode == "deepvariant":
-        return filt in {"PASS", "RefCall"}
+        return filt in {"PASS", "RefCall"} or (is_block and filt == ".")
     raise ValueError(f"unknown filter mode: {mode}")
 
 
@@ -165,34 +199,82 @@ def is_unplaceable_label(isogg: str) -> bool:
     return all("not listed" in p or "not_listed" in p or p == "unknown" for p in parts)
 
 
-def classify_marker(marker: MarkerRow, sample: Optional[SampleRow]) -> Tuple[str, str]:
-    # returns (source, status)
+def quality_failures(sample: SampleRow, min_gq: Optional[int], min_dp: Optional[int]) -> List[str]:
+    reasons = []
+    for name, raw, minimum in (("gq", sample.gq, min_gq), ("dp", sample.dp, min_dp)):
+        if minimum is None:
+            continue
+        value = to_int_or_none(raw)
+        if value is None:
+            reasons.append(f"missing_{name}")
+        elif value < minimum:
+            reasons.append(f"low_{name}")
+    return reasons
+
+
+def classify_marker(
+    marker: MarkerRow, sample: Optional[SampleRow], *,
+    reference: Optional[ReferenceFetch] = None, filter_mode: str = "any",
+    min_gq: Optional[int] = None, min_dp: Optional[int] = None,
+) -> Tuple[str, str, str]:
+    # Keep excluded evidence distinct from a missing record, before any allele call.
     if sample is None:
-        return "missing", "nocall"
+        return "missing", "nocall", "missing_record"
     source = "gvcf_block" if sample.is_block else "variant"
+    if not site_filter_ok(sample.filt, filter_mode, sample.is_block):
+        return source, "filtered", "site_filter"
+    reasons = quality_failures(sample, min_gq, min_dp)
+    if reasons:
+        return source, "filtered", ";".join(reasons)
     state, allele_idx = parse_gt(sample.gt)
     if state == "nocall":
-        return source, "nocall"
+        return source, "nocall", "missing_gt"
     if state == "ambiguous":
-        return source, "ambiguous"
+        return source, "ambiguous", "mixed_gt"
     assert allele_idx is not None
 
     aa = marker.aa
     if not aa or aa == ".":
-        return source, "unknown"
+        return source, "unknown", "missing_ancestral"
+
+    if sample.is_block:
+        if allele_idx != 0:
+            return source, "nocall", "symbolic_allele"
+        if to_int_or_none(sample.dp) == 0:
+            return source, "nocall", "zero_depth"
+        if len(sample.ref) != 1 or len(aa) != 1 or len(marker.alt) != 1:
+            return source, "nocall", "unsupported_block_marker"
+        if marker.pos != sample.pos and reference is None:
+            return source, "nocall", "reference_required"
+
+    if reference is not None:
+        try:
+            anchor = reference(sample.chrom, sample.pos - 1, sample.pos - 1 + len(sample.ref)).upper()
+            if anchor != sample.ref.upper():
+                return source, "nocall", "reference_mismatch"
+            called_ref = reference(marker.chrom, marker.pos - 1, marker.pos).upper() if sample.is_block else sample.ref
+        except (KeyError, OSError, ValueError):
+            return source, "nocall", "reference_unavailable"
+    else:
+        called_ref = sample.ref
 
     # Resolve called base from sample row. This is robust to marker REF/ALT
     # representation differences (e.g. after liftover or swapped alleles).
     sample_alts = sample.alt.split(",")
     if allele_idx == 0:
-        called = sample.ref
+        called = called_ref
     elif 1 <= allele_idx <= len(sample_alts):
         called = sample_alts[allele_idx - 1]
     else:
-        return source, "other"
+        return source, "other", "invalid_allele_index"
+
+    if called in {"*", "."} or called.startswith("<"):
+        return source, "nocall", "symbolic_allele"
+    if not called or any(base not in "ACGT" for base in called.upper()):
+        return source, "nocall", "noncanonical_base"
 
     if called == aa:
-        return source, "ancestral"
+        return source, "ancestral", "."
 
     der = marker.der
     if not der or der == ".":
@@ -203,8 +285,8 @@ def classify_marker(marker: MarkerRow, sample: Optional[SampleRow]) -> Tuple[str
             der = marker.ref
 
     if der and der != "." and called == der:
-        return source, "derived"
-    return source, "other"
+        return source, "derived", "."
+    return source, "other", "unrecognized_allele"
 
 
 def marker_rows_vcf(path: Path, chrom: str = "chrY") -> Iterator[MarkerRow]:
@@ -307,12 +389,18 @@ def sample_rows(path: Path, sample_name: Optional[str], chrom: str = "chrY") -> 
         if sample_idx is None or len(cols) <= sample_idx:
             continue
         info = parse_info(cols[7])
-        end = int(info.get("END", cols[1]))
         fmt_keys = cols[fmt_idx].split(":") if len(cols) > fmt_idx else []
         sample_vals = cols[sample_idx].split(":")
         sm = dict(zip(fmt_keys, sample_vals))
         alt = cols[4]
-        is_block = "END" in info and ("<*>" in alt or alt == "<*>")
+        is_block = "END" in info and alt in {"<*>", "<NON_REF>", "."}
+        pos = int(cols[1])
+        end = int(info["END"]) if is_block else pos
+        if end < pos:
+            raise SystemExit(f"ERROR: reference block END precedes POS at {cols[0]}:{pos}")
+        dp = sm.get("DP", ".")
+        if is_block and "MIN_DP" in sm:
+            dp = sm["MIN_DP"]
         yield SampleRow(
             chrom=cols[0],
             pos=int(cols[1]),
@@ -322,26 +410,28 @@ def sample_rows(path: Path, sample_name: Optional[str], chrom: str = "chrY") -> 
             alt=alt,
             gt=sm.get("GT", "."),
             gq=sm.get("GQ", "."),
-            dp=sm.get("DP", sm.get("MIN_DP", ".")),
+            dp=dp,
             is_block=is_block,
         )
 
 
-def pick_variant(rows: List[SampleRow]) -> Optional[SampleRow]:
+def pick_variant(
+    rows: List[SampleRow], filter_mode: str = "any",
+    min_gq: Optional[int] = None, min_dp: Optional[int] = None,
+) -> Optional[SampleRow]:
     if not rows:
         return None
-    # Prefer non-block rows. For ties, prefer non-missing GT and higher GQ.
+    # An explicit site must not disappear into a covering reference block.
+    # Among tied site records prefer eligible evidence, then GT and GQ.
     non_block = [r for r in rows if not r.is_block]
     cands = non_block or rows
 
     def rank(row: SampleRow):
         gt_state, _ = parse_gt(row.gt)
         nonmiss = 1 if gt_state != "nocall" else 0
-        try:
-            gq = int(row.gq)
-        except Exception:
-            gq = -1
-        return (nonmiss, gq)
+        gq = to_int_or_none(row.gq)
+        return (site_filter_ok(row.filt, filter_mode, row.is_block),
+                not quality_failures(row, min_gq, min_dp), nonmiss, gq if gq is not None else -1)
 
     return sorted(cands, key=rank, reverse=True)[0]
 
@@ -354,27 +444,29 @@ def to_int_or_none(x: str) -> Optional[int]:
 
 
 def build_sample_lookup(
-    path: Path, sample_name: Optional[str], chrom: str, filter_mode: str
+    path: Path, sample_name: Optional[str], chrom: str
 ) -> Tuple[Dict[int, List[SampleRow]], List[int], List[SampleRow]]:
     variants_by_pos: Dict[int, List[SampleRow]] = {}
     blocks: List[SampleRow] = []
     for row in sample_rows(path, sample_name=sample_name, chrom=chrom):
-        if not site_filter_ok(row.filt, filter_mode):
-            continue
         if row.is_block:
             blocks.append(row)
         else:
             variants_by_pos.setdefault(row.pos, []).append(row)
     blocks.sort(key=lambda r: (r.pos, r.end))
+    for previous, current in zip(blocks, blocks[1:]):
+        if current.pos <= previous.end:
+            raise SystemExit(f"ERROR: overlapping reference blocks at {chrom}:{current.pos}")
     block_starts = [b.pos for b in blocks]
     return variants_by_pos, block_starts, blocks
 
 
 def sample_for_pos(
-    pos: int, variants_by_pos: Dict[int, List[SampleRow]], block_starts: List[int], blocks: List[SampleRow]
+    pos: int, variants_by_pos: Dict[int, List[SampleRow]], block_starts: List[int], blocks: List[SampleRow],
+    *, filter_mode: str = "any", min_gq: Optional[int] = None, min_dp: Optional[int] = None,
 ) -> Optional[SampleRow]:
     rows = variants_by_pos.get(pos, [])
-    picked = pick_variant(rows)
+    picked = pick_variant(rows, filter_mode, min_gq, min_dp)
     if picked is not None:
         return picked
     if not blocks:
@@ -391,19 +483,22 @@ def sample_for_pos(
 def main() -> int:
     ap = argparse.ArgumentParser(description="Y marker status from VCF/gVCF.")
     ap.add_argument("-i", "--input", required=True, help="sample VCF/gVCF (plain or gzip)")
-    ap.add_argument("--markers", required=True, help="marker VCF (YBrowse/ISOGG)")
+    ap.add_argument("--markers", required=True, help="marker VCF or GFF3 (YBrowse/ISOGG)")
+    ap.add_argument("--reference", help="matching sample-assembly indexed FASTA; needed for interior gVCF block bases (requires pysam)")
     ap.add_argument("-o", "--out-prefix", required=True, help="output prefix")
     ap.add_argument("-s", "--sample", default="", help="sample name (default: first sample)")
     ap.add_argument("--chrom", default="chrY", help="target chromosome (default: chrY)")
     ap.add_argument("--site-filter-mode", default="any", choices=["any", "pass", "pass-or-dot", "deepvariant"])
-    ap.add_argument("--min-gq", type=int, default=None)
-    ap.add_argument("--min-dp", type=int, default=None)
+    ap.add_argument("--min-gq", type=int, default=None, help="minimum GQ for every output state; failures become filtered")
+    ap.add_argument("--min-dp", type=int, default=None, help="minimum DP for every output state (MIN_DP preferred for blocks)")
     ap.add_argument(
         "--bgzip-index-input",
         action="store_true",
         help="When input has no index, create temporary bgzip+tabix copy for fast regional fetch.",
     )
     args = ap.parse_args()
+    if any(value is not None and value < 0 for value in (args.min_gq, args.min_dp)):
+        ap.error("--min-gq and --min-dp must be nonnegative")
 
     in_path = Path(args.input)
     marker_path = Path(args.markers)
@@ -450,7 +545,7 @@ def main() -> int:
 
     m_iter = marker_rows(marker_path, chrom=args.chrom)
     variants_by_pos, block_starts, blocks = build_sample_lookup(
-        sample_path_for_read, sample_name=(args.sample or None), chrom=args.chrom, filter_mode=args.site_filter_mode
+        sample_path_for_read, sample_name=(args.sample or None), chrom=args.chrom
     )
 
     counts = {
@@ -461,107 +556,52 @@ def main() -> int:
         "nocall": 0,
         "ambiguous": 0,
         "other": 0,
+        "unknown": 0,
+        "filtered": 0,
     }
+    reason_counts: Counter[str] = Counter()
     isogg_counts: Dict[str, int] = {}
     deepest: Dict[str, int] = {}
     max_depth = 0
     counts["derived_unplaceable"] = 0
 
-    with marker_status_tsv.open("w", encoding="utf-8") as m_out, derived_tsv.open(
-        "w", encoding="utf-8"
-    ) as d_out, unplaceable_tsv.open("w", encoding="utf-8") as u_out:
-        u_out.write(
-            "\t".join(
-                ["chrom", "pos", "id", "ref", "alt", "aa", "hg", "isogg", "gt", "gq", "dp", "source", "status"]
-            )
-            + "\n"
-        )
+    with (
+        open_reference(Path(args.reference) if args.reference else None) as reference,
+        marker_status_tsv.open("w", encoding="utf-8") as m_out,
+        derived_tsv.open("w", encoding="utf-8") as d_out,
+        unplaceable_tsv.open("w", encoding="utf-8") as u_out,
+    ):
+        u_out.write("\t".join(OUTPUT_COLUMNS) + "\n")
         for m in m_iter:
             counts["total_markers"] += 1
-            picked = sample_for_pos(m.pos, variants_by_pos, block_starts, blocks)
+            picked = sample_for_pos(m.pos, variants_by_pos, block_starts, blocks,
+                                    filter_mode=args.site_filter_mode, min_gq=args.min_gq, min_dp=args.min_dp)
 
-            source, status = classify_marker(m, picked)
+            source, status, reason = classify_marker(m, picked, reference=reference,
+                                                      filter_mode=args.site_filter_mode,
+                                                      min_gq=args.min_gq, min_dp=args.min_dp)
+            if reason != ".":
+                reason_counts.update(reason.split(";"))
 
             gt = picked.gt if picked else "."
             gq = picked.gq if picked else "."
             dp = picked.dp if picked else "."
 
-            m_out.write(
-                "\t".join(
-                    [
-                        m.chrom,
-                        str(m.pos),
-                        m.vid,
-                        m.ref,
-                        m.alt,
-                        m.aa,
-                        m.hg,
-                        m.isogg,
-                        gt,
-                        gq,
-                        dp,
-                        source,
-                        status,
-                    ]
-                )
-                + "\n"
-            )
+            fields = [m.chrom, str(m.pos), m.vid, m.ref, m.alt, m.aa, m.hg, m.isogg,
+                      gt, gq, dp, source, status, reason]
+            row_text = "\t".join(fields) + "\n"
+            m_out.write(row_text)
 
-            if status != "nocall":
+            if status not in {"nocall", "filtered"}:
                 counts["resolved_nonmiss"] += 1
             counts[status] = counts.get(status, 0) + 1
 
             if status == "derived":
-                gq_i = to_int_or_none(gq)
-                dp_i = to_int_or_none(dp)
-                if args.min_gq is not None and (gq_i is None or gq_i < args.min_gq):
-                    continue
-                if args.min_dp is not None and (dp_i is None or dp_i < args.min_dp):
-                    continue
-                d_out.write(
-                    "\t".join(
-                        [
-                            m.chrom,
-                            str(m.pos),
-                            m.vid,
-                            m.ref,
-                            m.alt,
-                            m.aa,
-                            m.hg,
-                            m.isogg,
-                            gt,
-                            gq,
-                            dp,
-                            source,
-                            status,
-                        ]
-                    )
-                    + "\n"
-                )
-                counts["derived"] += 0  # already counted above; keep no-op for clarity
+                d_out.write(row_text)
 
                 if is_unplaceable_label(m.isogg):
                     counts["derived_unplaceable"] += 1
-                    u_out.write(
-                        "\t".join(
-                            [
-                                m.chrom,
-                                str(m.pos),
-                                m.vid,
-                                m.ref,
-                                m.alt,
-                                m.aa,
-                                m.hg,
-                                m.isogg,
-                                gt,
-                                gq,
-                                dp,
-                                source,
-                                status,
-                            ]
-                        )
-                        + "\n"
-                    )
+                    u_out.write(row_text)
 
                 isogg = m.isogg.strip('"') if m.isogg and m.isogg != "." else "(missing)"
                 isogg_counts[isogg] = isogg_counts.get(isogg, 0) + 1
@@ -577,12 +617,13 @@ def main() -> int:
     with summary_txt.open("w", encoding="utf-8") as out:
         out.write(f"Input: {in_path}\n")
         out.write(f"Markers: {marker_path}\n")
+        out.write(f"Reference: {args.reference or 'none (interior blocks unresolved)'}\n")
         out.write(f"Chrom: {args.chrom}\n")
         out.write(f"FilterMode: {args.site_filter_mode}\n")
         out.write(f"MinGQ: {args.min_gq if args.min_gq is not None else 'none'}\n")
         out.write(f"MinDP: {args.min_dp if args.min_dp is not None else 'none'}\n\n")
         out.write("Counts:\n")
-        for k in ["total_markers", "resolved_nonmiss", "derived", "ancestral", "nocall", "ambiguous", "other"]:
+        for k in ["total_markers", "resolved_nonmiss", "derived", "ancestral", "nocall", "ambiguous", "other", "unknown", "filtered"]:
             out.write(f"  {k}: {counts.get(k, 0)}\n")
         out.write(
             f"  derived_unplaceable: {counts.get('derived_unplaceable', 0)}"
@@ -590,6 +631,9 @@ def main() -> int:
             f" see {unplaceable_tsv.name}; test these against FTDNA/YFull blocks"
             " with annotate/y_markers_pileup.py)\n"
         )
+        out.write("\nResolution/filter reasons (a row may have multiple):\n")
+        for reason, n in sorted(reason_counts.items()):
+            out.write(f"  {reason}: {n}\n")
         out.write("\nDeepest HG candidates (derived rows only):\n")
         if max_depth == 0:
             out.write("  (none)\n")
@@ -603,6 +647,12 @@ def main() -> int:
 
     if temp_dir is not None:
         temp_dir.cleanup()
+    if reason_counts["reference_required"]:
+        print(f"WARN: {reason_counts['reference_required']} interior block markers need --reference; reported as nocall.",
+              file=sys.stderr)
+    for reason in ("reference_mismatch", "reference_unavailable"):
+        if reason_counts[reason]:
+            print(f"WARN: {reason_counts[reason]} marker rows have {reason}; reported as nocall.", file=sys.stderr)
     print(
         f"Done. marker_status={marker_status_tsv} derived={derived_tsv} "
         f"unplaceable_derived={unplaceable_tsv} summary={summary_txt}"

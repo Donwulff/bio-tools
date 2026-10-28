@@ -18,6 +18,7 @@ Usage:
     [--allow-extended-ref] \
     [--picard-jar picard.jar] \
     [--java-opts "-Xms1g -Xmx8g"] \
+    [--min-gq N] [--min-dp N] \
     [--out-dir DIR]
 
 Purpose:
@@ -31,6 +32,8 @@ Defaults:
   out-dir defaults to ./experiments/y_dual_liftover_<timestamp>
   markers default is fetched to ./resources/snps_hg38.vcf.gz
   refs auto-detect from --ref-root, BIO_TOOLS_INDEX_DIR/INDEX_DIR, ./resources/ref, mapping/index
+  quality thresholds default to unset; when supplied they apply to all marker states
+  reference-based marker resolution requires pysam
 
 Output:
   <out-dir>/summary.tsv
@@ -59,6 +62,8 @@ JAVA_OPTS=""
 ALLOW_EXTENDED_REF=0
 CLADE_PREFIX="${YPATH_CLADE_PREFIX:-R}"
 AUTO_CLADE=1
+MIN_GQ=""
+MIN_DP=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -77,9 +82,17 @@ while [ $# -gt 0 ]; do
     --allow-extended-ref) ALLOW_EXTENDED_REF=1; shift ;;
     --picard-jar) PICARD_JAR="$2"; shift 2 ;;
     --java-opts) JAVA_OPTS="$2"; shift 2 ;;
+    --min-gq) MIN_GQ="$2"; shift 2 ;;
+    --min-dp) MIN_DP="$2"; shift 2 ;;
     --out-dir) OUT_DIR="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "ERROR: unknown argument: $1" >&2; usage; exit 1 ;;
+  esac
+done
+
+for threshold in "$MIN_GQ" "$MIN_DP"; do
+  case "$threshold" in
+    *[!0-9]*) echo "ERROR: --min-gq and --min-dp must be nonnegative integers" >&2; exit 1 ;;
   esac
 done
 
@@ -100,6 +113,10 @@ need_cmd bcftools
 need_cmd tabix
 need_cmd python3
 need_cmd samtools
+python3 -c 'import pysam' >/dev/null 2>&1 || {
+  echo "ERROR: reference-based marker resolution requires pysam (python3 -m pip install pysam)" >&2
+  exit 1
+}
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 . "${SCRIPT_DIR}/lib_liftover.sh"
@@ -270,38 +287,30 @@ java $JAVA_OPTS -jar "$PICARD_JAR" LiftoverVcf \
 tabix -f "$SAMPLE_HG38"
 
 echo "Run marker-state extraction on hs1 branch"
-python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
-  -i "$SAMPLE_VCF_HS1" \
-  --markers "$MARKERS_HS1" \
-  -o "${OUT_DIR}/hs1_from_markers_lifted" \
-  --site-filter-mode deepvariant \
-  --bgzip-index-input
+extract_markers() {
+  set -- -i "$1" --markers "$2" -o "$3" --reference "$4" \
+    --site-filter-mode deepvariant --bgzip-index-input
+  [ -z "$MIN_GQ" ] || set -- "$@" --min-gq "$MIN_GQ"
+  [ -z "$MIN_DP" ] || set -- "$@" --min-dp "$MIN_DP"
+  python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" "$@"
+}
+
+extract_markers "$SAMPLE_VCF_HS1" "$MARKERS_HS1" \
+  "${OUT_DIR}/hs1_from_markers_lifted" "$REF_HS1"
 
 if [ -n "$SAMPLE_GVCF_HS1" ]; then
-  python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
-    -i "$SAMPLE_GVCF_HS1" \
-    --markers "$MARKERS_HS1" \
-    -o "${OUT_DIR}/hs1_from_markers_lifted_gvcf" \
-    --site-filter-mode deepvariant \
-    --bgzip-index-input
+  extract_markers "$SAMPLE_GVCF_HS1" "$MARKERS_HS1" \
+    "${OUT_DIR}/hs1_from_markers_lifted_gvcf" "$REF_HS1"
 fi
 
 echo "Run marker-state extraction on hg38-lifted sample branch"
-python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
-  -i "$SAMPLE_HG38" \
-  --markers "$MARKERS_HG38_CLEAN" \
-  -o "${OUT_DIR}/hg38_from_sample_lifted" \
-  --site-filter-mode deepvariant \
-  --bgzip-index-input
+extract_markers "$SAMPLE_HG38" "$MARKERS_HG38_CLEAN" \
+  "${OUT_DIR}/hg38_from_sample_lifted" "$REF_HG38"
 
 if [ -n "$MARKERS_GFF3_HG38" ] && [ -f "$MARKERS_GFF3_HG38" ]; then
   echo "Run marker-state extraction on hg38-lifted sample branch (GFF3 markers)"
-  python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
-    -i "$SAMPLE_HG38" \
-    --markers "$MARKERS_GFF3_HG38" \
-    -o "${OUT_DIR}/hg38_from_sample_lifted_gff3" \
-    --site-filter-mode deepvariant \
-    --bgzip-index-input
+  extract_markers "$SAMPLE_HG38" "$MARKERS_GFF3_HG38" \
+    "${OUT_DIR}/hg38_from_sample_lifted_gff3" "$REF_HG38"
 fi
 
 if [ "$AUTO_CLADE" -eq 1 ]; then

@@ -4,6 +4,8 @@ Compare marker-status TSV outputs from y_haplo_from_markers.py across datasets.
 
 Input rows are expected in this column order:
   CHROM POS ID REF ALT AA HG ISOGG GT GQ DP SOURCE STATUS
+Newer tables append REASON; extra columns are accepted. Filtered states remain
+distinct from missing records and explicit no-calls.
 """
 
 from __future__ import annotations

@@ -16,12 +16,14 @@ Options:
   --iceman-vcf-sample S Sample name for iceman.vcf (default: auto/first)
   --iceman-gvcf-sample S
                         Sample name for iceman.gvcf (default: auto/first)
+  --reference FILE      Matching sample-assembly indexed FASTA (or YCOMPARE_REFERENCE);
+                        needed to resolve interior gVCF blocks, requires pysam
   --solid-vcf FILE      Legacy SOLiD/freebayes VCF input
                         (default: auto-detect)
   --solid-sample S      Sample name for SOLiD VCF (default: Iceman_tst)
   --out-dir DIR         Output directory (default: /tmp/iceman_y_compare_YYYYmmdd_HHMMSS)
-  --min-gq N            GQ threshold for derived.tsv rows (default: 20)
-  --min-dp N            DP threshold for derived.tsv rows (default: 3)
+  --min-gq N            GQ threshold for all marker states (default: 20)
+  --min-dp N            DP threshold for all marker states (default: 3)
   --skip-vcf            Skip iceman.vcf branch
   --skip-gvcf           Skip iceman.gvcf branch
   --skip-solid          Skip SOLiD branch
@@ -48,6 +50,7 @@ need_cmd() {
 MARKERS="${YCOMPARE_MARKERS:-}"
 ICEMAN_VCF="${YCOMPARE_ICEMAN_VCF:-}"
 ICEMAN_GVCF="${YCOMPARE_ICEMAN_GVCF:-}"
+REFERENCE="${YCOMPARE_REFERENCE:-}"
 ICEMAN_VCF_SAMPLE=""
 ICEMAN_GVCF_SAMPLE=""
 SOLID_VCF="${YCOMPARE_SOLID_VCF:-}"
@@ -66,6 +69,7 @@ while [ $# -gt 0 ]; do
     --iceman-gvcf) ICEMAN_GVCF="$2"; shift 2 ;;
     --iceman-vcf-sample) ICEMAN_VCF_SAMPLE="$2"; shift 2 ;;
     --iceman-gvcf-sample) ICEMAN_GVCF_SAMPLE="$2"; shift 2 ;;
+    --reference) REFERENCE="$2"; shift 2 ;;
     --solid-vcf) SOLID_VCF="$2"; shift 2 ;;
     --solid-sample) SOLID_SAMPLE="$2"; shift 2 ;;
     --out-dir) OUT_DIR="$2"; shift 2 ;;
@@ -142,30 +146,18 @@ run_one() {
   out_prefix="${OUT_DIR}/${label}"
   echo "### [$label] input=$input_vcf mode=$mode"
 
-  bgzip_flag=""
+  set -- -i "$input_vcf" --markers "$MARKERS" -o "$out_prefix" \
+    --site-filter-mode "$mode" --min-gq "$MIN_GQ" --min-dp "$MIN_DP"
+  if [ -n "$REFERENCE" ]; then
+    set -- "$@" --reference "$REFERENCE"
+  fi
   if [ ! -f "${input_vcf}.tbi" ] && [ ! -f "${input_vcf}.csi" ]; then
-    bgzip_flag="--bgzip-index-input"
+    set -- "$@" --bgzip-index-input
   fi
   if [ -n "$sample_name" ]; then
-    python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
-      -i "$input_vcf" \
-      --markers "$MARKERS" \
-      -o "$out_prefix" \
-      --sample "$sample_name" \
-      --site-filter-mode "$mode" \
-      --min-gq "$MIN_GQ" \
-      --min-dp "$MIN_DP" \
-      $bgzip_flag
-  else
-    python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
-      -i "$input_vcf" \
-      --markers "$MARKERS" \
-      -o "$out_prefix" \
-      --site-filter-mode "$mode" \
-      --min-gq "$MIN_GQ" \
-      --min-dp "$MIN_DP" \
-      $bgzip_flag
+    set -- "$@" --sample "$sample_name"
   fi
+  python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" "$@"
 
   python3 "${SCRIPT_DIR}/y_path_rank.py" \
     --input "${out_prefix}.marker_status.tsv" \

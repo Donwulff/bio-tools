@@ -8,6 +8,7 @@ usage() {
 Usage:
   run_modern_y_experiment.sh --sample-vcf sample.vcf.gz [--sample-gvcf sample.gvcf.gz]
                              [--markers markers.vcf.gz] [--out-dir DIR]
+                             [--reference sample-assembly.fa]
                              [--allow-assembly-mismatch]
 
 Purpose:
@@ -20,6 +21,7 @@ Notes:
     then annotate/data/snps_hg38.vcf.gz.
   - For CHM13 sample calls and hg38 markers, liftover markers first or use
     a native GRCh38 callset.
+  - Interior gVCF blocks require --reference and pysam; without it they are no-calls.
 EOF
 }
 
@@ -32,6 +34,7 @@ need_cmd() {
 
 SAMPLE_VCF=""
 SAMPLE_GVCF=""
+REFERENCE=""
 MARKERS=""
 OUT_DIR=""
 ALLOW_MISMATCH=0
@@ -40,6 +43,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --sample-vcf) SAMPLE_VCF="$2"; shift 2 ;;
     --sample-gvcf) SAMPLE_GVCF="$2"; shift 2 ;;
+    --reference) REFERENCE="$2"; shift 2 ;;
     --markers) MARKERS="$2"; shift 2 ;;
     --out-dir) OUT_DIR="$2"; shift 2 ;;
     --allow-assembly-mismatch) ALLOW_MISMATCH=1; shift ;;
@@ -112,6 +116,7 @@ fi
 {
   echo "sample_vcf=$SAMPLE_VCF"
   echo "sample_gvcf=${SAMPLE_GVCF:-none}"
+  echo "reference=${REFERENCE:-none}"
   echo "markers=$MARKERS"
   echo "markers_clean=$MARKERS_CLEAN"
   echo "sample_chrY_length=$sample_y_len"
@@ -134,12 +139,17 @@ EOF
   exit 2
 fi
 
+set --
+if [ -n "$REFERENCE" ]; then
+  set -- --reference "$REFERENCE"
+fi
 if [ -n "$SAMPLE_GVCF" ]; then
   [ -f "$SAMPLE_GVCF" ] || { echo "ERROR: sample gVCF not found: $SAMPLE_GVCF" >&2; exit 1; }
   python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
     -i "$SAMPLE_GVCF" \
     --markers "$MARKERS_CLEAN" \
     -o "${OUT_DIR}/from_gvcf" \
+    "$@" \
     --site-filter-mode deepvariant \
     --bgzip-index-input
 fi
@@ -148,6 +158,7 @@ python3 "${SCRIPT_DIR}/y_haplo_from_markers.py" \
   -i "$SAMPLE_VCF" \
   --markers "$MARKERS_CLEAN" \
   -o "${OUT_DIR}/from_vcf" \
+  "$@" \
   --site-filter-mode deepvariant \
   --bgzip-index-input
 

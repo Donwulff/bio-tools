@@ -17,6 +17,7 @@ Columns:
  11 DP
  12 SOURCE
  13 STATUS
+ 14 REASON (optional; newer resolver outputs)
 """
 
 from __future__ import annotations
@@ -202,7 +203,7 @@ def main() -> int:
         "--nocall-weight",
         type=float,
         default=0.0,
-        help="weight for nocall markers at candidate labels (default: 0.0)",
+        help="weight for nocall/filtered markers at candidate labels (default: 0.0)",
     )
     ap.add_argument(
         "--tree",
@@ -305,7 +306,7 @@ def main() -> int:
                 elif status == "ancestral":
                     ancestral_total[c] += 1
                     score_total[c] += args.ancestral_weight
-                elif status == "nocall":
+                elif status in {"nocall", "filtered"}:
                     nocall_total[c] += 1
                     score_total[c] += args.nocall_weight
                 elif status == "ambiguous":
