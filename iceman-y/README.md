@@ -1,24 +1,31 @@
 # Ötzi's Y-haplogroup
 
-**The published label is one node too deep. Read-level evidence puts the Iceman terminal at
-`G-L166`, not at `G-Z6208`.**
+Repository/workstream status, the unmerged Work assessments and interpretation limits are tracked in
+[the dated situation review](../SITUATION.md). This page reports the project's read-level case;
+metadata-only candidate research does not change its placements.
+
+**Read-level evidence places the Iceman at `G-L166` under this project's local tree. `Z6208` is
+derived, but is not treated as a separately resolved downstream node.**
 
 Nature Communications 2025 (`s41467-025-61601-8`) reports `G2a2a1a2a1a1b (G-Z6208*)`. `Z6208` is a
-real SNP and the Iceman is genuinely derived at it (DP 9). It is not a node below `L166`: YBrowse
-and YFull both place it *inside* the `L166` block (`yfull_node=G-L166`), and ISOGG's own longhand
-carries the provisional tilde (`G2a2a1a2a1a1b~`). No ancient sample orders it — zero reads across
-all 30 Oberbipp, Aesch and Muttenz libraries. A derived SNP was read as a terminal placement.
+real SNP and the Iceman is genuinely derived at it (DP 9). The catalogue/tree annotations inspected
+for this analysis group it *inside* the `L166` block (`yfull_node=G-L166`), and the inspected ISOGG
+longhand carries the provisional tilde (`G2a2a1a2a1a1b~`). The 30 Oberbipp, Aesch and Muttenz
+libraries provide zero reads at Z6208, so they do not order it against L166. The local tree marks
+the proposed separate node `refuted`; that is a project interpretation, not a refutation of the
+derived allele. It also does not prove a universally basal terminal-star placement.
 
-Two further nodes fall out of the same evidence, and neither is in any published tree:
+The local tree encodes two provisional splits with different evidential strength:
 
 - **`G-Z6219` sits between `PF3239` and `L166`**, splitting the YFull `L166` block upward. Men from three
-  Swiss Neolithic sites stand here — one rung below the Iceman, not beside him.
-- **`G-Z6499` sits below `L166`**, on the branch toward the modern testers the block was built
-  from. The Iceman is ancestral at it 10/0, so his lineage diverged above them.
+  Swiss Neolithic sites stand here — one node upstream of the Iceman's placement.
+- **`G-Z6499` is proposed below `L166`**, on the branch toward the modern testers the block was
+  built from. The Iceman is ancestral at it 10/0, but below-versus-parallel rests on parsimony alone.
 
-Both are invisible to FTDNA and YFull by construction, not by oversight: **an equivalence block can
-only be split by a sample on the intermediate branch**, and for this part of G2a those branches
-survive only in ancient individuals. No number of modern customers recovers them.
+Samples carrying all markers in an equivalence block cannot resolve their internal order. An
+informative intermediate can split the block, including an ancient individual absent from a
+modern-only comparison. This does not establish that such lineages are extinct, that no modern
+intermediate exists, or that a commercial tree cannot incorporate ancient evidence.
 
 ## The ladder
 
@@ -40,18 +47,21 @@ only on a node's `defining` markers, and a `refuted` node can never appear on a 
 
 ## Who the closest paternal relatives are
 
-**`I5118` — Mezőcsát-Hörcsögös, Hungary, 3300–3000 BCE.** The only other individual anywhere in this
-data that is `L166`-derived. Near-contemporary with the Iceman. Derived at two independent
-`L166`-defining transversions (`L166` and `FGC5696`), **one read each**, no conflicting read —
+**`I5118` — Mezőcsát-Hörcsögös, Hungary, 3300–3000 BCE.** Near-contemporary with the Iceman.
+Derived at two distinct transversion loci in the `L166` block (`L166` and `FGC5696`),
+**one read each**, no conflicting read —
 a `DERIVED_1read_transversion` call under rules fixed before the data existed. Backbone `P15`,
 `PF3147`, `L91`, `PF3239`, `Z6043` all derived with no ancestral read. The call is a single molecule
-per site and is reported as exactly that.
+per site and is reported as exactly that. In the local scorer, `L166` is defining and `FGC5696`
+is an equivalent block marker. The tool also returns a thinner `L166` placement for `Aesch7`,
+with a weak ancestral observation; its caveat is described below. Thus `I5118` is not literally the
+only other tool-returned `L166` placement.
 
-**One rung below, at `G-Z6219`: seven men across three Swiss Neolithic sites** — Oberbipp
+**One node upstream, at `G-Z6219`: seven men across three Swiss Neolithic sites** — Oberbipp
 (`MX210`, `SX10`), Aesch (`Aesch12`, `Aesch13`, `Aesch23`) and Muttenz (`SNPRA61`, `SNPRA62`). Each
 is derived at `Z6219` and, where callable, ancestral at the `L166` transversions. They are the
-Iceman's nearest *positively placed* relatives after `I5118` — genuinely close, and genuinely not
-where the circulating claim puts them.
+upstream comparison set in this analysis, not demonstrated close genealogical relatives or
+independent replications of the branch.
 
 These are **not demonstrably independent patrilines** and this design cannot make them so. Kin
 groups negative at third degree are not thereby Y-independent, and neither the source publication
@@ -62,15 +72,15 @@ lineages carrying the `Z6219`-derived / `L166`-ancestral state is **1**, observe
 
 | excluded | evidence |
 |---|---|
-| **Three Sardinians** — `I14677`, `I14678`, `I15942` | `I14677` and `I14678` place at `G-PF3239`, `I15942` at `G-L91` on coverage; all three are excluded from both `G-Z6219` and `G-L166`. 42 ancestral reads across three `L166`-defining transversions, zero derived. `I14677` alone carries 11 reads at `L166`. |
-| **The Oberbipp/Aesch/Muttenz men** | At `G-Z6219`, one node above. 59 ancestral reads at `L166` and zero derived, in the same men who are 25/0 derived at `Z6219`. |
-| **Modern `G-L166` testers** | The Iceman is ancestral at `Z6499` 10/0, which the YFull block treats as `L166`-defining. Their branch left after his. |
-| **`CGG017683`** (Crimea) | Permanently unplaceable on the public deposit — zero reads at `Z6219`, `L166`, `L167` and `Z6499`, verified with all filters off. Of ~20 Iceman novel sites it covers 3, ancestral at all 3. |
-| **`UNTA58_68Sk1`** (Augsburg) | No power. Zero reads at all nine `L166`-defining markers. |
+| **Three Sardinians** — `I14677`, `I14678`, `I15942` | `I14677` and `I14678` place at `G-PF3239`, `I15942` at `G-L91` on coverage; all three are excluded from both `G-Z6219` and `G-L166`. 42 ancestral reads across three tested `L166`-block transversion loci, zero derived. `I14677` alone carries 11 reads at `L166`. |
+| **Upstream Oberbipp/Aesch/Muttenz comparison set** | `Z6219`-derived / `L166`-ancestral observations recur across the three sites. Cohort totals are 59 ancestral reads at `L166` and zero derived, and 25 derived at `Z6219` with zero ancestral. Not every man is callable at both sites; see the individual placements and the Aesch7 caveat. |
+| **Modern `G-L166` block comparison** | The Iceman is ancestral at `Z6499` 10/0, contrasting with the derived block used for comparison. The local tree's below-versus-parallel interpretation remains provisional. |
+| **`CGG017683`** (Crimea) | No placement power in the public deposit examined — zero reads at `Z6219`, `L166`, `L167` and `Z6499`, verified with all filters off. Of ~20 Iceman novel sites it covers 3, ancestral at all 3. Revisit only for a genuinely new input or correction. |
+| **`UNTA58_68Sk1`** (Augsburg) | No power. Zero reads across the nine-marker `L166` panel tested. |
 
-Deamination cannot manufacture any of this. `L166` is `C>A` and `L167` is `T>A` — transversions, so
-damage cannot fake the ancestral allele. `Z6499` is `C>T` and the Iceman is *ancestral* there, the
-direction damage cannot produce.
+The usual C>T/G>A deamination mechanism cannot explain these transversion states at `L166` (`C>A`)
+or `L167` (`T>A`), nor manufacture the ancestral C at `Z6499` (`C>T`). This is a directional damage
+check, not a blanket exclusion of sequencing error, contamination or mismapping.
 
 ## What is provisional, and what would overturn it
 
@@ -154,6 +164,12 @@ read; commit timestamps are what makes that claim checkable. They are not requir
 - [`prereg/unhedged_L166.md`](prereg/unhedged_L166.md) — the Sardinians and `I5118`
 - [`prereg/uniqueness_filter.md`](prereg/uniqueness_filter.md) — a filter tested and rejected
 - [`PROTOCOL_extending_analyses.md`](PROTOCOL_extending_analyses.md) — how a new question gets added
+
+The dated [candidate assessment](research/otzi_literature_candidates.md),
+[accession crosswalk](research/otzi_literature_candidates.tsv), and
+[research priorities/source-watch note](research/priorities_and_source_watch.md) preserve the Work
+assessments. They nominate prerequisites and possible follow-ups, not new placements. Their source
+commits and the unverified watch-scheduling claim are recorded in [SITUATION.md](../SITUATION.md).
 
 Working notes, gotchas and the full command history stay in the repository root
 ([`NOTES.md`](../NOTES.md), [`RUNLOG.md`](../RUNLOG.md), [`METHODS.md`](../METHODS.md)). Those files

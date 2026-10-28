@@ -2,6 +2,10 @@
 
 This document records practical methods and reasoning for re-mapping ancient DNA using the scripts in this repo. It is written for pre-filtered BAMs (e.g., reads already filtered to a human reference).
 
+For current outcomes, superseded interpretations and branch/PR status, see
+[SITUATION.md](SITUATION.md). Methods here include experimental branches; their presence is not a
+claim that every branch was validated or that the command template is the exact executed command.
+
 ## Scope
 - Applies to aDNA BAMs that have already been filtered against an older human reference.
 - Examples reference the Otzi 2023 resequencing data (Cell Genomics 2023).
@@ -52,7 +56,8 @@ A single dominant peak is preferred over multimodal peaks, especially when mixin
 - For pre-filtered aDNA, re-dedup can bias results when mates are missing.
 - If needed, dedup only true PE reads or use DeDup on prefix-tagged data.
 DeDup specifics:
-- DeDup expects coordinate-sorted input and does not sort; output header is set to unsorted.
+- DeDup expects coordinate-sorted input; its output can reorder records and sets the header to
+  unsorted. Coordinate-sort the output before indexing/merging; reheadering alone does not sort it.
 - DeDup removes duplicates (does not mark 0x400). Existing duplicate flags are preserved unless cleared first.
 - DeDup requires `M_/F_/R_` prefixes unless `--merged` is used.
 
@@ -61,7 +66,7 @@ Recommended order for each library:
 1) Restore prefixes and drop synthetic D mates; clear 0x400 if present.
 2) Coordinate-sort.
 3) DeDup on the library BAM.
-4) Fix header or sort (DeDup writes `SO:unsorted`).
+4) Coordinate-sort the DeDup output (a header change alone is insufficient).
 Then merge libraries and run a final DeDup on the merged BAM.
 Notes:
 - DeDup ignores read-group (RG). If library-specific dedup is required, split by RG first.
@@ -74,6 +79,33 @@ Preferred split:
 - Route READ_OTHER to `-0` if you want to keep merged/SE reads.
 Chunk boundary risk:
 - `bwa mem -p` pairs only adjacent names and can split true pairs across chunk boundaries when singletons exist. Mitigations are separate PE/SE fastqs or larger `-K` to reduce splits.
+
+The working low-I/O compromise scans the queryname-grouped uBAM twice, emits missing-mate reads
+first and complete pairs second, then loads the BWA index once:
+
+```bash
+(
+  samtools fastq -0 unexpected-se.fastq -o /dev/null -s - -T '*' "$UBAMFILE"
+  samtools fastq -0 unexpected-pe.fastq -o - -s /dev/null -T '*' "$UBAMFILE"
+) | bwa mem -p -C -t "$CORES" "$REF" - > aligned.sam
+```
+
+This template assumes repaired flags and no expected category-0 records. Inspect the diagnostic
+FASTQs. It reduces opportunities for a true pair to cross an input chunk boundary, but the first
+pair at the SE-to-PE transition still can. Check BWA's paired/SE counts and insert-size estimates;
+do not describe this arrangement as a proof of pair preservation. `bwa mem -p` does support mixed
+SE/PE input by adjacent names; missing mates do not globally shift every subsequent pair.
+
+`samtools fastq -s` finds a QNAME with only one of categories 1/2; this differs from `flagstat`
+"singletons" (mapped read with an unmapped mate). PE-technology flags in the published data are
+not sufficient to reconstruct which ends survive. Use prefixes/XQ plus grouped names and reconcile
+primary record counts at each stage.
+
+Memory observations from this run: `samtools sort -@8 -m3G` alongside aligners caused heavy swap;
+`-m` is a per-thread budget, not the job's total. A small-buffer single-threaded sort was used to
+coexist with mapping. Python and sort alternated CPU during buffer-fill/spill cycles; no measured
+Python-specific multi-minute output-buffer defect was established. Pre-decompressing with
+`samtools view -u` reduces work on the Python stage, though it does not parallelize Python itself.
 
 ## Metagenome Decoys
 For Iceman, oral decoys produced sparse, spiky hits after human-reference filtering.
@@ -251,16 +283,20 @@ Observed final-pass delta:
 ## Removed-Read Characterization (First Library)
 For D2049, an exact removed SAM/BAM was created by join-diff between name-sorted pre/post DeDup BAMs.
 Important implementation details:
-- use tab-delimited join: `join -t$'\\t'`
+- use tab-delimited join: `join -t$'\t'` (Bash syntax)
 - use name order compatible with join (`samtools sort -N` or explicit `LC_ALL=C sort`)
 
 Reference command pattern:
 ```bash
+export LC_ALL=C
 samtools view -H pre.Nsort.bam > removed.sam
-join -t$'\\t' -v1 <(samtools view pre.Nsort.bam) <(samtools view post.Nsort.bam) >> removed.sam
+join -t$'\t' -v1 <(samtools view pre.Nsort.bam) <(samtools view post.Nsort.bam) >> removed.sam
 samtools view -b -o removed.bam removed.sam
 samtools flagstat removed.bam
 ```
+
+This compares QNAME existence. It does not distinguish two records sharing the same QNAME; use an
+alignment/end-aware key if the question is removal of only one member or one alignment of a name.
 
 Observed removed BAM (`...pair.prim_rmdup.Nsort.removed.bam`) summary:
 - total removed records: `6735265`
@@ -353,10 +389,15 @@ downstream of alignment — same reference, same marker set, same pileup thresho
 shared script name.
 
 ## Y Haplogroup Marker Workflow (Current)
-For GRCh38-based Y haplogroup checks:
-1. Merge sample chrY calls with YBrowse hg38 marker VCF (`snps_hg38.vcf.gz`).
-2. Extract derived calls against marker ancestral allele (`INFO/AA`), with caller-specific site filtering.
-3. Score candidate clades across datasets via support/conflict counts (not only "deepest label string").
+For GRCh38-based Y checks, resolve marker alleles from a versioned YBrowse VCF/GFF3 panel against
+sample VCF/gVCF, then inspect derived, ancestral, no-call and conflicting states. The historical
+merge-based `y_haplo_from_vcf.sh` is retained for compatibility. Label ranking from
+`y_haplo_from_markers.py` -> `y_path_rank.py` is exploratory; it does not reconstruct an authoritative
+tree or assign calibrated clade probabilities. For the current Iceman investigation, query reads
+with the pileup tools and place on the explicit local tree using `y_tree_place.py`/`ytree.py`.
+For native gVCF marker queries, supply `--reference` for interior block bases. Quality thresholds
+now apply to all marker states; excluded calls are `filtered`, not absent or ancestral. This is
+separate from the unvalidated Picard gVCF conversion described in [the liftover guide](annotate/LIFTOVER.md).
 
 Implementation in repo:
 - `annotate/y_haplo_from_vcf.sh`
@@ -406,9 +447,15 @@ logic when a committed pipeline script calls it; until then it is recorded, not 
 
 Current result snapshot (Iceman):
 - Illumina branch supports `M201`, `L91`, `L166`, and `Z6208` as derived.
+- Derived `Z6208` is not evidence for a separate downstream terminal node. The read-level placement
+  is `G-L166` under the local tree; provisional splits and untested alternatives are in
+  [iceman-y/README.md](iceman-y/README.md).
 - SOLiD branch remains conflict-heavy/inconclusive for terminal placement with current panel.
 
 ## Dual Liftover Workflow Checklist (Modern Y, hs1 <-> hg38)
+Reference preparation, gVCF limitations, sex-independent conversion and fair comparison requirements
+are maintained in [annotate/LIFTOVER.md](annotate/LIFTOVER.md). A completed Picard gVCF run must not
+be taken as validation of reference-confidence block liftover.
 Use this when validating both directions:
 1. `hg38 markers -> hs1` (score on native hs1 sample).
 2. `hs1 sample -> hg38` (score on hg38 markers/resources).

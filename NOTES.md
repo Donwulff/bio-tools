@@ -1,5 +1,12 @@
 # Notes
 
+**Reading this record (reviewed 2026-10-28)**
+Start with [SITUATION.md](SITUATION.md) for current outcomes and open work. These notes retain the
+investigation's chronology: early label-based placement, candidate leads and operational diagnoses
+were often superseded below. Public tables and the current local tree support the latest Iceman
+interpretation. Modern results remain external; [annotate/LIFTOVER.md](annotate/LIFTOVER.md) preserves
+their reusable workflow lessons without sample details.
+
 **Dataset**
 Cell Genomics 2023 short article (Sep 13, 2023): "High-coverage genome of the Tyrolean Iceman reveals unusually high Anatolian farmer ancestry." This note set refers to the Otzi 2023 resequencing BAMs.
 
@@ -236,19 +243,31 @@ samtools view -c -e 'XQ!="D" && (flag&0x400)' file.bam
   - GFF includes indels and more duplicate loci rows.
   - VCF export is SNP-oriented and has fewer duplicate-locus rows.
 - Practical workflow decision:
-  - Use marker VCF as the canonical input for current haplogroup scripts.
+  - The February dual-liftover workflow used sanitized VCF for marker conversion. This does not make
+    that export a complete or authoritative tree; later catalogue comparisons below show why GFF3
+    metadata and explicit defining-marker sets are needed.
   - Sanitize marker VCF alleles before liftover/strict parsing (`ALT!=REF`, no duplicate ALT).
   - For modern terminal-label comparisons against YFull-style nodes, marker GFF3 can be used in `y_haplo_from_markers.py` because it includes `yfull_node` labels.
   - YBrowse GFF3 is not position-sorted; marker evaluation must not assume monotonic marker order.
 
 **Liftover Ops Gotcha (2026-02-24)**
 - A frequent failure mode was not the chain or markers, but reference sidecar naming for compressed FASTA.
-- For `.fa.gz` references, `CreateSequenceDictionary` may produce `ref.fa.dict` while `LiftoverVcf` path checks may look for `ref.dict` (tool/path dependent).
+- For `.fa.gz` references, the script originally computed `ref.fa.dict` instead of the canonical
+  `ref.dict`. This was a suffix-handling bug, not demonstrated disagreement between Picard tools.
 - Mitigation now used in scripts:
   - create/use the canonical dictionary path based on FASTA suffix,
   - add dictionary alias symlink so both names resolve,
   - preflight `.fai` + `.dict` before liftover starts.
   - reuse shared liftover helper module (`annotate/lib_liftover.sh`) so this behavior is consistent across drivers.
+
+**Liftover review correction (2026-10-28)**
+The earlier explanation of gVCF rejection as ordinary chain-boundary loss was incomplete. Picard
+2.27.1's interval/REF-length check also rejects multi-base reference blocks; see the source-backed
+explanation in [annotate/LIFTOVER.md](annotate/LIFTOVER.md#picard-gvcf-limitation).
+Completed lifted gVCFs remain experimental partial outputs. The VCF/gVCF basename collision was
+repaired, but reference discovery and execution are still duplicated across drivers. Modern
+three-way agreement was preliminary QC, not a demonstrated winner between direct and lifted calls;
+no-call-heavy denominators, panel differences and duplicate marker keys need resolving.
 
 **Y Path Ranking Readability/Label Gotcha (2026-02-24)**
 - Some marker tables carry coarse clade labels (e.g. `I1`) even when marker IDs are specific (e.g. `Y47125`).
@@ -2590,3 +2609,22 @@ This matters beyond our own tooling because Y-only mapping is standard in commer
 calls against such a pipeline should therefore *predict* disagreement at X-homologous sites rather
 than treat it as a discrepancy to reconcile — and that prediction is registrable in advance from the
 mappability table, before any comparison is run.
+
+## Native gVCF marker resolution correction (2026-10-28)
+
+Synthetic fixtures reproduced two resolver bugs: an interior marker inherited the block-start REF,
+and `--min-gq/--min-dp` excluded only derived reports after unfiltered states had already been
+written for ranking. The corrected engine reads interior bases from `--reference` on the sample's
+assembly and filters every state before output. No supplied reference means an interior no-call,
+not an inferred base. A reference genotype can be derived relative to the marker's ancestral allele.
+
+Both DeepVariant `<*>` and GATK `<NON_REF>` blocks are recognized. MIN_DP, when present, supplies
+a conservative block depth bound; zero does not establish an allele at the queried marker.
+Excluded records remain `filtered`, distinguished from missing records and explicit missing GTs.
+An explicit filtered variant is not replaced by a covering reference block. Column 14 records
+the reason while keeping the original 13 columns in place; older tables still lack these checks.
+
+See [the resolver documentation](annotate/README.md#y_haplo_from_markerspy) and
+[native comparison guide](annotate/LIFTOVER.md#comparing-native-hs1-lifted-hg38-and-direct-hg38).
+This is a synthetic-tested code correction, not a new sample analysis or a fix for Picard gVCF
+liftover. No committed result table or registration was regenerated or amended.

@@ -33,6 +33,8 @@ See also `TODO.md` for pending improvements to build scripts.
 - There is no centralized test runner in the repository.
 - Validate changes by running the affected script on representative data and checking outputs with domain tools (e.g., `samtools`, `bcftools`).
 - Use `results/` PDFs as qualitative comparisons where relevant.
+- Synthetic marker regressions: `python3 annotate/test_y_haplo_from_markers.py`; local-tree checks:
+  `python3 annotate/test_ytree.py`. Neither requires opening private sample files.
 
 ## Commit & Pull Request Guidelines
 - Existing history favors short, imperative summaries (sometimes with `fix:` prefixes). Keep the first line concise and scoped.
@@ -51,8 +53,11 @@ See also `TODO.md` for pending improvements to build scripts.
 
 ## Documentation
 In addition to this file:
+- `SITUATION.md` — dated situation review, branch/PR inventory, evidence precedence and open work;
+  start here before reviving an old task from a chat or an early working note.
 - Top-level `README.md` (high-level).
 - `annotate/README.md`, `mapping/README.md`, `util/README.md` — detailed per-module usage and notes.
+- `annotate/LIFTOVER.md` — reference preparation, Picard gVCF limitations and comparison caveats.
 - `METHODS.md` — practical remapping methods (especially aDNA).
 - `NOTES.md` — findings, gotchas, troubleshooting (pairing, MarkDuplicatesSpark, EAGER interaction, etc.).
 - `RUNLOG.md` — run history.
@@ -60,18 +65,29 @@ In addition to this file:
 - `iceman-y/README.md` — the Ötzi Y verdict, and the only page written to be read on its own. `NOTES.md`
   and `RUNLOG.md` deliberately still carry the Iceman working notes and commands: they predate this
   investigation, they are shared with the mapping work, and there is no clean line to cut them on.
+- `iceman-y/research/` — dated literature/candidate and research-priority assessments imported from
+  reviewed Work PR revisions; planning inputs, not new sample results or verified scheduler state.
 - `mapping/CLAUDE.md` — older Claude-oriented overview (complements this file).
 
 ## Y/Liftover Guardrails (Important)
+- Separate competitive whole-genome alignment from a smaller liftover target/reference query.
+  A chrY-only query is not authorization to remap reads against chrY alone.
 - Prefer non-extended references for Y workflows unless explicitly testing decoy behavior:
   - hs1: `chm13v2.0_maskedY_rCRS.fa(.gz)`
   - hg38: `GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna`
 - Extended references (`*H3630*`, `*DH3630*`, `*O1102*`, `hs38d1`, oral/metagenome additions) are valid for some mapping tasks but are easy to misuse for marker liftover experiments.
 - Picard/GATK liftover requires both `.fai` and `.dict` sidecars.
+- Verify sidecar contents and FASTA compatibility; current shell helpers check existence only.
+  `.gz` does not prove BGZF. Rebuild byte-offset indexes when staged FASTA bytes change.
 - For compressed FASTA (`.fa.gz` / `.fna.gz`), keep dictionary naming compatible:
   - `<ref_without_fasta_suffix>.dict` (e.g. `x.fa.gz -> x.dict`)
   - and alias `<ref_without_last_suffix>.dict` when needed (e.g. `x.fa.dict`)
 - For modern/private samples: keep run outputs outside repo and do not commit sample IDs or per-sample results.
+- Do not treat reject-heavy Picard gVCF output as validated block conversion; see `annotate/LIFTOVER.md`.
+- VCF label rankings are heuristic. For the Iceman verdict use committed read-level evidence and
+  `markers/tree_local.tsv`; a derived SNP is not by itself a separate downstream node.
+- Preserve dated corrections and preregistered outcomes. Record PR-only work as pending integration;
+  do not silently turn metadata research, no-power outcomes or planned tests into completed results.
 
 ## Data Handling & Privacy
 - Ancient/public datasets (for example, published Iceman data) may be documented in-repo and committed.

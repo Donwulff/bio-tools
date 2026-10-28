@@ -1,5 +1,9 @@
 ## annotate - VCF file annotation and manipulation
 
+See [LIFTOVER.md](LIFTOVER.md) for the reference/conversion guide and known comparison limits, and
+[the situation review](../SITUATION.md) for evidence status and unmerged Work PRs. Current Iceman
+placement uses read-level pileups and the local tree. VCF label rankings remain exploratory.
+
 ### annotate_y.sh
 Historical script used for annotating Tyrolean Iceman GRCH38 mapped Y-chromosome with ISOGG gbrowse data.
 Illustrates liftover from Hg19 to Hg38 for features from gbrowse exported annotations tracks.
@@ -13,14 +17,36 @@ Keep `y_haplo_from_vcf.sh` mainly for backward compatibility with older runbooks
 
 ### y_haplo_from_markers.py
 Python marker resolver for VCF/gVCF sample inputs and marker definitions from either VCF or GFF3.
-Streams marker rows against sample rows, resolves each marker to `derived|ancestral|nocall|ambiguous`,
+Resolves marker rows to `derived|ancestral|nocall|ambiguous|filtered|other|unknown`,
 and writes:
 - `<prefix>.marker_status.tsv` (all marker statuses)
-- `<prefix>.derived.tsv` (derived-only rows, optional `--min-gq/--min-dp`)
+- `<prefix>.derived.tsv` (derived-only rows after filtering)
 - `<prefix>.summary.txt`
 Notes:
 - For marker GFF3 input, `yfull_node` is preferred for `HG` when available (fallback: `ycc_haplogroup`).
 - Marker/source ordering does not need to be pre-sorted.
+- `--reference` supplies the sample assembly's indexed FASTA for interior gVCF block bases; it
+  requires pysam and existing nonempty `.fai` (plus `.gzi` for BGZF). No reference index is created
+  implicitly. Both `<*>` and `<NON_REF>` reference blocks are supported. Without a reference,
+  interior block markers are `nocall` with reason `reference_required`, not copies of the anchor REF.
+- `--min-gq/--min-dp` now apply before **all** output states and summaries. Missing or sub-threshold
+  values and excluded site filters produce `filtered`, retaining GT/GQ/DP and the exclusion reason.
+  The ranker counts these as no-calls (default weight zero); the comparator retains `filtered`.
+- The original 13 columns remain in order; column 14 is `reason` (`.` for a resolved call).
+  `marker_status.tsv` and `derived.tsv` remain headerless. Older 13-column tables remain readable by
+  the ranker/comparator, but contain no new filter/reference validation and must not be relabelled.
+- For blocks, DP reports conservative `MIN_DP` when present, otherwise DP. Zero effective block
+  depth is not allele evidence; indel markers in blocks remain explicit no-calls. DeepVariant mode
+  permits `FILTER=.` on reference blocks, but not on ordinary variant records.
+- No sample analyses were rerun for this correction. Use a fresh output prefix for new results;
+  see [LIFTOVER.md](LIFTOVER.md#comparing-native-hs1-lifted-hg38-and-direct-hg38).
+
+Synthetic regression checks (no sample inputs):
+
+```bash
+python3 annotate/test_y_haplo_from_markers.py
+python3 annotate/test_ytree.py
+```
 
 ### y_clade_consistency.py
 Scores candidate clades against derived marker tables (`*.derived.tsv`) and reports
@@ -39,6 +65,11 @@ Ranks clade/path candidates from `*.marker_status.tsv` with tunable scoring:
   (e.g. `HG=I1` + `ID=Y47125` can contribute to `I-Y47125` ranking).
 - reports simple support-strength summaries from derived marker rows:
   `derived_dp_sum`, `derived_dp_mean`, `derived_dp_max`, `derived_gq_mean`.
+- These DP statistics are depth at derived marker rows, not allele-specific read support or counts
+  of independent molecules; the resolver does not export AD. Scores and `support_ratio` are
+  descriptive heuristics, not probabilities. Equivalent names can count the same locus repeatedly.
+- Candidate labels synthesized from IDs help locate individual SNPs; they do not establish that
+  each SNP defines a distinct branch. Deamination weighting defaults to 0.5 even for modern data.
 - `--tree markers/tree_local.tsv` adds a topology-aware placement beside the label
   ranking, written to `--tree-out` (default `<out>.tree.tsv`). The two are independent:
   the ranking reads HG/ISOGG labels, the placement reads only marker names against the
@@ -141,6 +172,9 @@ Shared shell helpers used by liftover drivers (`prepare_y_refs.sh`,
 - FASTA sidecar preparation (`.fai`, `.dict`)
 - compressed-FASTA dictionary alias handling (`ref.dict` and `ref.fa.dict`)
 
+This is partial consolidation: reference search and Picard execution remain duplicated in drivers.
+Sidecar checks currently test file existence, not validity. See [LIFTOVER.md](LIFTOVER.md).
+
 ### prepare_y_refs.sh
 Stages hs1 and hg38 reference FASTAs into `./resources/ref/` and ensures
 required sidecars exist (`.fai`, `.dict`). By default it symlinks source
@@ -155,14 +189,21 @@ Two-branch experiment driver for modern Y analysis:
 - branch D: path ranking with auto top-level clade (default) or manual `--clade-prefix`
 - branch E: condensed `top_paths.tsv` summary (top positive-score rows per dataset)
 
+The optional sample gVCF is queried on the native hs1 branch only, not lifted. GFF3 interpretation
+is an additional hg38 branch, so different panels can yield different evidence. Rerunning only one
+ranker leaves other reports stale; save matching run/script/resource revisions when comparing.
+Each extraction uses its matching hs1/hg38 reference through the common resolver; pysam is required.
+Optional `--min-gq/--min-dp` apply to all branches' marker states (default: unset).
+
 Default output path is under the caller's working directory: `./experiments/...`.
 Run it from a private working directory for sensitive sample data.
 Supports `--java-opts` (or env `PICARD_JAVA_OPTS`) for LiftoverVcf heap sizing.
 Uses `RECOVER_SWAPPED_REF_ALT=true` to retain loci where reference/alternate
 alleles are swapped between assemblies.
 Accepts `--markers-gff3-hg38` to force a specific GFF3 marker file.
-References can be passed directly from your index build (full assemblies are fine);
-the script ensures `.fai` and `.dict` sidecars exist before liftover.
+References can be passed explicitly from the index build; prefer the compatible base assembly to
+large appended mapping references. The script ensures `.fai` and `.dict` paths exist, but does not
+fully validate their content or the compression/index format.
 If refs are omitted, the script auto-detects from:
 - `--ref-root` or `BIO_TOOLS_INDEX_DIR`/`INDEX_DIR`
 - `./resources/ref`
@@ -175,8 +216,8 @@ Hard-won operational notes:
 - For routine Y analysis, prefer non-extended refs (`chm13v2.0_maskedY_rCRS.fa(.gz)` and
   `GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna`) to avoid decoy-driven confusion.
 - Picard liftover is strict about reference sidecars; ensure both `.fai` and `.dict` exist.
-- With compressed FASTA (`.fa.gz`), some tool paths expect `ref.dict` and others `ref.fa.dict`.
-  This script now normalizes/aliases both dictionary names to avoid false "missing dictionary" failures.
+- For `ref.fa.gz`, the canonical dictionary is `ref.dict`; the helper aliases the previously
+  miscomputed `ref.fa.dict`. Do not infer validity from the presence of either filename.
 Canonical usage:
 - Male sample QC + assignment cross-check: use this script.
 - It is the maintained modern Y entrypoint.
@@ -184,6 +225,9 @@ Canonical usage:
 ### liftover_to_hg38_batch.sh
 Batch liftover helper for hs1/CHM13 sample VCF/gVCF files to GRCh38.
 Designed for generating GRCh38 callsets for downstream tools (Exomiser/PharmCAT).
+Ordinary VCF conversion and experimental gVCF input have different validation status: **reference
+block preservation has not been established**. See the [Picard gVCF limitation](LIFTOVER.md#picard-gvcf-limitation)
+before using a lifted gVCF for reference/no-call evidence.
 Optional `--primary-only` emits a canonical-contig subset
 (`chr1-22,chrX,chrY,chrM`) per lifted sample.
 Supports `--java-opts` (or env `PICARD_JAVA_OPTS`) for LiftoverVcf heap sizing.
@@ -192,6 +236,8 @@ alleles are swapped between assemblies.
 Canonical usage:
 - For non-Y pipelines (including female exome), use this script for hs1 -> hg38 conversion.
 - `--ref-hg38` can be omitted if your index root is discoverable via `--ref-root` or `BIO_TOOLS_INDEX_DIR`.
+- VCF/gVCF outputs have distinct names and overwrite checks. Use a fresh output directory; run
+  reports and sidecars are not managed transactionally. `--primary-only` filters after conversion.
 
 ### compare_vcf_runs.sh
 General run-vs-run VCF comparator for the same sample/reference.
@@ -210,6 +256,11 @@ Useful for side-by-side checks such as:
 Outputs:
 - `<prefix>.matrix.tsv` row-wise status/GT/DP/GQ/HG across datasets
 - `<prefix>.summary.tsv` per-dataset status counts + pairwise agreement/flip counts
+
+Use `--key-mode locusid` only on a common assembly; `--key-mode id` needs verified marker identities
+across assemblies. Current duplicate keys silently keep the last row. All-row agreement includes
+no-call/missing pairs and is not an accuracy metric. The [comparison guide](LIFTOVER.md#comparing-native-hs1-lifted-hg38-and-direct-hg38)
+states what is still required for callable and expected-path QC.
 
 ### genos_annotate.sh
 Genos Research provided exome VCF's have weird format which cointains NT=Not Targeted Regions and NC=No Call.

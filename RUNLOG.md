@@ -2,6 +2,10 @@
 
 This file is the operator-facing ledger for reproducibility. Keep methods in `METHODS.md`, interpretation in `NOTES.md`, and put exact run invocations/results here.
 
+For the current branch/PR inventory and a reconciliation of older interpretations, see
+[SITUATION.md](SITUATION.md). Entries below retain their original dates; planned commands and later
+corrections must be read together.
+
 ## Scope
 - Dataset: Otzi 2023 resequencing BAMs, EAGER-style prefixed reads (`M_/F_/R_`), published in filtered form.
 - Goal: reconstruct PE semantics where possible, remap, evaluate duplicate handling, and compare variant-calling branches.
@@ -49,11 +53,16 @@ This file is the operator-facing ledger for reproducibility. Keep methods in `ME
 - Removed final pass: `11996390` (`1.79%`)
 
 ## DeepVariant Status
+- Both Iceman model branches subsequently completed; the A/B results are recorded below. This
+  section originally described the first run while it was still active.
 - Ancient DNA branch: long `postprocess_variants` tail observed.
 - Evidence of progress: active `pread64` streaming + high CPU in protobuf `_message.so`.
 - Runtime caveat: non-primary contig scope with gVCF can create heavy postprocess overhead even with zero-read contigs.
 
-## Next Commands (shortlist)
+## Historical Next Commands (February shortlist)
+These were proposed next steps, not an outstanding queue. In particular, finalization and the
+small-model comparison are complete. See [the situation review](SITUATION.md#open-work-without-reopening-completed-experiments)
+for the current queue; no completed no-final-DeDup calling branch is established by this list.
 1. Finalize Ancient DNA DV outputs, then snapshot stats:
 ```bash
 bcftools stats <output_dir>/iceman.vcf > <output_dir>/iceman.vcf.stats
@@ -1453,3 +1462,155 @@ Per-sample paths, identifiers and results stay outside this repository per AGENT
   from it is a separate project, noted so it is not lost.
 - Broad/WARP vs nf-core/eager: still deferred, still awaiting a concrete trigger. `annotate/` is
   downstream of both and consumes BAMs and pileup tables, so nothing in flight is blocked.
+
+## 2026-10-28 — situation review
+
+Documentation review against `master` at `43273c0`, current source, committed public evidence,
+the available session history, and read-only GitHub PR queries. The worktree was clean initially.
+No modern sample files were opened for this review, and no modern identifiers, genotypes or
+per-sample metrics were copied into tracked documentation.
+
+**Repository / Work inventory**
+
+- `master`, local `tooling/se-adna-y-pipeline`, the recorded `origin/master` and GitHub's live
+  `master` agree at `43273c0`.
+  The earlier "ahead, unmerged" branch note is obsolete as a current status description.
+- Work [PR #7](https://github.com/Donwulff/bio-tools/pull/7) is open at `2663d4c`; its literature
+  assessment and accession crosswalk remain on the research branch.
+- Work [PR #8](https://github.com/Donwulff/bio-tools/pull/8) is open at `fd7264d`; its research-value
+  note and source-watch description remain on the documentation branch.
+- Neither PR changes genotypes or closes a registered test. No PR was merged or copied over the
+  July results. Their revisions, bounded findings and unresolved prerequisites are indexed in
+  [SITUATION.md](SITUATION.md).
+
+**Documentation reconciliation**
+
+- Added `SITUATION.md` as the dated entry point and `annotate/LIFTOVER.md` as the reusable
+  conversion/reference/QC guide, linked from module and repository documentation.
+- Preserved D2049 record reconciliation, per-library DeDup removals, the merged pass, and actual
+  small-model comparison counts. Planned A/B command templates remain distinct from executed runs.
+- Corrected the gVCF reject explanation using pinned Picard 2.27.1 source. Existing lifted gVCFs
+  are not a validated substitute for native reference-confidence evidence.
+- Recorded partial script consolidation, sidecar/compression checks, VCF/gVCF output collision
+  history, marker-panel differences, DP-versus-AD semantics, duplicate-key comparison limitations,
+  and the absence of an accuracy winner from preliminary direct-versus-lifted QC.
+- Replaced the obsolete DeDup reheader-only option with coordinate-sorting guidance; fixed the
+  Bash tab-delimiter example and recorded the QNAME-existence limitation of that comparison.
+- Preserved the two-pass SE-first FASTQ compromise and residual chunk-boundary risk, the observed
+  sort-memory/swap tradeoff, and the distinction between singleton terminology across tools.
+- Marked TODO's interleaving and stage-gating work as already implemented; added specific remaining
+  liftover/comparator/marker-resolution items. Registered research outcomes were not amended.
+
+**Validation performed**
+
+```bash
+python3 annotate/test_ytree.py
+```
+
+All 40 checks passed. Re-executed the four placement commands documented in
+`iceman-y/README.md` with outputs directed to temporary storage. Both detailed placement and summary
+TSVs matched the committed files byte-for-byte for Iceman, Oberbipp15, Aesch/Muttenz and the
+unhedged cohort. This verifies reproducibility of those tables under current code, not independent
+validation of the tree's scientific assumptions. No sequence mapping, variant calling or new
+claim-bearing genotype test was run.
+
+Checked 60 local Markdown links/heading targets in the updated documents and the corrected Bash
+tab-delimiter template. `git diff --check` passed. No scripts, marker definitions, registrations or
+result tables were changed in this review.
+
+### Continuation: Work documents and registration reconciliation
+
+Preserved the three public Work documents in `iceman-y/research/`, unchanged from the reviewed
+commits `2663d4c` (candidate assessment and accession crosswalk) and `fd7264d` (priorities/source
+watch). Their source dates, access limitations and planning-only scope remain intact. This copies
+documentation into the working tree; it does not merge or close either GitHub PR. The reported
+external source-watch schedule is still not independently verified here.
+
+Added a documentary crosswalk in `SITUATION.md` for original P3/F2, Test C's PC1/PC2 and Test B's
+source roster. Test C's five callable Z6219 rows are all derived; their direct PF3239 rows are
+two `no_coverage` and three `nocall_damage_prone_1read`. Four have derived Z6043, an equivalent
+block marker, with no ancestral backbone reads. These existing table entries do not fulfill the
+original split prediction or supply confident direct PF3239 calls. Neither registration nor its
+recorded outcome was edited.
+
+Clarified the case page's local-tree interpretation versus published nomenclature, Z6499's
+parsimony-only direction, the defining/equivalent distinction for FGC5696, and the difference
+between no-power deposits and genetic exclusions. Removed unqualified claims that the intermediate
+lineages must be extinct or that every cohort member has the same callable placement. These are
+presentation corrections, not new genotypes or a change to the encoded tree.
+
+Validation repeated: all 40 tree checks passed; four placement tables and their summaries still
+match the committed files byte-for-byte. All three imported Work files match their source commits
+byte-for-byte. Checked 87 relative Markdown targets across 12 updated/imported documents; the
+candidate TSV has 17 data rows with 31 columns each. No private sample inputs were used. No script,
+marker definition, registration or result table changed, and no commit, push or PR merge was made.
+
+## 2026-10-28 - native gVCF resolver and quality-filter regressions
+
+Reusable tooling follow-up to the situation review. Tests use invented calls, tiny FASTAs and
+temporary output directories only; no modern/private input or new claim-bearing sample was used.
+
+- Reproduced the old anchor-REF and derived-report-only filtering failures with synthetic CLI
+  tests before fixing them.
+- Added `--reference` lookup with pysam for native interior block bases; existing nonempty `.fai`
+  is required and BGZF also needs `.gzi`. No implicit reference-index writes or chromosome loading.
+- Recognized `<*>`, `<NON_REF>` and END-bearing `.` reference blocks. Only homozygous/haploid
+  reference genotypes resolve through a block; symbolic alleles, zero effective depth, unsupported
+  block-indel markers and missing/incompatible reference evidence cannot become allele calls.
+- Retained excluded site records as `filtered`; quality thresholds now affect all state tables,
+  summaries and downstream ranking rather than only derived exports. Effective block depth prefers
+  MIN_DP. An explicit filtered variant cannot fall back to a reference block.
+- Preserved the first 13 output columns and appended a reason column. Old 13-column inputs remain
+  readable by ranker/comparator; new filtered states count as no-calls in ranking and remain
+  distinguishable in comparisons. Duplicate-key and callable-denominator limitations are unchanged.
+- Wired native/lifted references into the dual driver and added optional thresholds. Iceman and
+  compatibility modern drivers accept `--reference`; the Iceman driver's existing default
+  thresholds now also affect its marker states and rankings. No sample output was regenerated.
+
+Validation commands:
+
+```bash
+python3 annotate/test_y_haplo_from_markers.py
+python3 annotate/test_ytree.py
+sh -n annotate/run_iceman_y_compare.sh
+sh -n annotate/run_modern_y_experiment.sh
+sh -n annotate/run_y_dual_liftover_experiment.sh
+git diff --check
+```
+
+All 41 new synthetic unittest cases and all 40 existing tree checks passed on Python 3.14.4 with
+pysam 0.23.3. Coverage includes indexed/unindexed input parity, BGZF FASTA lookup, GFF3 and output
+schema consistency, missing versus filtered evidence, ranker/comparator consumption, and a tiny
+Iceman-driver run with an explicit sample name and an output path containing spaces. No complete
+Picard liftover experiment was rerun, and block liftover remains unvalidated.
+ShellCheck reports the same six existing warning/error diagnostics as `HEAD` across the three
+drivers, with no new diagnostics. Invoked the installed binary directly because the Snap launcher
+could not create its runtime directory inside the workspace sandbox.
+
+### Comparator preflight
+
+Prepared the next tooling decision without reading sample inputs or changing the comparator's
+behavior. Two tiny synthetic runs reproduced its documented problems: a conflicting duplicate key
+was accepted and its earlier state overwritten; a second example reported three matching no-calls
+out of four keys while its only jointly callable marker disagreed. All temporary files were removed.
+These are bug demonstrations, not sample-comparison findings or completed fixes. A compact restart
+checklist is now at the top of `SITUATION.md`; implementation priority between comparator safeguards
+and full gVCF block liftover was requested separately.
+
+## 2026-10-29 - local commit checkpoint
+
+The user clarified that the request was to commit the existing work, not to begin another tooling
+implementation. Split the checkpoint into three scoped patches:
+
+- `06f8b89` - native gVCF marker resolution, all-state quality filtering, driver forwarding and
+  41 synthetic regression tests. Comparator behavior and full gVCF block liftover are not fixed.
+- `3e929af` - the three reviewed public Work research snapshots, byte-for-byte identical to their
+  source revisions. This is local preservation, not a remote PR merge or new sample evidence.
+- The accompanying documentation commit reconciles methods, results, interpretation limits,
+  registrations, remaining work and the compact handoff. It preserves historical corrections and
+  does not amend registrations, marker definitions or sample result tables.
+
+Rechecked all 41 synthetic tests, all 40 tree checks, shell syntax, local Markdown targets and
+whitespace. The four public placement datasets and their summaries still reproduce byte-for-byte.
+Added-text privacy/path checks passed; no private sample files were used. No changes were pushed
+and no remote PR was merged. Comparator safeguards and gVCF block conversion remain open tasks.

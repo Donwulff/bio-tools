@@ -1,6 +1,10 @@
 # bio-tools
 Bioinformatics tools and snippets
 
+Start with [SITUATION.md](SITUATION.md) for the dated repository review: current evidence,
+ChatGPT Work PRs, workflow limitations and remaining tasks. Methods and run history are in
+[METHODS.md](METHODS.md), [NOTES.md](NOTES.md) and [RUNLOG.md](RUNLOG.md).
+
 ## [annotate](annotate) - VCF file annotation and manipulation
 
 ## [mapping](mapping) - Tools for producing analysis-ready BAM files
