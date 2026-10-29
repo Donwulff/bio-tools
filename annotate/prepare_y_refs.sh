@@ -1,6 +1,10 @@
 #!/bin/sh
 set -eu
 
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+. "${SCRIPT_DIR}/lib_liftover.sh"
+load_liftover_config
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -12,7 +16,7 @@ Usage:
     [--primary-only] \
     [--primary-contigs "chr1 ... chr22 chrX chrY chrM"] \
     [--hs1-name chm13v2.0_maskedY_rCRS.fa] \
-    [--hg38-name hg38p14.H3630.fa]
+    [--hg38-name hg38.fa]
 
 Purpose:
   Stage hs1 and hg38 reference FASTAs for Y-analysis workflows and ensure:
@@ -20,7 +24,7 @@ Purpose:
   - sequence dictionary (.dict)
 
 Defaults:
-  --out-dir defaults to ./resources/ref
+  --out-dir defaults to Y_RESOURCES_DIR/ref or ./resources/ref
   references are symlinked by default (use --copy to copy files)
   dictionary creation prefers: gatk, auto-detected picard.jar, picard CLI, or PICARD_JAR env
   --primary-only extracts canonical contigs from source FASTA into staged FASTA
@@ -38,9 +42,9 @@ need_cmd() {
 
 REF_HS1_SRC=""
 REF_HG38_SRC=""
-OUT_DIR="${YREF_OUT_DIR:-$(pwd)/resources/ref}"
+OUT_DIR="${YREF_OUT_DIR:-${Y_RESOURCES_DIR:-$(pwd)/resources}/ref}"
 HS1_NAME="${YREF_HS1_NAME:-chm13v2.0_maskedY_rCRS.fa}"
-HG38_NAME="${YREF_HG38_NAME:-hg38p14.H3630.fa}"
+HG38_NAME="${YREF_HG38_NAME:-hg38.fa}"
 DO_COPY=0
 PRIMARY_ONLY=0
 PRIMARY_CONTIGS="${YREF_PRIMARY_CONTIGS:-chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM}"
@@ -69,8 +73,6 @@ done
 need_cmd samtools
 need_cmd python3
 
-SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
-. "${SCRIPT_DIR}/lib_liftover.sh"
 if [ -z "$PICARD_JAR" ]; then
   PICARD_JAR="$(detect_picard_jar "$SCRIPT_DIR" || true)"
 fi

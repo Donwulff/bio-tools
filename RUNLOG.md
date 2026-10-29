@@ -1735,3 +1735,48 @@ samtools/bcftools/tabix. No Picard jar was available for a real Java identity-ch
 successful production conversion or allele correctness is not claimed. No private inputs were
 opened, no public result tables/markers/registrations/research snapshots were changed, and no
 downloads or pushes were performed. Documentation records recovery limits and the remaining work.
+
+## 2026-10-29 - Shared Liftover Resource Discovery And Config
+
+Consolidated reference selection and trusted local configuration, not backend invocation, gVCF
+block conversion, a catalogue refresh or a sample analysis.
+
+- `liftover_resources.py` now selects references for both the Python batch and shell dual-Y
+  drivers. Search roots retain spaces; CLI references override configured defaults, and supplied
+  invalid paths fail rather than silently falling through. Base references across all roots precede
+  explicitly permitted extended fallbacks. Known extended names, including resolved symlink target
+  names, require `--allow-extended-ref` in both drivers. This remains a filename safeguard, not proof
+  of contig inventory, sequence identity or chain suitability.
+- `lib_liftover.sh` supplies one config loader for both drivers, staging and marker/chain fetchers.
+  Config is trusted executable POSIX shell, loaded before defaults and CLI parsing; relative values
+  stay analysis-directory relative. A missing explicit config fails. The Python entry point imports
+  the loader's environment privately; it does not print the environment. Config execution is outside
+  batch preflight/transaction guarantees. Active `bio-tools.cfg` files are ignored by git.
+- `Y_RESOURCES_DIR` consistently directs marker, chain and staging defaults. The dual driver no
+  longer falls back to another cache when the configured root lacks marker VCF data. More specific
+  settings and explicit CLI options remain supported. Staging defaults to neutral `hg38.fa`, not a
+  misleading `H3630` label. No existing reference files were renamed, replaced or removed.
+- Backend discovery, JVM argument handling in older shell tool calls, transactional fetching/other
+  drivers, complete resource hashes and full gVCF conversion remain separate work. The earlier
+  chronological entries describe their own checkpoints, not a claim these remaining tasks are done.
+
+Validation:
+
+```bash
+sh annotate/run_tests.sh
+git diff --check
+```
+
+Passed **27 new resource/config unittest cases** and **28 batch cases** (two new batch regressions),
+plus 29 comparator, 27 reference and 41 resolver cases: **152 unittest cases and 40 tree checks**.
+Fixtures cover precedence, relative paths/spaces, exported/unexported config values and unsetting,
+explicit config failures, extended fallback/symlink checks, neutral staged-name discovery, real
+driver entry points, and configured fetch locations with stand-in download commands. No network
+requests or private files are needed. Batch lifecycle tests still use a stand-in Java/Picard backend,
+not validated production conversion. ShellCheck reports only the three inherited JVM-options
+word-splitting diagnostics in the older backend calls, which this patch does not change.
+The exported staged snapshot independently passed the same suites and ShellCheck with those
+existing diagnostics excluded. Read-only review caught a remaining caller-directory dependency
+in the signal test; its subprocess and reference-staging fixtures now isolate local config.
+No scientific result tables, markers, preregistrations or reviewed research snapshots were changed;
+no downloads, sample reruns or pushes were performed.

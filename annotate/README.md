@@ -162,7 +162,7 @@ Cleans marker VCF allele fields:
 
 ### fetch_liftover_chains.sh
 Fetches `hg38ToHs1` and `hs1ToHg38` chain files to `./resources/chains/`
-using UCSC mirrors with MARBL chain-name fallback.
+or `$Y_RESOURCES_DIR/chains/`, using UCSC mirrors with MARBL chain-name fallback.
 
 ### lib_liftover.sh
 Shared shell helpers used by liftover drivers (`prepare_y_refs.sh`,
@@ -171,10 +171,23 @@ Shared shell helpers used by liftover drivers (`prepare_y_refs.sh`,
 - FASTA sidecar preparation (`.fai`, `.dict`)
 - compressed-FASTA dictionary alias handling (`ref.dict` and `ref.fa.dict`)
 
-This is partial consolidation: reference search and Picard execution remain duplicated in drivers.
+Reference discovery is shared through `liftover_resources.py`; Picard backend discovery/execution
+still needs consolidation. The shell helpers also load trusted local config before CLI parsing.
 Sidecar validation now uses the same `reference_utils.py` implementation as marker queries. Empty,
 malformed or mismatching existing sidecars fail rather than being overwritten. Set `SCRIPT_DIR`
 to the annotate directory before sourcing the library. See [LIFTOVER.md](LIFTOVER.md).
+
+### liftover_resources.py
+One selector for the batch and dual-Y drivers: explicit reference paths, configured index/resource
+roots, analysis-local `resources/ref`, then repository `mapping/index`. Paths are not whitespace-split
+and no recursive filesystem search or download is performed by discovery. Base analysis references
+are preferred; extended filenames require `--allow-extended-ref` in either driver. This is a filename
+safeguard, not verification of the assembly or every contig. See
+[resource configuration](LIFTOVER.md#resource-configuration) for precedence, defaults and limitations.
+
+Both drivers, reference staging and the two fetch helpers now share the `BIO_TOOLS_CFG` loader.
+An explicitly named missing config is an error; absence of default `./bio-tools.cfg` is allowed.
+The file is executable POSIX shell, not an inert settings file: use only trusted local configs.
 
 ### check_reference.py / reference_utils.py
 Read-only checks for FASTA format, FAI structure, BGZF/GZI compatibility, dictionary names/lengths/
@@ -204,6 +217,8 @@ and does not replace an existing target except to reuse an unchanged source syml
 output directory for a new copy/subset; orphaned sidecars are rejected. Subsets get fresh indexes
 for their new byte layout rather than copied source offsets. Failed extraction does not leave a
 partial target FASTA.
+The default GRCh38 staging name is now `hg38.fa`; use `--hg38-name` if another label is needed.
+`Y_RESOURCES_DIR` changes the default staging root to its `ref/` subdirectory; `--out-dir` wins.
 
 ### run_y_dual_liftover_experiment.sh
 Two-branch experiment driver for modern Y analysis:
@@ -229,11 +244,12 @@ References can be passed explicitly from the index build; prefer the compatible 
 large appended mapping references. The script validates reference sidecars and indexed access, but
 does not establish whole-sequence identity by default; sidecar/probe checks and optional full MD5 validation
 are described above.
-If refs are omitted, the script auto-detects from:
-- `--ref-root` or `BIO_TOOLS_INDEX_DIR`/`INDEX_DIR`
+If refs are omitted, shared discovery searches:
+- `--ref-root` or `REF_ROOT`/`BIO_TOOLS_INDEX_DIR`/`INDEX_DIR`
+- `$Y_RESOURCES_DIR/ref` when configured
 - `./resources/ref`
-- `mapping/index`
-and prefers no-alt/smaller analysis references before `...DH3630O1102.fa`.
+- `mapping/index` under the repo root
+Base analysis references are preferred across these roots, even when extended fallbacks are allowed.
 By default the script rejects references that look like extended H3630/decoy sets;
 use `--allow-extended-ref` only when you explicitly want that behavior.
 
@@ -263,6 +279,8 @@ alleles are swapped between assemblies.
 Canonical usage:
 - For non-Y pipelines (including female exome), use this script for hs1 -> hg38 conversion.
 - `--ref-hg38` can be omitted if your index root is discoverable via `--ref-root` or `BIO_TOOLS_INDEX_DIR`.
+  `REF_HG38` and trusted local config are also supported. Extended reference filenames now require
+  `--allow-extended-ref`, matching the dual-Y driver; their presence does not authorize auto-selection.
 - Supply a new or empty dedicated `--out-dir`; populated directories and destination symlinks
   are refused. All inputs are scanned before reference-sidecar creation or output/report writes.
   Duplicate inputs (including hardlinks), colliding stems and malformed/truncated streams fail early.

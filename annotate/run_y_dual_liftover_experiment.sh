@@ -1,6 +1,10 @@
 #!/bin/sh
 set -eu
 
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+. "${SCRIPT_DIR}/lib_liftover.sh"
+load_liftover_config
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -30,8 +34,9 @@ Purpose:
 
 Defaults:
   out-dir defaults to ./experiments/y_dual_liftover_<timestamp>
-  markers default is fetched to ./resources/snps_hg38.vcf.gz
-  refs auto-detect from --ref-root, BIO_TOOLS_INDEX_DIR/INDEX_DIR, ./resources/ref, mapping/index
+  markers default to Y_RESOURCES_DIR or ./resources (explicit paths win)
+  refs share discovery with the batch driver; non-extended references are preferred
+  trusted BIO_TOOLS_CFG or ./bio-tools.cfg loads before defaults and CLI options
   quality thresholds default to unset; when supplied they apply to all marker states
   reference-based marker resolution requires pysam
 
@@ -54,11 +59,11 @@ REF_HG38="${REF_HG38:-}"
 REF_ROOT="${REF_ROOT:-}"
 CHAIN_HG38_TO_HS1=""
 CHAIN_HS1_TO_HG38=""
-MARKERS_HG38=""
-MARKERS_GFF3_HG38=""
-PICARD_JAR=""
+MARKERS_HG38="${YMARKERS_OUT:-}"
+MARKERS_GFF3_HG38="${YMARKERS_GFF3_OUT:-}"
+PICARD_JAR="${PICARD_JAR:-}"
 OUT_DIR=""
-JAVA_OPTS=""
+JAVA_OPTS="${PICARD_JAVA_OPTS:-}"
 ALLOW_EXTENDED_REF=0
 CLADE_PREFIX="${YPATH_CLADE_PREFIX:-R}"
 AUTO_CLADE=1
@@ -118,72 +123,8 @@ python3 -c 'import pysam' >/dev/null 2>&1 || {
   exit 1
 }
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-. "${SCRIPT_DIR}/lib_liftover.sh"
-
-# Optional local config (same convention as mapping scripts).
-if [ -f "${BIO_TOOLS_CFG:-./bio-tools.cfg}" ]; then
-  # shellcheck disable=SC1090
-  . "${BIO_TOOLS_CFG:-./bio-tools.cfg}"
-fi
-
-if [ -z "$REF_ROOT" ]; then
-  REF_ROOT="${BIO_TOOLS_INDEX_DIR:-${INDEX_DIR:-}}"
-fi
-
-pick_ref() {
-  roots="$1"
-  shift
-  for r in $roots; do
-    [ -n "$r" ] || continue
-    for n in "$@"; do
-      p="${r%/}/$n"
-      if [ -f "$p" ]; then
-        echo "$p"
-        return 0
-      fi
-    done
-  done
-  return 1
-}
-
-if [ -z "$REF_HS1" ] || [ -z "$REF_HG38" ]; then
-  roots=""
-  [ -n "$REF_ROOT" ] && roots="$roots $REF_ROOT"
-  roots="$roots ${PWD}/resources/ref ${SCRIPT_DIR}/../mapping/index"
-
-  if [ -z "$REF_HS1" ]; then
-    REF_HS1="$(pick_ref "$roots" \
-      "chm13v2.0_maskedY_rCRS.fa.gz" \
-      "chm13v2.0_maskedY_rCRS.H3630.fa.gz" \
-      "chm13v2.0_maskedY_rCRSDH3630O1102.fa" \
-      "chm13v2.0_maskedY_rCRS.fa" \
-      "chm13v2.0_maskedY_rCRS.H3630.fa" || true)"
-  fi
-  if [ -z "$REF_HG38" ]; then
-    REF_HG38="$(pick_ref "$roots" \
-      "GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna" \
-      "hg38p14.H3630.fa.gz" \
-      "hg38p14DH3630O1102.fa" \
-      "hg38p14.H3630.fa" || true)"
-  fi
-fi
-
-[ -n "$REF_HS1" ] || { echo "ERROR: --ref-hs1 not set and auto-detect failed." >&2; exit 1; }
-[ -n "$REF_HG38" ] || { echo "ERROR: --ref-hg38 not set and auto-detect failed." >&2; exit 1; }
-[ -f "$REF_HS1" ] || { echo "ERROR: not found: $REF_HS1" >&2; exit 1; }
-[ -f "$REF_HG38" ] || { echo "ERROR: not found: $REF_HG38" >&2; exit 1; }
-
-if [ "$ALLOW_EXTENDED_REF" -eq 0 ]; then
-  case "$(basename "$REF_HS1") $(basename "$REF_HG38")" in
-    *H3630*|*DH3630*|*O1102*|*hs38d1*|*oral_microbiome*)
-      echo "ERROR: selected reference appears to include extended/decoy content (H3630/hs38d1/O1102)." >&2
-      echo "This workflow defaults to non-extended references for Y analysis." >&2
-      echo "Pick non-extended refs explicitly, or pass --allow-extended-ref to override." >&2
-      exit 2
-      ;;
-  esac
-fi
+REF_HS1="$(find_liftover_ref hs1 "$REF_HS1" "$REF_ROOT" "$ALLOW_EXTENDED_REF")"
+REF_HG38="$(find_liftover_ref hg38 "$REF_HG38" "$REF_ROOT" "$ALLOW_EXTENDED_REF")"
 
 echo "Using refs:"
 echo "  hs1  $REF_HS1"
@@ -210,8 +151,15 @@ if [ -z "$MARKERS_HG38" ]; then
   fi
 fi
 if [ -z "$MARKERS_HG38" ]; then
-  if [ -n "${Y_RESOURCES_DIR:-}" ] && [ -f "${Y_RESOURCES_DIR%/}/snps_hg38.vcf.gz" ]; then
+  if [ -n "${Y_RESOURCES_DIR:-}" ]; then
     MARKERS_HG38="${Y_RESOURCES_DIR%/}/snps_hg38.vcf.gz"
+    if [ ! -f "$MARKERS_HG38" ]; then
+      if [ -n "$MARKERS_GFF3_HG38" ]; then
+        "${SCRIPT_DIR}/fetch_ybrowse_markers.sh" --out "$MARKERS_HG38" --no-gff3
+      else
+        "${SCRIPT_DIR}/fetch_ybrowse_markers.sh" --out "$MARKERS_HG38"
+      fi
+    fi
   fi
 fi
 if [ -z "$MARKERS_HG38" ]; then

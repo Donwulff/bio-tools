@@ -4,6 +4,33 @@
 # Source from other scripts:
 #   . "$(dirname "$0")/lib_liftover.sh"
 
+load_liftover_config() {
+  # Load before defaults/argument parsing: explicit CLI options must win. This
+  # is trusted executable shell code, not a data-only configuration format.
+  liftover_config="${BIO_TOOLS_CFG:-./bio-tools.cfg}"
+  case "$liftover_config" in
+    */*) ;;
+    *) liftover_config="./$liftover_config" ;;
+  esac
+  if [ -n "${BIO_TOOLS_CFG:-}" ] && [ ! -f "$liftover_config" ]; then
+    echo "ERROR: BIO_TOOLS_CFG is not a file: $liftover_config" >&2
+    return 2
+  fi
+  [ -f "$liftover_config" ] || return 0
+  case "$-" in *a*) liftover_restore_export=0 ;; *) liftover_restore_export=1 ;; esac
+  set -a
+  # shellcheck disable=SC1090
+  . "$liftover_config"
+  if [ "$liftover_restore_export" -eq 1 ]; then set +a; fi
+}
+
+find_liftover_ref() {
+  liftover_allow_extended="$4"
+  set -- --assembly "$1" --reference "$2" --ref-root "$3"
+  [ "$liftover_allow_extended" -eq 0 ] || set -- "$@" --allow-extended-ref
+  python3 "${SCRIPT_DIR}/liftover_resources.py" "$@"
+}
+
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
     echo "ERROR: missing command: $1" >&2
@@ -12,11 +39,11 @@ need_cmd() {
 }
 
 detect_picard_jar() {
-  script_dir="$1"
+  liftover_script_dir="$1"
   for p in \
-    "${script_dir}/../mapping/tst/picard.jar" \
-    "${script_dir}/../util/bin/picard.jar" \
-    "${script_dir}/../mapping/picard.jar"
+    "${liftover_script_dir}/../mapping/tst/picard.jar" \
+    "${liftover_script_dir}/../util/bin/picard.jar" \
+    "${liftover_script_dir}/../mapping/picard.jar"
   do
     if [ -f "$p" ]; then
       echo "$p"

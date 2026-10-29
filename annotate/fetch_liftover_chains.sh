@@ -1,6 +1,10 @@
 #!/bin/sh
 set -eu
 
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+. "${SCRIPT_DIR}/lib_liftover.sh"
+load_liftover_config
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -13,6 +17,7 @@ Outputs (if successful):
   <out-dir>/hs1ToHg38.over.chain.gz
 
 Notes:
+  - Default output is Y_RESOURCES_DIR/chains or ./resources/chains.
   - If UCSC hosts are unreachable, the script also tries MARBL/CHM13 chain names.
   - Existing files are reused unless --refresh is provided.
 EOF
@@ -25,7 +30,7 @@ need_cmd() {
   }
 }
 
-OUT_DIR="$(pwd)/resources/chains"
+OUT_DIR="${Y_RESOURCES_DIR:-$(pwd)/resources}/chains"
 REFRESH=0
 
 while [ $# -gt 0 ]; do

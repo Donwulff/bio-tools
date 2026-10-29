@@ -31,7 +31,7 @@ See also `TODO.md` for pending improvements to build scripts.
 
 ## Testing Guidelines
 - There is no repository-wide test runner. `sh annotate/run_tests.sh` runs the focused annotation
-  suites (synthetic comparator/reference/resolver tests and the local-tree checks).
+  suites (synthetic comparator/reference/resource/batch/resolver tests and the local-tree checks).
 - Validate changes by running the affected script on representative data and checking outputs with domain tools (e.g., `samtools`, `bcftools`).
 - Use `results/` PDFs as qualitative comparisons where relevant.
 - Synthetic marker regressions: `python3 annotate/test_y_haplo_from_markers.py`; local-tree checks:
@@ -48,7 +48,12 @@ See also `TODO.md` for pending improvements to build scripts.
   - Notes about large downloads, new reference assets, or configuration changes.
 
 ## Configuration & Environment Tips
-- Scripts look for `./bio-tools.cfg` (or path in `BIO_TOOLS_CFG`) in the working directory and source it for local overrides. Several annotate/ drivers also support environment variables for paths.
+- Liftover drivers, reference staging and marker/chain fetch helpers share a loader for trusted
+  `./bio-tools.cfg` (or `BIO_TOOLS_CFG`). It is executable POSIX shell: load it before defaults/CLI
+  parsing, so explicit options win. A missing explicit config fails; a missing default is allowed.
+  Relative paths are analysis-working-directory relative, not config-file relative. Other workflows
+  still have their own config handling; do not assume a repository-wide resource registry.
+  Active `bio-tools.cfg` files are gitignored; commit only clearly named generic examples/templates.
 - Key variables:
   - `Y_RESOURCES_DIR`: Preferred location for YBrowse marker files (snps_hg38.vcf.gz / .gff3) and related data; used by fetch and experiment scripts.
   - `BIO_TOOLS_INDEX_DIR` (or `INDEX_DIR`): Root for discovering reference FASTAs (with .fai/.dict) for liftover and mapping scripts. Falls back to `./resources/ref` or `mapping/index`.
@@ -80,6 +85,11 @@ In addition to this file:
   - hs1: `chm13v2.0_maskedY_rCRS.fa(.gz)`
   - hg38: `GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna`
 - Extended references (`*H3630*`, `*DH3630*`, `*O1102*`, `hs38d1`, oral/metagenome additions) are valid for some mapping tasks but are easy to misuse for marker liftover experiments.
+- Batch and dual-Y reference discovery share `annotate/liftover_resources.py`. Both require
+  `--allow-extended-ref` for known extended filenames; this is not a full content/assembly check.
+  Root order: configured index root, `$Y_RESOURCES_DIR/ref`, analysis `resources/ref`, repository
+  `mapping/index`. Do not reintroduce whitespace-split roots or independent candidate lists.
+  Staging defaults to the neutral `hg38.fa` name, which does not imply primary-only sequence content.
 - Picard/GATK liftover requires both `.fai` and `.dict` sidecars.
 - Sidecar checks share `annotate/reference_utils.py` across marker queries and shell liftover
   helpers. Invalid existing sidecars fail without replacement; `.gz` does not prove BGZF.

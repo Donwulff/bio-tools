@@ -16,13 +16,11 @@ import sys
 import tempfile
 import zlib
 
+from liftover_resources import ResourceError, config_environment, find_reference
+
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PRIMARY_CONTIGS = [f"chr{i}" for i in range(1, 23)] + ["chrX", "chrY", "chrM"]
-REF_NAMES = (
-    "GCA_000001405.15_GRCh38_no_alt_analysis_set_masked.fna",
-    "hg38p14.H3630.fa.gz", "hg38p14.H3630.fa", "hg38p14DH3630O1102.fa",
-)
 VCF_SUFFIXES = (".g.vcf.gz", ".gvcf.gz", ".vcf.gz", ".g.vcf", ".gvcf", ".vcf")
 
 
@@ -191,7 +189,9 @@ def parser():
     p.add_argument("--ref-hg38")
     p.add_argument("--ref-root", default=os.environ.get("REF_ROOT") or
                    os.environ.get("BIO_TOOLS_INDEX_DIR") or os.environ.get("INDEX_DIR"))
-    p.add_argument("--picard-jar")
+    p.add_argument("--allow-extended-ref", action="store_true",
+                   help="explicitly permit extended/decoy-enriched reference filenames")
+    p.add_argument("--picard-jar", default=os.environ.get("PICARD_JAR"))
     p.add_argument("--java-opts", default=os.environ.get("PICARD_JAVA_OPTS") or "-Xms1g -Xmx8g")
     p.add_argument("--out-dir")
     p.add_argument("--primary-only", action="store_true")
@@ -208,15 +208,8 @@ def preflight(args):
     except ImportError as exc:
         raise BatchError("pysam is required (python3 -m pip install pysam)") from exc
     chain = require_file(args.chain_hs1_to_hg38)
-    ref = args.ref_hg38
-    if not ref:
-        roots = ([Path(args.ref_root).expanduser()] if args.ref_root else []) + [
-            Path.cwd() / "resources/ref", SCRIPT_DIR.parent / "mapping/index"]
-        ref = next((root / name for root in roots for name in REF_NAMES
-                    if (root / name).is_file()), None)
-    if not ref:
-        raise BatchError("--ref-hg38 not set and auto-detect failed")
-    ref = require_file(ref)
+    ref = require_file(find_reference("hg38", args.ref_hg38, args.ref_root,
+                                     allow_extended=args.allow_extended_ref))
     jar = args.picard_jar or next((p for p in (
         SCRIPT_DIR.parent / "mapping/tst/picard.jar", SCRIPT_DIR.parent / "util/bin/picard.jar",
         SCRIPT_DIR.parent / "mapping/picard.jar") if p.is_file()), None)
@@ -348,6 +341,13 @@ def execute(args):
 
 
 def main():
+    try:
+        environment = config_environment()
+        os.environ.clear()
+        os.environ.update(environment)
+    except (ResourceError, OSError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
     args = parser().parse_args()
     def interrupt(signum, _frame):
         raise Interrupted(signum)

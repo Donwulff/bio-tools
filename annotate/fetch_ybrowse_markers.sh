@@ -1,6 +1,10 @@
 #!/bin/sh
 set -eu
 
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+. "${SCRIPT_DIR}/lib_liftover.sh"
+load_liftover_config
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -8,7 +12,7 @@ Usage:
 
 Fetches YBrowse hg38 chrY marker VCF (+index) and optionally GFF3.
 Default output:
-  ./resources/snps_hg38.vcf.gz
+  Y_RESOURCES_DIR/snps_hg38.vcf.gz or ./resources/snps_hg38.vcf.gz
 EOF
 }
 
@@ -19,22 +23,13 @@ need_cmd() {
   }
 }
 
-OUT="${YMARKERS_OUT:-$(pwd)/resources/snps_hg38.vcf.gz}"
+OUT="${YMARKERS_OUT:-${Y_RESOURCES_DIR:-$(pwd)/resources}/snps_hg38.vcf.gz}"
 GFF3_OUT="${YMARKERS_GFF3_OUT:-}"
 REFRESH=0
 FALLBACK="${YMARKERS_FALLBACK:-}"
 FETCH_GFF3=1
 URL_BASE="http://ybrowse.org/gbrowse2/gff/snps_hg38.vcf.gz"
 URL_GFF3="http://ybrowse.org/gbrowse2/gff/snps_hg38.gff3"
-
-# Optional local config (same convention as mapping scripts).
-if [ -f "${BIO_TOOLS_CFG:-./bio-tools.cfg}" ]; then
-  # shellcheck disable=SC1090
-  . "${BIO_TOOLS_CFG:-./bio-tools.cfg}"
-  if [ -z "${YMARKERS_OUT:-}" ] && [ -n "${Y_RESOURCES_DIR:-}" ]; then
-    OUT="${Y_RESOURCES_DIR%/}/snps_hg38.vcf.gz"
-  fi
-fi
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -89,7 +84,6 @@ if [ ! -f "${OUT}.tbi" ]; then
   tabix -f "$OUT"
 fi
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 SAN_OUT="${OUT%.vcf.gz}.sanitized.vcf.gz"
 "${SCRIPT_DIR}/sanitize_marker_vcf.sh" --input "$OUT" --output "$SAN_OUT"
 mv -f "$SAN_OUT" "$OUT"

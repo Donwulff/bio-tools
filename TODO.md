@@ -11,9 +11,10 @@ registered thresholds or rerun sample analyses.
 3. `util/build_env.sh`: pass build flags explicitly on `make install` (use `sudo env CFLAGS=... LDFLAGS=... LIBS=...`). Avoid `sudo -E` which drops env and triggers rebuilds without zlib.
 4. `util/build_env.sh`: standardize zlib linking across tools (bedtools/bwa/samtools/bcftools) when using `../zlib/libz.a`.
 5. `util/build_env.sh`: Node build should pin a supported Python (`PYTHON=/usr/bin/python3.11` or `--python=...`) to avoid Python 3.13 configure failures.
-6. Liftover: shared reference/index/dictionary validation and safe reference staging are implemented
-   with synthetic tests. Remaining consolidation: reference discovery, configuration and backend
-   execution still differ among drivers. Batch preflight, content-based confidence-record rejection,
+6. Liftover: shared reference/index/dictionary validation, safe reference staging, reference discovery
+   and local configuration loading are implemented with synthetic tests. Remaining consolidation:
+   backend discovery/execution still differs among drivers; unrelated workflows do not yet share a
+   repository-wide resource registry. Batch preflight, content-based confidence-record rejection,
    staged validation and atomic directory publication are implemented with synthetic lifecycle tests.
    These publication guarantees do not yet cover other experiment drivers.
 7. gVCF: ordinary batch conversion now refuses confidence records based on content. Picard block

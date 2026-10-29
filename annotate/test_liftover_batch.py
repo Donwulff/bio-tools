@@ -177,6 +177,7 @@ class BatchLifecycleTests(unittest.TestCase):
                         TEST_CALLS=str(self.calls), TEST_READY=str(self.ready), TEST_FINAL=str(self.out))
         # Ignore user-level resource/JVM settings in synthetic runs.
         self.env.pop("PICARD_JAVA_OPTS", None)
+        self.env.pop("BIO_TOOLS_CFG", None)
 
     def command(self, samples=None, extra=()):
         command = ["sh", str(batch.SCRIPT_DIR / "liftover_to_hg38_batch.sh"),
@@ -188,7 +189,7 @@ class BatchLifecycleTests(unittest.TestCase):
 
     def run_batch(self, samples=None, mode="success", extra=()):
         return subprocess.run(self.command(samples, extra), env=dict(self.env, TEST_MODE=mode),
-                              text=True, capture_output=True, timeout=25)
+                              cwd=self.root, text=True, capture_output=True, timeout=25)
 
     def stages(self):
         return list(self.root.glob(".final output.staging-*"))
@@ -225,6 +226,24 @@ class BatchLifecycleTests(unittest.TestCase):
         result = self.run_batch()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads((self.out / "manifest.json").read_text())["status"], "complete")
+
+    def test_cli_reference_and_backend_override_local_config(self):
+        (self.root / "bio-tools.cfg").write_text(
+            "REF_HG38=missing.fa\nPICARD_JAR=missing.jar\nPICARD_JAVA_OPTS=invalid\n")
+        result = self.run_batch(extra=["--java-opts", "-Xms1g -Xmx2g"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        manifest = json.loads((self.out / "manifest.json").read_text())
+        self.assertEqual(manifest["reference"], str(self.ref))
+        self.assertEqual(manifest["java_options"], ["-Xms1g", "-Xmx2g"])
+
+    def test_extended_reference_requires_explicit_opt_in(self):
+        extended = self.root / "custom.H3630.fa"
+        extended.symlink_to(self.ref)
+        result = self.run_batch(extra=["--ref-hg38", str(extended)])
+        self.assert_preflight_failed(result)
+        self.assertIn("--allow-extended-ref", result.stderr)
+        result = self.run_batch(extra=["--ref-hg38", str(extended), "--allow-extended-ref"])
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_primary_subset(self):
         self.sample.write_text(HEADER + ROW + ROW.replace("chrY", "decoy"))
@@ -379,7 +398,8 @@ class BatchLifecycleTests(unittest.TestCase):
             with self.subTest(signal=signum):
                 self.ready.unlink(missing_ok=True)
                 proc = subprocess.Popen(self.command(), env=dict(self.env, TEST_MODE="sleep"),
-                                        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                        cwd=self.root, text=True,
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 try:
                     deadline = time.monotonic() + 15
                     while not self.ready.exists() and time.monotonic() < deadline and proc.poll() is None:

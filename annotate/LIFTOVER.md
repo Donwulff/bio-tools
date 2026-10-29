@@ -15,9 +15,9 @@ gVCF is read on the native hs1 branch; that driver does **not** lift the sample 
 The shared implementation is `reference_utils.py` / `check_reference.py` for reference validation,
 `marker_schema.py` for allele interpretation, `lib_liftover.sh` for tool/sidecar preparation, plus
 `y_haplo_from_markers.py` for marker states, `y_path_rank.py` for descriptive ranking, and
-`ytree.py` for an explicit topology where one is provided. Reference discovery and Picard invocation
-still occur in multiple drivers. Compatibility warnings on the older scripts do not remove that
-duplication. A future consolidation should reuse these operations rather than add another caller.
+`ytree.py` for an explicit topology where one is provided. The batch and dual-Y drivers now share
+reference discovery in `liftover_resources.py` and configuration loading in `lib_liftover.sh`.
+Picard backend discovery/invocation still needs consolidation; these changes do not add another caller.
 
 ## References and Resources
 
@@ -31,10 +31,10 @@ duplication. A future consolidation should reuse these operations rather than ad
 - Check the chain's assembly, direction, sequence names and target sequence content. A custom
   reference does not by itself require new chains if the relevant named sequences are unchanged;
   altered sequence, masking or mitochondrial choice requires locus-specific compatibility checks.
-- Use explicit reference/marker/chain paths when reproducing a run. `BIO_TOOLS_CFG`,
-  `BIO_TOOLS_INDEX_DIR`/`INDEX_DIR` and `Y_RESOURCES_DIR` are conventions with uneven driver support,
-  not a fully implemented common resource registry. Running from another directory changes some
-  fallback paths and can trigger a second download.
+- Use explicit reference/marker/chain paths when reproducing a run. The liftover drivers, staging
+  helper and fetch helpers share local configuration loading as described below. This is not a
+  repository-wide resource registry; unrelated drivers can still have different defaults. Changing
+  analysis directories without configuring resource locations can still trigger a second download.
 - Save source URLs, retrieval/header dates, hashes, command lines and tool versions alongside a run.
   A copyright year is not a release date, and an old local fallback is not a successful refresh.
 - YBrowse VCF and GFF3 are different exports. GFF3 carries ancestral/derived alleles and YFull
@@ -72,6 +72,59 @@ copies or changed subsets: existing targets and orphaned sidecars are refused, w
 source symlinks can be reused. Relative source links are made absolute; unchanged BGZF copies reuse
 their GZI, and subsets get new indexes rather than source byte offsets. Failed subset extraction
 leaves no partial target FASTA. Staging does not automatically decompress ordinary gzip.
+
+### Resource Configuration
+
+**2026-10-29 follow-up:** reference selection now has one implementation for the batch and dual-Y
+drivers. Neither driver splits search roots on whitespace. No broad filesystem search is performed.
+
+Both drivers, `prepare_y_refs.sh`, `fetch_ybrowse_markers.sh` and `fetch_liftover_chains.sh` load
+`${BIO_TOOLS_CFG:-./bio-tools.cfg}` before defaults and option parsing. The file is **trusted,
+executable POSIX shell code**; do not use an untrusted analysis directory/config. A missing default
+file is fine; an explicitly named missing `BIO_TOOLS_CFG` fails. Config assignments override inherited
+values of the same variable, and CLI options override that setting. Relative paths remain relative
+to the analysis working directory, not to the directory containing the config file. The Python batch
+entry point uses this same shell loader and imports its environment without printing its contents.
+Config code runs before VCF preflight and is outside the batch transaction guarantees.
+
+Example local config (keep private paths/configs external):
+
+```sh
+Y_RESOURCES_DIR=/path/to/analysis-resources
+BIO_TOOLS_INDEX_DIR=/path/to/base-reference-index
+PICARD_JAR=/path/to/picard.jar
+PICARD_JAVA_OPTS='-Xms1g -Xmx8g'
+```
+
+Reference selection is:
+
+1. `--ref-hs1` / `--ref-hg38`, otherwise `REF_HS1` / `REF_HG38`. A supplied path that is absent,
+   empty or disallowed fails; it is not silently replaced with a discovered reference.
+2. For discovery, the configured root is `--ref-root`, otherwise the first nonempty variable among
+   `REF_ROOT`, `BIO_TOOLS_INDEX_DIR`, `INDEX_DIR`. Then search `$Y_RESOURCES_DIR/ref` if configured,
+   `./resources/ref`, and repository `mapping/index`. An explicit per-assembly reference still wins
+   over a root setting; setting a different root does not unset `REF_HG38`/`REF_HS1`.
+3. Prefer recognized base names across all roots: `chm13v2.0_maskedY_rCRS.fa(.gz)` for hs1; the
+   no-alt masked GRCh38 analysis `.fna(.gz)` and staged `hg38.fa(.gz)` for hg38. For each basename,
+   uncompressed precedes compressed. A selected invalid file/symlink fails rather than falling
+   through to another candidate; gzip/sidecar validation remains a separate step.
+4. Only with `--allow-extended-ref` may recognized extended fallbacks be discovered, after base
+   candidates in all roots. Known extended names on either an explicit path or its resolved symlink
+   target are rejected without the flag. This is **not** a contig inventory or sequence identity
+   check: renamed/custom references must still be checked by the analyst.
+
+Resource defaults use `$Y_RESOURCES_DIR` or analysis-local `./resources`: marker files directly
+inside it, chains under `chains/`, staged references under `ref/`. CLI paths win; `YMARKERS_OUT`,
+`YMARKERS_GFF3_OUT`, and `YREF_OUT_DIR` provide more specific defaults. In the dual driver, an explicit
+GFF3's existing sibling VCF remains preferred before resource discovery. Configured resource roots
+are used for missing-marker downloads rather than falling back to a second analysis-local cache.
+Downloads/sanitization are not made transactional by this change, and cache reuse is not a refresh
+or evidence of the latest catalogue version.
+
+Reference staging now defaults to the neutral GRCh38 name `hg38.fa`, not `hg38p14.H3630.fa`.
+No old files are renamed or deleted; `--hg38-name` / `YREF_HG38_NAME` can retain an intentional name.
+The staging label does not prove primary-only content, masking or assembly identity. Backend choice,
+complete run/resource hashing and publication safety of drivers other than the batch remain open.
 
 ## Picard gVCF Limitation
 

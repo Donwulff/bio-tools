@@ -194,7 +194,11 @@ class ReferenceTest(unittest.TestCase):
                         'case "$1" in -R) ref="$2"; shift 2;; -O) out="$2"; shift 2;; *) exit 9;; esac\ndone\n'
                         'exec "$TEST_SAMTOOLS" dict -o "$out" "$ref"\n')
         gatk.chmod(0o755)
-        return {**os.environ, "PATH": f"{tools}:{os.environ['PATH']}", "TEST_SAMTOOLS": shutil.which("samtools")}
+        env = {**os.environ, "PATH": f"{tools}:{os.environ['PATH']}", "TEST_SAMTOOLS": shutil.which("samtools")}
+        for key in ("BIO_TOOLS_CFG", "Y_RESOURCES_DIR", "PICARD_JAR", "PICARD_JAVA_OPTS",
+                    "YREF_OUT_DIR", "YREF_HS1_NAME", "YREF_HG38_NAME", "YREF_PRIMARY_CONTIGS"):
+            env.pop(key, None)
+        return env
 
     def staging(self, *args, ok=True):
         run = subprocess.run(["sh", str(HERE / "prepare_y_refs.sh"),

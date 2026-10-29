@@ -111,6 +111,10 @@ Thumbs.db
 .agents/
 .clawhub/
 
+# Trusted local settings can contain private paths or credentials. Commit an
+# explicitly named example/template instead, never the active configuration.
+bio-tools.cfg
+
 # =============================================================================
 # Local experiment / analysis output directories
 # The Y-liftover and modern sample experiment drivers document that you
