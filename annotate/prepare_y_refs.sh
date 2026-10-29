@@ -15,6 +15,8 @@ Usage:
     [--copy] \
     [--primary-only] \
     [--primary-contigs "chr1 ... chr22 chrX chrY chrM"] \
+    [--backend auto|gatk|picard-jar|picard-cli] \
+    [--picard-jar picard.jar] [--java-opts "-Xms1g -Xmx8g"] \
     [--hs1-name chm13v2.0_maskedY_rCRS.fa] \
     [--hg38-name hg38.fa]
 
@@ -26,7 +28,7 @@ Purpose:
 Defaults:
   --out-dir defaults to Y_RESOURCES_DIR/ref or ./resources/ref
   references are symlinked by default (use --copy to copy files)
-  dictionary creation prefers: gatk, auto-detected picard.jar, picard CLI, or PICARD_JAR env
+  dictionary creation shares backend selection/JVM options with the liftover drivers
   --primary-only extracts canonical contigs from source FASTA into staged FASTA
   existing targets are refused except unchanged source symlinks; use a fresh out-dir
   validation requires python3 + pysam; ordinary gzip must be staged uncompressed or BGZF
@@ -49,6 +51,8 @@ DO_COPY=0
 PRIMARY_ONLY=0
 PRIMARY_CONTIGS="${YREF_PRIMARY_CONTIGS:-chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM}"
 PICARD_JAR="${PICARD_JAR:-}"
+LIFTOVER_BACKEND="${LIFTOVER_BACKEND:-auto}"
+LIFTOVER_JAVA_OPTS="${PICARD_JAVA_OPTS-"-Xms1g -Xmx8g"}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -60,6 +64,9 @@ while [ $# -gt 0 ]; do
     --copy) DO_COPY=1; shift ;;
     --primary-only) PRIMARY_ONLY=1; shift ;;
     --primary-contigs) PRIMARY_CONTIGS="$2"; shift 2 ;;
+    --backend) LIFTOVER_BACKEND="$2"; shift 2 ;;
+    --picard-jar) PICARD_JAR="$2"; shift 2 ;;
+    --java-opts) LIFTOVER_JAVA_OPTS="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "ERROR: unknown argument: $1" >&2; usage; exit 1 ;;
   esac
@@ -73,12 +80,10 @@ done
 need_cmd samtools
 need_cmd python3
 
-if [ -z "$PICARD_JAR" ]; then
-  PICARD_JAR="$(detect_picard_jar "$SCRIPT_DIR" || true)"
-fi
+python3 "${SCRIPT_DIR}/liftover_backend.py" --check-options \
+  --backend "$LIFTOVER_BACKEND" --java-opts="$LIFTOVER_JAVA_OPTS"
 
-mkdir -p "$OUT_DIR"
-OUT_DIR=$(CDPATH='' cd -- "$OUT_DIR" && pwd)
+OUT_DIR=$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).expanduser().absolute())' "$OUT_DIR")
 REF_HS1_SRC=$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).absolute())' "$REF_HS1_SRC")
 REF_HG38_SRC=$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).absolute())' "$REF_HG38_SRC")
 
@@ -148,7 +153,8 @@ copy_or_link_sidecar() {
 
 ensure_dict() {
   ref="$1"
-  ensure_ref_sidecars "$ref" "$PICARD_JAR" ""
+  # Reusing valid dictionaries does not require an installed Java backend.
+  ensure_ref_sidecars "$ref" "$PICARD_JAR" "$LIFTOVER_JAVA_OPTS" "$BACKEND_SPEC"
 }
 
 prepare_one() {
@@ -177,6 +183,31 @@ HG38_DST=$(stage_path "${OUT_DIR}/${HG38_NAME}")
 check_stage_target "$REF_HS1_SRC" "$HS1_DST"
 check_stage_target "$REF_HG38_SRC" "$HG38_DST"
 
+has_dictionary() {
+  for candidate in "$(dict_path_for_ref "$1")" "${1%.*}.dict"; do
+    if [ -f "$candidate" ]; then return 0; fi
+  done
+  return 1
+}
+
+# Select/validate transport before copying or subsetting whenever a dictionary
+# will need generation. Cached dictionaries still need no installed backend.
+BACKEND_SPEC=""
+for reference in "$REF_HS1_SRC" "$REF_HG38_SRC" "$HS1_DST" "$HG38_DST"; do
+  for candidate in "$(dict_path_for_ref "$reference")" "${reference%.*}.dict"; do
+    if { [ -e "$candidate" ] || [ -L "$candidate" ]; } && [ ! -f "$candidate" ]; then
+      echo "ERROR: invalid dictionary path (not a readable file target): $candidate" >&2
+      exit 2
+    fi
+  done
+done
+if [ "$PRIMARY_ONLY" -eq 1 ] ||
+   { ! has_dictionary "$REF_HS1_SRC" && ! has_dictionary "$HS1_DST"; } ||
+   { ! has_dictionary "$REF_HG38_SRC" && ! has_dictionary "$HG38_DST"; }; then
+  BACKEND_SPEC="$(select_liftover_backend "$LIFTOVER_BACKEND" "$PICARD_JAR" "$LIFTOVER_JAVA_OPTS")"
+fi
+
+mkdir -p "$OUT_DIR"
 prepare_one "$REF_HS1_SRC" "$HS1_DST"
 prepare_one "$REF_HG38_SRC" "$HG38_DST"
 

@@ -17,6 +17,7 @@ import tempfile
 import zlib
 
 from liftover_resources import ResourceError, config_environment, find_reference
+from liftover_backend import DEFAULT_JAVA_OPTS, MODES, select_backend
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -123,13 +124,15 @@ def check_destination(path):
         raise BatchError(f"output directory must be new or empty (no overwrite): {path}")
 
 
-def run_command(argv, log):
+def run_command(argv, log, env_updates=None):
     """Stop the entire child group on cancellation, including shell-helper children."""
     with log.open("ab") as stream:
+        for key, value in (env_updates or {}).items():
+            stream.write((f"{key}={shlex.quote(value)}\n").encode())
         stream.write(("$ " + shlex.join([str(a) for a in argv]) + "\n").encode())
         stream.flush()
         proc = subprocess.Popen(argv, stdout=stream, stderr=subprocess.STDOUT,
-                                start_new_session=True)
+                                start_new_session=True, env={**os.environ, **(env_updates or {})})
         try:
             code = proc.wait()
         except BaseException:
@@ -192,7 +195,8 @@ def parser():
     p.add_argument("--allow-extended-ref", action="store_true",
                    help="explicitly permit extended/decoy-enriched reference filenames")
     p.add_argument("--picard-jar", default=os.environ.get("PICARD_JAR"))
-    p.add_argument("--java-opts", default=os.environ.get("PICARD_JAVA_OPTS") or "-Xms1g -Xmx8g")
+    p.add_argument("--backend", choices=MODES, default=os.environ.get("LIFTOVER_BACKEND", "auto"))
+    p.add_argument("--java-opts", default=os.environ.get("PICARD_JAVA_OPTS", DEFAULT_JAVA_OPTS))
     p.add_argument("--out-dir")
     p.add_argument("--primary-only", action="store_true")
     p.add_argument("--sample", action="append", required=True, help="ordinary VCF; repeat for a batch")
@@ -200,7 +204,7 @@ def parser():
 
 
 def preflight(args):
-    for command in ("java", "bcftools", "tabix", "samtools", "sh"):
+    for command in ("bcftools", "tabix", "samtools", "sh"):
         if not shutil.which(command):
             raise BatchError(f"missing command: {command}")
     try:
@@ -210,13 +214,7 @@ def preflight(args):
     chain = require_file(args.chain_hs1_to_hg38)
     ref = require_file(find_reference("hg38", args.ref_hg38, args.ref_root,
                                      allow_extended=args.allow_extended_ref))
-    jar = args.picard_jar or next((p for p in (
-        SCRIPT_DIR.parent / "mapping/tst/picard.jar", SCRIPT_DIR.parent / "util/bin/picard.jar",
-        SCRIPT_DIR.parent / "mapping/picard.jar") if p.is_file()), None)
-    if not jar:
-        raise BatchError("set --picard-jar (picard.jar not auto-detected)")
-    jar = require_file(jar)
-    java_opts = shlex.split(args.java_opts)
+    backend = select_backend(args.backend, args.picard_jar, args.java_opts)
     destination = Path(args.out_dir or Path.cwd() / "experiments" /
                        datetime.now().strftime("liftover_hg38_%Y%m%d_%H%M%S")).expanduser().absolute()
     # Resolve parents but not the leaf: a destination symlink must not be followed.
@@ -242,17 +240,18 @@ def preflight(args):
                       "lifted_vcf": f"{stem}.hg38.vcf.gz",
                       "reject_vcf": f"{stem}.hg38.reject.vcf.gz",
                       "primary_vcf": f"{stem}.hg38.primary.vcf.gz" if args.primary_only else None})
-    return chain, ref, jar, java_opts, destination, plans
+    return chain, ref, backend, destination, plans
 
 
 def execute(args):
-    chain, ref, jar, java_opts, destination, plans = preflight(args)
+    chain, ref, backend, destination, plans = preflight(args)
     destination.parent.mkdir(parents=True, exist_ok=True)
     lock = destination.parent / f".{destination.name}.liftover.lock"
     stage = None
     manifest = {"status": "running", "started_utc": datetime.now(timezone.utc).isoformat(),
                 "output_directory": str(destination), "reference": str(ref), "chain": str(chain),
-                "picard_jar": str(jar), "java_options": java_opts, "inputs": plans}
+                "picard_jar": backend.jar, "java_options": list(backend.java_options),
+                "backend": backend.metadata(), "inputs": plans}
     try:
         lock_fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     except FileExistsError as exc:
@@ -268,8 +267,9 @@ def execute(args):
         print(f"Staging batch in {stage}", flush=True)
         # Keep one reference validator/preparer shared with the other drivers.
         run_command(["sh", "-eu", "-c",
-                     '. "$1/lib_liftover.sh"; SCRIPT_DIR="$1"; ensure_ref_sidecars "$2" "$3" "$4"',
-                     "liftover-reference", str(SCRIPT_DIR), str(ref), str(jar), args.java_opts],
+                     '. "$1/lib_liftover.sh"; SCRIPT_DIR="$1"; ensure_ref_sidecars "$2" "$3" "$4" "$5"',
+                     "liftover-reference", str(SCRIPT_DIR), str(ref), backend.jar or "", args.java_opts,
+                     json.dumps(backend.metadata())],
                     stage / "logs/reference.log")
         for plan in plans:
             source = Path(plan["input"])
@@ -278,9 +278,10 @@ def execute(args):
             rejected = stage / plan["reject_vcf"]
             log = stage / "logs" / f"{plan['stem']}.tools.log"
             print(f"Liftover: {source.name}", flush=True)
-            run_command(["java", *java_opts, "-jar", str(jar), "LiftoverVcf", f"I={source}",
-                         f"O={lifted}", f"CHAIN={chain}", f"R={ref}", f"REJECT={rejected}",
-                         "RECOVER_SWAPPED_REF_ALT=true", "WARN_ON_MISSING_CONTIG=true"], log)
+            argv, updates = backend.invocation("LiftoverVcf", ["--INPUT", source, "--OUTPUT", lifted,
+                "--CHAIN", chain, "--REFERENCE_SEQUENCE", ref, "--REJECT", rejected,
+                "--RECOVER_SWAPPED_REF_ALT", "true", "--WARN_ON_MISSING_CONTIG", "true"])
+            run_command(argv, log, updates)
             for path in (lifted, rejected):
                 run_command(["tabix", "-p", "vcf", str(path)], log)
             n_lifted = validate_output(lifted, plan["samples"])

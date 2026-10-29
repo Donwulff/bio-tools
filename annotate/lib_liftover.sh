@@ -38,19 +38,15 @@ need_cmd() {
   }
 }
 
-detect_picard_jar() {
-  liftover_script_dir="$1"
-  for p in \
-    "${liftover_script_dir}/../mapping/tst/picard.jar" \
-    "${liftover_script_dir}/../util/bin/picard.jar" \
-    "${liftover_script_dir}/../mapping/picard.jar"
-  do
-    if [ -f "$p" ]; then
-      echo "$p"
-      return 0
-    fi
-  done
-  return 1
+select_liftover_backend() {
+  python3 "${SCRIPT_DIR}/liftover_backend.py" --describe \
+    --backend "$1" --picard-jar "$2" --java-opts="$3"
+}
+
+run_liftover_tool() {
+  liftover_backend_spec="$1"
+  shift
+  python3 "${SCRIPT_DIR}/liftover_backend.py" --spec "$liftover_backend_spec" "$@"
 }
 
 dict_path_for_ref() {
@@ -89,22 +85,17 @@ ensure_ref_sidecars() {
   ref="$1"
   picard_jar="$2"
   java_opts="$3"
+  backend_spec="${4:-}"
   ensure_ref_index "$ref" || return
 
   dict_primary="$(dict_path_for_ref "$ref")" || return
   dict_alt="${ref%.*}.dict"
   if [ ! -e "$dict_primary" ] && [ ! -L "$dict_primary" ] && [ ! -e "$dict_alt" ] && [ ! -L "$dict_alt" ]; then
-    if command -v gatk >/dev/null 2>&1; then
-      gatk CreateSequenceDictionary -R "$ref" -O "$dict_primary" || return
-    elif [ -n "$picard_jar" ] && [ -f "$picard_jar" ]; then
-      java $java_opts -jar "$picard_jar" CreateSequenceDictionary R="$ref" O="$dict_primary" || return
-    elif command -v picard >/dev/null 2>&1; then
-      picard CreateSequenceDictionary R="$ref" O="$dict_primary" || return
-    else
-      echo "ERROR: missing sequence dictionary for $ref and no tool available to create it." >&2
-      echo "Install gatk/picard or set --picard-jar." >&2
-      exit 2
+    if [ -z "$backend_spec" ]; then
+      backend_spec="$(select_liftover_backend "${LIFTOVER_BACKEND:-auto}" "$picard_jar" "$java_opts")" || return
     fi
+    run_liftover_tool "$backend_spec" CreateSequenceDictionary \
+      --REFERENCE "$ref" --OUTPUT "$dict_primary" || return
   fi
   python3 "${SCRIPT_DIR}/check_reference.py" "$ref" >/dev/null || return
   link_dict_alias "$dict_primary" "$dict_alt" || return

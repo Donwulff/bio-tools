@@ -31,7 +31,7 @@ See also `TODO.md` for pending improvements to build scripts.
 
 ## Testing Guidelines
 - There is no repository-wide test runner. `sh annotate/run_tests.sh` runs the focused annotation
-  suites (synthetic comparator/reference/resource/batch/resolver tests and the local-tree checks).
+  suites (synthetic comparator/reference/resource/backend/batch/resolver tests and the local-tree checks).
 - Validate changes by running the affected script on representative data and checking outputs with domain tools (e.g., `samtools`, `bcftools`).
 - Use `results/` PDFs as qualitative comparisons where relevant.
 - Synthetic marker regressions: `python3 annotate/test_y_haplo_from_markers.py`; local-tree checks:
@@ -58,7 +58,11 @@ See also `TODO.md` for pending improvements to build scripts.
   - `Y_RESOURCES_DIR`: Preferred location for YBrowse marker files (snps_hg38.vcf.gz / .gff3) and related data; used by fetch and experiment scripts.
   - `BIO_TOOLS_INDEX_DIR` (or `INDEX_DIR`): Root for discovering reference FASTAs (with .fai/.dict) for liftover and mapping scripts. Falls back to `./resources/ref` or `mapping/index`.
   - `TMP=/path/to/ssd`: Point temporary files (Picard, sorting, etc.) to fast storage.
-- Java 8+ is required for Picard/GATK steps. Some liftover scripts accept `--java-opts` or `PICARD_JAVA_OPTS` for heap tuning.
+  - `LIFTOVER_BACKEND`: Shared liftover/dictionary backend: `auto`, `gatk`, `picard-jar`, `picard-cli`.
+    Explicit CLI mode wins. Auto prefers a supplied `PICARD_JAR`, GATK, a discovered jar, then Picard CLI.
+- Use the Java version required by the selected Picard/GATK release. Liftover drivers and reference
+  preparation accept `--java-opts` or `PICARD_JAVA_OPTS` for heap tuning; an explicit empty value
+  supplies no extra JVM options.
 
 ## Documentation
 In addition to this file:
@@ -91,6 +95,10 @@ In addition to this file:
   `mapping/index`. Do not reintroduce whitespace-split roots or independent candidate lists.
   Staging defaults to the neutral `hg38.fa` name, which does not imply primary-only sequence content.
 - Picard/GATK liftover requires both `.fai` and `.dict` sidecars.
+- Backend selection/JVM/tool arguments share `annotate/liftover_backend.py`; do not reintroduce
+  independent shell invocations or unquoted JVM-option expansion. GATK mode rejects whitespace
+  inside JVM values; use jar mode for those. Picard CLI uses child-scoped `JAVA_TOOL_OPTIONS`, which
+  wrappers may override. See `annotate/LIFTOVER.md` before claiming exact heap/version provenance.
 - Sidecar checks share `annotate/reference_utils.py` across marker queries and shell liftover
   helpers. Invalid existing sidecars fail without replacement; `.gz` does not prove BGZF.
   Defaults check metadata and small probes, not whole-sequence identity. Use

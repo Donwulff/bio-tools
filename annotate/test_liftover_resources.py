@@ -21,7 +21,7 @@ from liftover_resources import (
 HERE = Path(__file__).resolve().parent
 CONFIG_KEYS = ("BIO_TOOLS_CFG", "REF_ROOT", "REF_HS1", "REF_HG38", "BIO_TOOLS_INDEX_DIR",
                "INDEX_DIR", "Y_RESOURCES_DIR", "YMARKERS_OUT", "YMARKERS_GFF3_OUT",
-               "PICARD_JAR", "PICARD_JAVA_OPTS", "YREF_OUT_DIR", "YREF_HS1_NAME", "YREF_HG38_NAME")
+               "PICARD_JAR", "PICARD_JAVA_OPTS", "LIFTOVER_BACKEND", "YREF_OUT_DIR", "YREF_HS1_NAME", "YREF_HG38_NAME")
 
 
 class ResourceTests(unittest.TestCase):

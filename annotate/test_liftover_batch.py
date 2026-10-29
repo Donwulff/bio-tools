@@ -36,6 +36,7 @@ ROW = 'chrY\t2\t.\tC\tG\t50\tPASS\t.\tGT\t1\n'
 
 FAKE_JAVA = r'''
 import gzip
+import json
 import os
 from pathlib import Path
 import signal
@@ -44,9 +45,20 @@ import sys
 import time
 import pysam
 
-opts = dict(arg.split("=", 1) for arg in sys.argv if "=" in arg)
-source = Path(opts["I"])
-out = Path(opts["O"])
+tool = next(t for t in ("LiftoverVcf", "CreateSequenceDictionary") if t in sys.argv)
+args = sys.argv[sys.argv.index(tool) + 1:]
+opts = {args[i].removeprefix("--"): args[i + 1] for i in range(0, len(args), 2)}
+if os.environ.get("TEST_BACKEND_ARGS"):
+    with open(os.environ["TEST_BACKEND_ARGS"], "a") as log:
+        log.write(json.dumps({"program": Path(sys.argv[0]).name, "argv": sys.argv[1:],
+                              "JAVA_TOOL_OPTIONS": os.environ.get("JAVA_TOOL_OPTIONS")}) + "\n")
+if tool == "CreateSequenceDictionary":
+    if os.environ.get("TEST_MODE") == "fail_dict":
+        sys.exit(23)
+    subprocess.run([os.environ["TEST_SAMTOOLS"], "dict", "-o", opts["OUTPUT"], opts["REFERENCE"]], check=True)
+    sys.exit(0)
+source = Path(opts["INPUT"])
+out = Path(opts["OUTPUT"])
 reject = Path(opts["REJECT"])
 with open(os.environ["TEST_CALLS"], "a") as calls:
     calls.write(source.name + "\n")
@@ -174,10 +186,16 @@ class BatchLifecycleTests(unittest.TestCase):
         self.sample = self.root / "sample.part with spaces.vcf"
         self.sample.write_text(HEADER + ROW)
         self.env = dict(os.environ, PATH=str(self.bin) + os.pathsep + os.environ["PATH"],
-                        TEST_CALLS=str(self.calls), TEST_READY=str(self.ready), TEST_FINAL=str(self.out))
+                        TEST_CALLS=str(self.calls), TEST_READY=str(self.ready), TEST_FINAL=str(self.out),
+                        TEST_SAMTOOLS=shutil.which("samtools"))
         # Ignore user-level resource/JVM settings in synthetic runs.
         self.env.pop("PICARD_JAVA_OPTS", None)
         self.env.pop("BIO_TOOLS_CFG", None)
+        self.env.pop("LIFTOVER_BACKEND", None)
+
+    def install_fake_wrappers(self):
+        for name in ("gatk", "picard"):
+            shutil.copy2(self.bin / "java", self.bin / name)
 
     def command(self, samples=None, extra=()):
         command = ["sh", str(batch.SCRIPT_DIR / "liftover_to_hg38_batch.sh"),
@@ -229,8 +247,8 @@ class BatchLifecycleTests(unittest.TestCase):
 
     def test_cli_reference_and_backend_override_local_config(self):
         (self.root / "bio-tools.cfg").write_text(
-            "REF_HG38=missing.fa\nPICARD_JAR=missing.jar\nPICARD_JAVA_OPTS=invalid\n")
-        result = self.run_batch(extra=["--java-opts", "-Xms1g -Xmx2g"])
+            "REF_HG38=missing.fa\nPICARD_JAR=missing.jar\nPICARD_JAVA_OPTS=invalid\nLIFTOVER_BACKEND=gatk\n")
+        result = self.run_batch(extra=["--java-opts", "-Xms1g -Xmx2g", "--backend", "picard-jar"])
         self.assertEqual(result.returncode, 0, result.stderr)
         manifest = json.loads((self.out / "manifest.json").read_text())
         self.assertEqual(manifest["reference"], str(self.ref))
@@ -349,6 +367,107 @@ class BatchLifecycleTests(unittest.TestCase):
         self.assert_preflight_failed(result)
         self.assertIn("No closing quotation", result.stderr)
 
+    def test_all_backends_share_dictionary_and_liftover_selection_and_options(self):
+        self.install_fake_wrappers()
+        for mode, name in (("picard-jar", "java"), ("gatk", "gatk"), ("picard-cli", "picard")):
+            with self.subTest(mode=mode):
+                self.out = self.root / f"result-{mode}"
+                self.ref.with_suffix(".dict").unlink()
+                trace = self.root / f"{mode}.jsonl"
+                self.env["TEST_BACKEND_ARGS"] = str(trace)
+                self.env.pop("JAVA_TOOL_OPTIONS", None)
+                result = self.run_batch(extra=["--backend", mode, "--java-opts", "-Xmx64m -Dpattern=*"])
+                self.assertEqual(result.returncode, 0, result.stderr)
+                manifest = json.loads((self.out / "manifest.json").read_text())
+                self.assertEqual(manifest["backend"]["kind"], mode)
+                self.assertEqual(manifest["backend"]["java_options"], ["-Xmx64m", "-Dpattern=*"])
+                calls = [json.loads(line) for line in trace.read_text().splitlines()]
+                self.assertEqual(len(calls), 2)
+                self.assertEqual({call["program"] for call in calls}, {name})
+                self.assertIn("CreateSequenceDictionary", calls[0]["argv"])
+                self.assertIn("LiftoverVcf", calls[1]["argv"])
+                for call in calls:
+                    if mode == "picard-cli":
+                        self.assertEqual(call["JAVA_TOOL_OPTIONS"], '"-Xmx64m" "-Dpattern=*"')
+                    elif mode == "gatk":
+                        self.assertEqual(call["argv"][:2], ["--java-options", "-Xmx64m -Dpattern=*"])
+                    else:
+                        self.assertEqual(call["argv"][:2], ["-Xmx64m", "-Dpattern=*"])
+
+    def test_explicit_jar_dictionary_does_not_use_available_gatk(self):
+        self.install_fake_wrappers()
+        self.ref.with_suffix(".dict").unlink()
+        trace = self.root / "backend.jsonl"
+        self.env["TEST_BACKEND_ARGS"] = str(trace)
+        result = self.run_batch()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual({json.loads(line)["program"] for line in trace.read_text().splitlines()}, {"java"})
+
+    def test_jar_quoted_jvm_values_survive_dictionary_shell_bridge(self):
+        self.ref.with_suffix(".dict").unlink()
+        trace = self.root / "backend.jsonl"
+        self.env["TEST_BACKEND_ARGS"] = str(trace)
+        result = self.run_batch(extra=["--java-opts", '-Xmx64m -Dsynthetic="a b" -Dpattern=*'])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for line in trace.read_text().splitlines():
+            self.assertEqual(json.loads(line)["argv"][:3], ["-Xmx64m", "-Dsynthetic=a b", "-Dpattern=*"])
+
+    def test_dual_driver_uses_shared_backends_end_to_end(self):
+        self.install_fake_wrappers()
+        markers = self.root / "markers.vcf.gz"
+        marker_header = ('##fileformat=VCFv4.2\n##contig=<ID=chrY,length=16>\n'
+            '##INFO=<ID=AA,Number=1,Type=String,Description="Ancestral">\n'
+            '##INFO=<ID=HG,Number=1,Type=String,Description="Label">\n'
+            '##INFO=<ID=ISOGG,Number=1,Type=String,Description="Label">\n'
+            '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n')
+        with pysam.BGZFile(str(markers), "w") as handle:
+            handle.write((marker_header + 'chrY\t2\tSYNTHETIC\tC\tG\t.\tPASS\tAA=C;HG=I-SYNTHETIC;ISOGG=I1\n').encode())
+        pysam.tabix_index(str(markers), preset="vcf")
+        gff = self.root / "markers.gff3"
+        gff.write_text('##gff-version 3\nchrY\tpoint\tsnp\t2\t2\t.\t+\t.\t'
+                       'ID=SYNTHETIC;allele_anc=C;allele_der=G;isogg_haplogroup=I1;yfull_node=I-SYNTHETIC\n')
+        for mode in ("picard-jar", "gatk", "picard-cli"):
+            with self.subTest(mode=mode):
+                out = self.root / f"dual-{mode}"
+                trace = self.root / f"dual-{mode}.jsonl"
+                env = dict(self.env, TEST_MODE="success", TEST_BACKEND_ARGS=str(trace))
+                result = subprocess.run(["sh", str(batch.SCRIPT_DIR / "run_y_dual_liftover_experiment.sh"),
+                    "--sample-vcf-hs1", str(self.sample), "--ref-hs1", str(self.ref), "--ref-hg38", str(self.ref),
+                    "--chain-hg38-to-hs1", str(self.chain), "--chain-hs1-to-hg38", str(self.chain),
+                    "--markers-hg38", str(markers), "--markers-gff3-hg38", str(gff),
+                    "--picard-jar", str(self.jar), "--backend", mode, "--out-dir", str(out)],
+                    cwd=self.root, env=env, capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertTrue((out / "summary.tsv").is_file())
+                for name in ("hs1_from_markers_lifted", "hg38_from_sample_lifted"):
+                    rows = (out / f"{name}.marker_status.tsv").read_text().splitlines()
+                    self.assertEqual(len(rows), 1)
+                    self.assertEqual(rows[0].split("\t")[12], "derived")
+                calls = [json.loads(line) for line in trace.read_text().splitlines()]
+                self.assertEqual(len(calls), 2)
+                expected = {"picard-jar": "java", "gatk": "gatk", "picard-cli": "picard"}[mode]
+                self.assertEqual({call["program"] for call in calls}, {expected})
+
+    def test_gatk_unrepresentable_jvm_value_fails_before_writes(self):
+        self.install_fake_wrappers()
+        Path(str(self.ref) + ".fai").unlink()
+        result = self.run_batch(extra=["--backend", "gatk", "--java-opts", '-Xmx64m -Dsynthetic="a b"'])
+        self.assert_preflight_failed(result)
+        self.assertIn("GATK's launcher splits", result.stderr)
+        self.assertFalse(Path(str(self.ref) + ".fai").exists())
+
+    def test_dictionary_failure_keeps_stage_without_fallback_or_publication(self):
+        self.install_fake_wrappers()
+        self.ref.with_suffix(".dict").unlink()
+        trace = self.root / "backend.jsonl"
+        self.env["TEST_BACKEND_ARGS"] = str(trace)
+        result = self.run_batch(mode="fail_dict")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.out.exists())
+        manifest = json.loads((self.stages()[0] / "manifest.json").read_text())
+        self.assertEqual(manifest["status"], "failed")
+        self.assertEqual([json.loads(line)["program"] for line in trace.read_text().splitlines()], ["java"])
+
     def test_index_failure_cannot_publish(self):
         tabix = self.bin / "tabix"
         tabix.write_text("#!/bin/sh\nexit 19\n")
@@ -393,11 +512,13 @@ class BatchLifecycleTests(unittest.TestCase):
         self.assertEqual([p.name for p in self.out.iterdir()], ["keep"])
         self.assertTrue(self.stages())
 
-    def test_sigterm_stops_tool_group_and_retains_stage(self):
-        for signum in (signal.SIGTERM, signal.SIGINT):
-            with self.subTest(signal=signum):
+    def test_signals_stop_each_backend_tool_group_and_retain_stage(self):
+        self.install_fake_wrappers()
+        for mode, signum in ((m, s) for m in ("picard-jar", "gatk", "picard-cli")
+                             for s in (signal.SIGTERM, signal.SIGINT)):
+            with self.subTest(backend=mode, signal=signum):
                 self.ready.unlink(missing_ok=True)
-                proc = subprocess.Popen(self.command(), env=dict(self.env, TEST_MODE="sleep"),
+                proc = subprocess.Popen(self.command(extra=["--backend", mode]), env=dict(self.env, TEST_MODE="sleep"),
                                         cwd=self.root, text=True,
                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 try:

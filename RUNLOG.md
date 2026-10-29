@@ -1780,3 +1780,64 @@ existing diagnostics excluded. Read-only review caught a remaining caller-direct
 in the signal test; its subprocess and reference-staging fixtures now isolate local config.
 No scientific result tables, markers, preregistrations or reviewed research snapshots were changed;
 no downloads, sample reruns or pushes were performed.
+
+## 2026-10-29 - Shared Liftover Backend And JVM Options
+
+Consolidated GATK/Picard dispatch for the ordinary-VCF batch, dual-Y driver and dictionary preparation.
+This is reusable tooling, not a new sample run or validated gVCF conversion.
+
+- `liftover_backend.py` owns backend selection, JVM option parsing and tool argument construction.
+  Explicit modes are `gatk`, `picard-jar`, `picard-cli`; `auto` prefers a supplied jar, GATK, a
+  discovered local jar, then Picard CLI. Supplied invalid jars and execution failures do not cause
+  fallback. Both tools use modern long option/value pairs. No shell eval/globbing is used.
+- Batch/dual-Y select a backend once and reuse it for dictionary creation and liftover, rather than
+  independently using GATK for the dictionary and a jar for mapping variants. Batch manifests record
+  selected executable/jar paths and parsed options. Existing stage validation, count conservation,
+  child-group cancellation and atomic publication remain in place.
+- `prepare_y_refs.sh` accepts the same backend/jar/JVM options. Its syntax check precedes staging;
+  backend/transport selection precedes writes when a dictionary must be generated. Valid existing sidecars
+  do not require a Java installation. Default heap options now also reach dictionary creation.
+  An explicitly empty JVM-option value is preserved. Driver-local option variables no longer
+  overwrite an inherited generic `JAVA_OPTS` used by external wrappers.
+- The [GATK launcher](https://github.com/broadinstitute/gatk/blob/master/gatk) inspected on this date
+  splits the JVM string on whitespace. GATK mode rejects space-containing JVM values before tools
+  start; direct jar mode preserves them. Picard CLI uses child-scoped `JAVA_TOOL_OPTIONS`, preserving
+  inherited values. Its wrapper can override environment options; exact heap enforcement is not
+  claimed for arbitrary wrappers. Unsafe quote combinations fail instead of being silently rewritten.
+  See [backend details and primary argument references](annotate/LIFTOVER.md#backend-selection).
+- Pinned paths are not binary/resource hashes or exhaustive environment provenance. No production
+  Picard/GATK executable or jar was available for a real identity-chain smoke test; no successful
+  biological conversion, accuracy gain or gVCF block support is inferred from stand-in tests.
+
+Validation:
+
+```bash
+sh annotate/run_tests.sh
+/snap/shellcheck/current/usr/bin/shellcheck -x -P annotate \
+  annotate/lib_liftover.sh annotate/prepare_y_refs.sh \
+  annotate/run_y_dual_liftover_experiment.sh annotate/run_tests.sh
+git diff --check
+```
+
+The focused runner passes **187 unittest cases and 40 tree checks**: 29 comparator, 30 reference,
+27 resource/config, 26 backend, 34 batch/lifecycle and 41 resolver cases. New regressions cover all
+backend policies, pinned metadata, spaced/literal argv, invalid options, inherited JVM environment,
+dictionary/liftover consistency, failure without fallback, both cancellation signals on all three
+backends, and end-to-end synthetic dual-Y execution. Stand-ins execute real samtools dictionary
+creation, indexing/subsetting and marker resolution; an optional real Java check confirms environment
+option quoting. They do not execute real Picard/GATK conversion. The three former ShellCheck JVM
+word-splitting diagnostics are gone, without suppressing them. No private inputs, result tables,
+marker definitions, preregistrations or research snapshots were changed. No sample/catalogue/reference
+data was downloaded and nothing was pushed.
+
+Read-only review found that staging could copy references before discovering a GATK-incompatible
+JVM value; selection/transport checks now precede those writes when dictionary generation is needed,
+with auto/explicit-mode regressions. Dangling dictionary links and directory-valued source/staged
+dictionary paths are rejected before writes, rather than mistaken for reusable files. The review
+also reproduced retained standalone-shell signal
+forwarding limitations. That is documented as pending supervision work, not claimed fixed by the
+batch cancellation tests or the shim's `execve`.
+
+The exported staged snapshot independently passed all 187 unittest cases, 40 tree checks and
+unsuppressed ShellCheck. Added-line privacy/path and local-documentation link checks also passed;
+no protected scientific files changed.

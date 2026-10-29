@@ -190,12 +190,12 @@ class ReferenceTest(unittest.TestCase):
         tools = self.root / "bin"
         tools.mkdir(exist_ok=True)
         gatk = tools / "gatk"
-        gatk.write_text('#!/bin/sh\nshift\nwhile [ "$#" -gt 0 ]; do\n'
-                        'case "$1" in -R) ref="$2"; shift 2;; -O) out="$2"; shift 2;; *) exit 9;; esac\ndone\n'
+        gatk.write_text('#!/bin/sh\n[ "$1" != --java-options ] || shift 2\nshift\nwhile [ "$#" -gt 0 ]; do\n'
+                        'case "$1" in --REFERENCE) ref="$2"; shift 2;; --OUTPUT) out="$2"; shift 2;; *) exit 9;; esac\ndone\n'
                         'exec "$TEST_SAMTOOLS" dict -o "$out" "$ref"\n')
         gatk.chmod(0o755)
         env = {**os.environ, "PATH": f"{tools}:{os.environ['PATH']}", "TEST_SAMTOOLS": shutil.which("samtools")}
-        for key in ("BIO_TOOLS_CFG", "Y_RESOURCES_DIR", "PICARD_JAR", "PICARD_JAVA_OPTS",
+        for key in ("BIO_TOOLS_CFG", "Y_RESOURCES_DIR", "PICARD_JAR", "PICARD_JAVA_OPTS", "LIFTOVER_BACKEND",
                     "YREF_OUT_DIR", "YREF_HS1_NAME", "YREF_HG38_NAME", "YREF_PRIMARY_CONTIGS"):
             env.pop(key, None)
         return env
@@ -207,6 +207,48 @@ class ReferenceTest(unittest.TestCase):
                              cwd=self.root, capture_output=True, text=True, env=self.dictionary_tool_env())
         self.assertEqual(run.returncode == 0, ok, run.stderr)
         return run
+
+    @unittest.skipUnless(shutil.which("samtools"), "staging integration requires samtools")
+    def test_invalid_backend_options_fail_before_staging(self):
+        result = self.staging("--java-opts", '"unterminated', ok=False)
+        self.assertIn("No closing quotation", result.stderr)
+        self.assertFalse((self.root / "stage").exists())
+
+    @unittest.skipUnless(shutil.which("samtools"), "staging integration requires samtools")
+    def test_unrepresentable_gatk_options_fail_before_copy_or_index_writes(self):
+        self.dictionary.unlink()
+        index = Path(str(self.ref) + ".fai")
+        before = (index.read_bytes(), index.stat().st_mtime_ns)
+        for mode in ("auto", "gatk"):
+            with self.subTest(mode=mode):
+                result = self.staging("--copy", "--backend", mode,
+                                      "--java-opts", '-Dsynthetic="a b"', ok=False)
+                self.assertIn("GATK's launcher splits", result.stderr)
+                self.assertFalse((self.root / "stage").exists())
+                self.assertEqual((index.read_bytes(), index.stat().st_mtime_ns), before)
+
+    @unittest.skipUnless(shutil.which("samtools"), "staging integration requires samtools")
+    def test_noncopyable_source_dictionary_fails_before_staging_or_index_writes(self):
+        self.dictionary.unlink()
+        index = Path(str(self.ref) + ".fai")
+        index.unlink()
+        for kind in ("dangling", "directory"):
+            with self.subTest(kind=kind):
+                if kind == "dangling":
+                    self.dictionary.symlink_to("missing.dict")
+                else:
+                    self.dictionary.mkdir()
+                result = self.staging("--copy", "--backend", "gatk",
+                                      "--java-opts", '-Dsynthetic="a b"', ok=False)
+                self.assertIn("invalid dictionary path", result.stderr)
+                self.assertFalse((self.root / "stage").exists())
+                self.assertFalse(index.exists())
+                if kind == "dangling":
+                    self.assertTrue(self.dictionary.is_symlink())
+                    self.dictionary.unlink()
+                else:
+                    self.assertTrue(self.dictionary.is_dir())
+                    self.dictionary.rmdir()
 
     @unittest.skipUnless(shutil.which("samtools"), "staging integration requires samtools")
     def test_relative_source_symlinks_are_absolute_and_reusable(self):

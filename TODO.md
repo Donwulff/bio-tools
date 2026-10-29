@@ -12,11 +12,12 @@ registered thresholds or rerun sample analyses.
 4. `util/build_env.sh`: standardize zlib linking across tools (bedtools/bwa/samtools/bcftools) when using `../zlib/libz.a`.
 5. `util/build_env.sh`: Node build should pin a supported Python (`PYTHON=/usr/bin/python3.11` or `--python=...`) to avoid Python 3.13 configure failures.
 6. Liftover: shared reference/index/dictionary validation, safe reference staging, reference discovery
-   and local configuration loading are implemented with synthetic tests. Remaining consolidation:
-   backend discovery/execution still differs among drivers; unrelated workflows do not yet share a
-   repository-wide resource registry. Batch preflight, content-based confidence-record rejection,
+   local configuration loading and GATK/Picard backend selection/argument building are implemented
+   with synthetic tests. Remaining: complete tool/resource provenance and a repository-wide resource
+   registry for unrelated workflows. Batch preflight, content-based confidence-record rejection,
    staged validation and atomic directory publication are implemented with synthetic lifecycle tests.
-   These publication guarantees do not yet cover other experiment drivers.
+   These publication guarantees do not yet cover other experiment drivers; standalone shell drivers
+   also need supervision/forwarding for PID-targeted cancellation so descendants do not remain alive.
 7. gVCF: ordinary batch conversion now refuses confidence records based on content. Picard block
    preservation remains unvalidated; require a block-aware implementation and meaningful fixtures before
    advertising that capability. See [annotate/LIFTOVER.md](annotate/LIFTOVER.md).

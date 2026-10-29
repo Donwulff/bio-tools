@@ -17,7 +17,8 @@ The shared implementation is `reference_utils.py` / `check_reference.py` for ref
 `y_haplo_from_markers.py` for marker states, `y_path_rank.py` for descriptive ranking, and
 `ytree.py` for an explicit topology where one is provided. The batch and dual-Y drivers now share
 reference discovery in `liftover_resources.py` and configuration loading in `lib_liftover.sh`.
-Picard backend discovery/invocation still needs consolidation; these changes do not add another caller.
+`liftover_backend.py` supplies one backend selector/argument builder for both drivers and dictionary
+creation; these changes do not add another scientific caller.
 
 ## References and Resources
 
@@ -123,8 +124,67 @@ or evidence of the latest catalogue version.
 
 Reference staging now defaults to the neutral GRCh38 name `hg38.fa`, not `hg38p14.H3630.fa`.
 No old files are renamed or deleted; `--hg38-name` / `YREF_HG38_NAME` can retain an intentional name.
-The staging label does not prove primary-only content, masking or assembly identity. Backend choice,
-complete run/resource hashing and publication safety of drivers other than the batch remain open.
+The staging label does not prove primary-only content, masking or assembly identity. Complete
+run/resource hashing and publication safety of drivers other than the batch remain open.
+
+### Backend Selection
+
+**2026-10-29 follow-up:** the batch and dual-Y drivers and `prepare_y_refs.sh` now share
+`liftover_backend.py` for `LiftoverVcf` and `CreateSequenceDictionary`. Use `--backend` or the
+`LIFTOVER_BACKEND` setting (`auto` by default). CLI options override local config as above.
+
+| Mode | Selection and JVM transport |
+|---|---|
+| `auto` | Supplied `--picard-jar` / `PICARD_JAR`, otherwise GATK on PATH, otherwise a repository-local Picard jar, otherwise `picard` on PATH |
+| `picard-jar` | Explicit or discovered jar; invoke Java directly with an argument list |
+| `gatk` | GATK wrapper on PATH; JVM options go through `--java-options` |
+| `picard-cli` | Picard wrapper on PATH; JVM options go through child-scoped `JAVA_TOOL_OPTIONS` |
+
+Explicit modes are authoritative: `--backend gatk` or `picard-cli` ignores a global `PICARD_JAR`.
+In auto mode, a supplied invalid jar fails rather than silently choosing GATK. The local jar search
+is limited to repository `mapping/tst/picard.jar`, `util/bin/picard.jar`, `mapping/picard.jar`; there
+is no home-directory scan or automatic installation. A missing tool, rejected JVM value or failed
+execution does not trigger another backend. Installing GATK can change `auto` selection when no jar
+was explicitly supplied; select a mode and record its version for reproduction.
+
+The batch/dual-Y drivers select once and reuse a pinned backend description for dictionary creation
+and liftover. The batch records it in `manifest.json` and uses the existing log/process-group handling.
+Reference staging selects before staging writes when a new dictionary will be needed; valid existing
+dictionaries need no installed Java backend. Invalid mode/JVM syntax also fails before staging. Existing invalid sidecars
+are still refused. Pinned executable/jar paths are not binary hashes or a guarantee that a wrapper's
+internal jar, environment or dependencies have not changed.
+Dangling dictionary links and directory-valued dictionary paths are rejected before writes, not
+treated as reusable source files. Regular-file metadata contents still pass through the shared
+validator; this is not transactional preflight of every staging operation.
+
+JVM defaults are `-Xms1g -Xmx8g`, overridden by `--java-opts` or `PICARD_JAVA_OPTS`, now also honored
+for dictionary creation. An explicitly empty value supplies no extra JVM options. Values use shell-like
+quoting to form self-contained JVM arguments, but are **not** evaluated by a shell: globs and command
+substitutions remain literal. Tool paths with spaces are preserved in every mode. Multi-token launcher
+directives such as `-jar`/`-cp` are not JVM tuning options here and are rejected.
+
+GATK's inspected launcher splits its JVM option string on whitespace, so this runner deliberately
+refuses space-containing JVM values in GATK mode rather than silently corrupting them. Use direct
+jar mode for, for example, a quoted `-Djava.io.tmpdir` containing spaces. This restriction does not
+apply to input/output/reference paths. See the [GATK launcher source](https://github.com/broadinstitute/gatk/blob/master/gatk)
+(checked 2026-10-29).
+
+For Picard wrappers, existing `JAVA_TOOL_OPTIONS` is preserved and the requested initialization
+options are appended for that child only. The JVM, not a shell, parses them. Mixed literal quote
+characters in one value are refused; use direct jar mode. Wrapper-supplied command-line JVM flags
+can override environment flags, and some launcher-only flags cannot go through this variable.
+Prefer direct jar or GATK mode when exact heap control is required; no arbitrary wrapper contract
+is assumed. See Oracle's [JAVA_TOOL_OPTIONS description](https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/envvars002.html).
+Inherited Java/wrapper environment settings are not exhaustively captured in the manifest.
+
+Tools now use `--INPUT`/`--OUTPUT` and other long option/value pairs rather than legacy `KEY=value`
+syntax; see the primary [LiftoverVcf](https://gatk.broadinstitute.org/hc/en-us/articles/4414602424603-LiftoverVcf-Picard)
+and [CreateSequenceDictionary](https://gatk.broadinstitute.org/hc/en-us/articles/360036712531-CreateSequenceDictionary-Picard)
+argument references. This does not add gVCF block conversion or make other drivers transactional.
+Batch cancellation stops its child process groups. Standalone shell drivers still do not forward
+a PID-targeted signal to every backend/descendant automatically: terminating just their shell PID
+can leave tool processes alive. Inspect and terminate the actual process group when needed; do not
+infer standalone cancellation safety from the batch tests. General driver supervision is pending.
 
 ## Picard gVCF Limitation
 
@@ -219,8 +279,8 @@ CHAIN_HS1_TO_HG38=/path/to/hs1ToHg38.over.chain.gz
 ```
 
 This reflects current CLI options; it is not a claim that those paths or that heap fit every input.
-Reference loading and VCF sorting are separate memory costs. The Picard calls in these drivers use
-the detected jar, even if GATK is available for dictionary creation; record the actual backend.
+Reference loading and VCF sorting are separate memory costs. Use `--backend gatk` instead of the jar
+option to run through GATK, or choose another supported backend as above; record the actual version.
 
 ## Comparing Native hs1, Lifted hg38 and Direct hg38
 

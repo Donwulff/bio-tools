@@ -21,6 +21,7 @@ Usage:
     [--markers-gff3-hg38 snps_hg38.gff3] \
     [--allow-extended-ref] \
     [--picard-jar picard.jar] \
+    [--backend auto|gatk|picard-jar|picard-cli] \
     [--java-opts "-Xms1g -Xmx8g"] \
     [--min-gq N] [--min-dp N] \
     [--out-dir DIR]
@@ -62,8 +63,9 @@ CHAIN_HS1_TO_HG38=""
 MARKERS_HG38="${YMARKERS_OUT:-}"
 MARKERS_GFF3_HG38="${YMARKERS_GFF3_OUT:-}"
 PICARD_JAR="${PICARD_JAR:-}"
+LIFTOVER_BACKEND="${LIFTOVER_BACKEND:-auto}"
 OUT_DIR=""
-JAVA_OPTS="${PICARD_JAVA_OPTS:-}"
+LIFTOVER_JAVA_OPTS="${PICARD_JAVA_OPTS-"-Xms1g -Xmx8g"}"
 ALLOW_EXTENDED_REF=0
 CLADE_PREFIX="${YPATH_CLADE_PREFIX:-R}"
 AUTO_CLADE=1
@@ -86,7 +88,8 @@ while [ $# -gt 0 ]; do
     --markers-gff3-hg38) MARKERS_GFF3_HG38="$2"; shift 2 ;;
     --allow-extended-ref) ALLOW_EXTENDED_REF=1; shift ;;
     --picard-jar) PICARD_JAR="$2"; shift 2 ;;
-    --java-opts) JAVA_OPTS="$2"; shift 2 ;;
+    --backend) LIFTOVER_BACKEND="$2"; shift 2 ;;
+    --java-opts) LIFTOVER_JAVA_OPTS="$2"; shift 2 ;;
     --min-gq) MIN_GQ="$2"; shift 2 ;;
     --min-dp) MIN_DP="$2"; shift 2 ;;
     --out-dir) OUT_DIR="$2"; shift 2 ;;
@@ -113,7 +116,6 @@ if [ -n "$SAMPLE_GVCF_HS1" ]; then
   [ -f "$SAMPLE_GVCF_HS1" ] || { echo "ERROR: not found: $SAMPLE_GVCF_HS1" >&2; exit 1; }
 fi
 
-need_cmd java
 need_cmd bcftools
 need_cmd tabix
 need_cmd python3
@@ -130,17 +132,10 @@ echo "Using refs:"
 echo "  hs1  $REF_HS1"
 echo "  hg38 $REF_HG38"
 
-if [ -z "$PICARD_JAR" ]; then
-  PICARD_JAR="$(detect_picard_jar "$SCRIPT_DIR" || true)"
-fi
-[ -n "$PICARD_JAR" ] || { echo "ERROR: set --picard-jar (picard.jar not auto-detected)" >&2; exit 1; }
-[ -f "$PICARD_JAR" ] || { echo "ERROR: not found: $PICARD_JAR" >&2; exit 1; }
-if [ -z "$JAVA_OPTS" ]; then
-  JAVA_OPTS="${PICARD_JAVA_OPTS:-"-Xms1g -Xmx8g"}"
-fi
+BACKEND_SPEC="$(select_liftover_backend "$LIFTOVER_BACKEND" "$PICARD_JAR" "$LIFTOVER_JAVA_OPTS")"
 
-ensure_ref_sidecars "$REF_HS1" "$PICARD_JAR" "$JAVA_OPTS"
-ensure_ref_sidecars "$REF_HG38" "$PICARD_JAR" "$JAVA_OPTS"
+ensure_ref_sidecars "$REF_HS1" "$PICARD_JAR" "$LIFTOVER_JAVA_OPTS" "$BACKEND_SPEC"
+ensure_ref_sidecars "$REF_HG38" "$PICARD_JAR" "$LIFTOVER_JAVA_OPTS" "$BACKEND_SPEC"
 
 if [ -z "$MARKERS_HG38" ]; then
   if [ -n "$MARKERS_GFF3_HG38" ]; then
@@ -213,25 +208,25 @@ MARKERS_HG38_CLEAN="${OUT_DIR}/markers_hg38.clean.vcf.gz"
 "${SCRIPT_DIR}/sanitize_marker_vcf.sh" --input "$MARKERS_HG38" --output "$MARKERS_HG38_CLEAN"
 
 echo "Liftover markers: hg38 -> hs1"
-java $JAVA_OPTS -jar "$PICARD_JAR" LiftoverVcf \
-  I="$MARKERS_HG38_CLEAN" \
-  O="$MARKERS_HS1" \
-  CHAIN="$CHAIN_HG38_TO_HS1" \
-  R="$REF_HS1" \
-  REJECT="$MARKERS_HS1_REJECT" \
-  RECOVER_SWAPPED_REF_ALT=true \
-  WARN_ON_MISSING_CONTIG=true
+run_liftover_tool "$BACKEND_SPEC" LiftoverVcf \
+  --INPUT "$MARKERS_HG38_CLEAN" \
+  --OUTPUT "$MARKERS_HS1" \
+  --CHAIN "$CHAIN_HG38_TO_HS1" \
+  --REFERENCE_SEQUENCE "$REF_HS1" \
+  --REJECT "$MARKERS_HS1_REJECT" \
+  --RECOVER_SWAPPED_REF_ALT true \
+  --WARN_ON_MISSING_CONTIG true
 tabix -f "$MARKERS_HS1"
 
 echo "Liftover sample VCF: hs1 -> hg38"
-java $JAVA_OPTS -jar "$PICARD_JAR" LiftoverVcf \
-  I="$SAMPLE_VCF_HS1" \
-  O="$SAMPLE_HG38" \
-  CHAIN="$CHAIN_HS1_TO_HG38" \
-  R="$REF_HG38" \
-  REJECT="$SAMPLE_HG38_REJECT" \
-  RECOVER_SWAPPED_REF_ALT=true \
-  WARN_ON_MISSING_CONTIG=true
+run_liftover_tool "$BACKEND_SPEC" LiftoverVcf \
+  --INPUT "$SAMPLE_VCF_HS1" \
+  --OUTPUT "$SAMPLE_HG38" \
+  --CHAIN "$CHAIN_HS1_TO_HG38" \
+  --REFERENCE_SEQUENCE "$REF_HG38" \
+  --REJECT "$SAMPLE_HG38_REJECT" \
+  --RECOVER_SWAPPED_REF_ALT true \
+  --WARN_ON_MISSING_CONTIG true
 tabix -f "$SAMPLE_HG38"
 
 echo "Run marker-state extraction on hs1 branch"

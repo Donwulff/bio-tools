@@ -23,6 +23,10 @@ retains its 2026-10-28 date; remote status was not rechecked as part of committi
   Resource helpers honor configured locations, spaced roots stay intact, and explicit CLI settings
   win over config. Extended-reference selection requires opt-in in both drivers. The focused runner
   includes synthetic resource/config tests and the expanded batch suite; no sample analysis was run.
+- GATK/Picard selection and JVM/tool argument building now share one backend implementation.
+  Batch/dual-Y dictionaries use the selected liftover backend; staging uses the same policy on
+  demand. Synthetic backend/lifecycle tests cover all three execution modes and batch cancellation.
+  Real Picard/GATK conversion was not run; scientific results and gVCF limitations are unchanged.
 - Completed tooling: native gVCF block-base lookup, all-state quality thresholds, explicit filtered
   evidence and backward-compatible status-table consumption. Validation: 41 synthetic tests,
   40 tree checks and four public placement datasets reproduced without changed results.
@@ -30,9 +34,10 @@ retains its 2026-10-28 date; remote status was not rechecked as part of committi
   [the resolver follow-up](RUNLOG.md#2026-10-28---native-gvcf-resolver-and-quality-filter-regressions)
   [the comparator/reference checkpoint](RUNLOG.md#2026-10-29---comparator-safeguards-and-shared-reference-validation)
   [the batch-safety follow-up](RUNLOG.md#2026-10-29---ordinary-vcf-batch-liftover-safety)
-  and [resource consolidation](RUNLOG.md#2026-10-29---shared-liftover-resource-discovery-and-config).
+  [resource consolidation](RUNLOG.md#2026-10-29---shared-liftover-resource-discovery-and-config)
+  and [backend consolidation](RUNLOG.md#2026-10-29---shared-liftover-backend-and-jvm-options).
 - Comparator duplicate/allele safeguards, callable/expected-panel metrics and shared reference
-  validation are implemented below. Next: backend consolidation, panel provenance
+  validation are implemented below. Next: standalone-driver supervision, panel provenance
   and AD/liftover-loss evidence. Full gVCF block liftover is separate
   and is **not** repaired by the native-query correction.
 - Research decisions remain in the open-work table below. Do not relaunch experiments, change
@@ -191,7 +196,7 @@ markers is a useful control, while agreeing no-calls over millions of catalogue 
 general accuracy score. The VCF and gVCF marker panels and callable denominators must be matched.
 Picard's treatment of gVCF blocks is an implementation limitation, not just a difficult reference
 transition. Validation/naming share one implementation across marker queries and shell preparation;
-discovery/config are shared by the later follow-up below. Backend execution remains duplicated.
+discovery/config and backend argument building are shared by the later follow-ups below.
 
 The subsequent 2026-10-28 code follow-up adds indexed native-reference lookup and all-state
 quality filtering to the marker resolver, with synthetic regression tests. Drivers use that same
@@ -207,7 +212,14 @@ The next 2026-10-29 tooling batch consolidates reference discovery and local con
 the batch/dual-Y drivers and resource helpers. It fixes whitespace-split roots, config overriding CLI
 paths and inconsistent resource defaults. Selection remains filename/path-based, not proof of FASTA
 assembly/content. Both drivers require explicit permission for known extended filenames. Backend
-choice/invocation remains separate pending work; no scientific outputs were regenerated.
+choice/invocation was still pending at that checkpoint; the backend follow-up below completes that
+consolidation without regenerating scientific outputs or validating full gVCF conversion.
+
+The backend follow-up uses `liftover_backend.py` for both tools across the batch, dual-Y and reference
+staging paths, with explicit mode selection and consistent option handling. GATK cannot safely carry
+space-containing JVM values through its inspected launcher, and Picard wrappers can override JVM
+environment options; these limits are explicit rather than hidden by fallback. Version/resource
+hash provenance and publication safety outside the batch remain open.
 
 ## Open Work, Without Reopening Completed Experiments
 
@@ -240,7 +252,7 @@ rule after its outcome is known.
 | Z6135/Z6209 (protocol D) | Post-hoc observation; prospective validation or explicit disposition remains required |
 | FC3, supplement parsing | FC3 repair needs a separate registration/rerun; independent spreadsheet-parser check remains unrecorded |
 | Modern three-way QC | Repeat with identical marker definitions, native gVCF evidence, explicit missingness and trusted expected-path definitions; keep every result external |
-| Liftover tooling | Reference checks, shared discovery/config and ordinary-VCF batch preflight/staged publication implemented; backend consolidation and other drivers' publication safety remain open, as does gVCF block conversion |
+| Liftover tooling | Reference checks, shared discovery/config/backend and ordinary-VCF batch preflight/staged publication implemented; tool/resource provenance and other drivers' publication safety remain open, as does gVCF block conversion |
 | Marker comparator | Duplicate/allele guards and callable/expected-panel reports implemented; verified crosswalks, AD and exact reject provenance remain open |
 | Marker resolution/quality | Native-reference block lookup and all-state thresholds implemented with synthetic tests; matched-panel sample QC, panel hashes and broader allele validation remain pending |
 | Ranking output | Separate marker evidence from clade placement; retain current heuristic weights as descriptive, not learned probabilities |

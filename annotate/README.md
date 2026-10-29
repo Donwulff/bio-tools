@@ -167,12 +167,12 @@ or `$Y_RESOURCES_DIR/chains/`, using UCSC mirrors with MARBL chain-name fallback
 ### lib_liftover.sh
 Shared shell helpers used by liftover drivers (`prepare_y_refs.sh`,
 `run_y_dual_liftover_experiment.sh`, `liftover_to_hg38_batch.sh`):
-- Picard auto-detection
+- shared backend selection and dictionary/liftover invocation
 - FASTA sidecar preparation (`.fai`, `.dict`)
 - compressed-FASTA dictionary alias handling (`ref.dict` and `ref.fa.dict`)
 
-Reference discovery is shared through `liftover_resources.py`; Picard backend discovery/execution
-still needs consolidation. The shell helpers also load trusted local config before CLI parsing.
+Reference discovery is shared through `liftover_resources.py`; backend selection/argument building
+uses `liftover_backend.py`. The shell helpers also load trusted local config before CLI parsing.
 Sidecar validation now uses the same `reference_utils.py` implementation as marker queries. Empty,
 malformed or mismatching existing sidecars fail rather than being overwritten. Set `SCRIPT_DIR`
 to the annotate directory before sourcing the library. See [LIFTOVER.md](LIFTOVER.md).
@@ -188,6 +188,16 @@ safeguard, not verification of the assembly or every contig. See
 Both drivers, reference staging and the two fetch helpers now share the `BIO_TOOLS_CFG` loader.
 An explicitly named missing config is an error; absence of default `./bio-tools.cfg` is allowed.
 The file is executable POSIX shell, not an inert settings file: use only trusted local configs.
+
+### liftover_backend.py
+One selector/argument builder used by the batch/dual-Y drivers and dictionary preparation.
+`--backend` / `LIFTOVER_BACKEND` accepts `auto`, `gatk`, `picard-jar`, `picard-cli`. Auto prefers a
+supplied jar, then GATK, a discovered local jar, and finally the Picard wrapper; failures do not cause
+fallback. The batch records selected backend paths/options in its manifest. JVM options are parsed
+consistently without shell eval/globbing, including dictionary creation. An explicit empty `--java-opts` adds
+no options. GATK mode refuses space-containing JVM values; direct jar mode preserves them. Picard CLI
+uses child-scoped `JAVA_TOOL_OPTIONS`; wrapper command-line flags can override those values.
+See [backend selection and limits](LIFTOVER.md#backend-selection), including tool-version provenance.
 
 ### check_reference.py / reference_utils.py
 Read-only checks for FASTA format, FAI structure, BGZF/GZI compatibility, dictionary names/lengths/
@@ -293,9 +303,11 @@ Canonical usage:
 - Failed/interrupted stages are retained with logs and a failure manifest, without partial final
   products. No automatic resume or overwrite is provided. Run locks prevent cooperating runs from
   sharing a destination; inspect stale locks after a crash rather than blindly deleting them.
-- Requires Python/pysam plus Java/Picard, samtools, bcftools and tabix. Batch lifecycle regressions:
+- Requires Python/pysam, a supported GATK/Picard backend, samtools, bcftools and tabix. Backend/lifecycle regressions:
+  `python3 annotate/test_liftover_backend.py` and
   `python3 annotate/test_liftover_batch.py` (also in `sh annotate/run_tests.sh`). These use a stand-in
-  Picard process and real indexing/subsetting tools, not production sample conversion.
+  backend and real indexing/subsetting tools, not production sample conversion. An optional Java
+  runtime check verifies JVM environment-option quoting, not Picard's scientific behavior.
 
 See [batch lifecycle and limits](LIFTOVER.md#what-the-existing-drivers-actually-do) for recovery and
 the difference between atomic publication, reference metadata changes and power-loss durability.
