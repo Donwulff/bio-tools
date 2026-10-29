@@ -92,6 +92,8 @@ In addition to this file:
   - and alias `<ref_without_last_suffix>.dict` when needed (e.g. `x.fa.dict`)
 - For modern/private samples: keep run outputs outside repo and do not commit sample IDs or per-sample results.
 - Do not treat reject-heavy Picard gVCF output as validated block conversion; see `annotate/LIFTOVER.md`.
+  The ordinary-VCF batch driver rejects confidence records by content. Use a new/empty output
+  directory; failed stages/logs are retained, and only validated complete batches are published.
 - Comparator IDs across assemblies need a verified crosswalk. Complement permission is not
   identity verification; callable agreement is not accuracy and alias counts are not molecules.
 - VCF label rankings are heuristic. For the Iceman verdict use committed read-level evidence and

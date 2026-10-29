@@ -13,10 +13,11 @@ registered thresholds or rerun sample analyses.
 5. `util/build_env.sh`: Node build should pin a supported Python (`PYTHON=/usr/bin/python3.11` or `--python=...`) to avoid Python 3.13 configure failures.
 6. Liftover: shared reference/index/dictionary validation and safe reference staging are implemented
    with synthetic tests. Remaining consolidation: reference discovery, configuration and backend
-   execution still differ among drivers. Batch liftover outputs/reports still need transactional
-   handling and complete preflight; the new comparator's output guards do not fix that batch path.
-7. gVCF: separate ordinary variant conversion from reference-block transformation. Picard block
-   preservation is unvalidated; require a block-aware implementation and meaningful fixtures before
+   execution still differ among drivers. Batch preflight, content-based confidence-record rejection,
+   staged validation and atomic directory publication are implemented with synthetic lifecycle tests.
+   These publication guarantees do not yet cover other experiment drivers.
+7. gVCF: ordinary batch conversion now refuses confidence records based on content. Picard block
+   preservation remains unvalidated; require a block-aware implementation and meaningful fixtures before
    advertising that capability. See [annotate/LIFTOVER.md](annotate/LIFTOVER.md).
 8. Comparator: duplicate/conflict safeguards, callable-only metrics and explicit expected-panel
    denominators are implemented and synthetic-tested. Remaining: allele-depth export (not in the

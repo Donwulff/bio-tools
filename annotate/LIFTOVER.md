@@ -6,7 +6,7 @@ Iceman results and overall status, start at [the situation review](../SITUATION.
 
 ## Separate Conversion From Y Validation
 
-`liftover_to_hg38_batch.sh` converts sample callsets regardless of sex or assay. Y analysis is an
+`liftover_to_hg38_batch.sh` converts ordinary variant VCFs regardless of sex or assay. Y analysis is an
 optional validation on informative male samples; it is not a prerequisite for exome conversion.
 `run_y_dual_liftover_experiment.sh` tests both coordinate directions: hg38 markers lifted to hs1
 against native calls, and sample variants lifted to hg38 against hg38 markers. Its optional sample
@@ -98,10 +98,52 @@ ancestral/derived interpretation; auxiliary allele annotations need checking aft
 
 ## What the Existing Drivers Actually Do
 
-The batch script now distinguishes `.vcf` and `.gvcf` outputs and refuses to overwrite those output
-files. This repairs the original collision when both inputs had the same sample stem. The check
-does not establish transaction safety: it writes the run report before all per-file checks, and a
-failed run can leave products or sidecars. Use a fresh output directory and retain the full log.
+**2026-10-29 correction:** the former batch script distinguished `.vcf` and `.gvcf` names, but wrote
+the report before all checks and could leave partial final products. The shell entry point now
+delegates to one Python batch engine, with the following bounded safety contract. This fixes the
+batch path only; it does not make the dual-Y or other drivers transactional.
+
+- Full input streams are preflighted before output/report writes or reference-sidecar generation.
+  Gzip is detected from bytes, not suffix. `<NON_REF>` or `<*>` ALT alleles (also mixed with actual
+  alleles), and `ALT=.` plus `END` (including one-base intervals), fail as unsupported confidence
+  records. An unused confidence header declaration is not enough to reject an ordinary VCF.
+  Literal `*` spanning deletions and symbolic variants with `END` are not classified as reference
+  blocks. Picard still decides whether those variants can actually be converted.
+- All inputs must exist, be structurally readable and have distinct identities/output stems.
+  Paths with spaces work; removing one known VCF suffix preserves dotted stems. Content, not a
+  `.gvcf` suffix, decides this guard. Variant-only content uses ordinary `.hg38.vcf.gz` naming;
+  supplying both VCF and gVCF with the same stem is now an error, not two conversions.
+- The destination must be new or empty, not a symlink. Even an existing report, unrelated file or
+  orphan index prevents the batch from starting. A sibling exclusive lock covers execution and
+  publication. Final products are built in a hidden sibling `.<name>.staging-*` directory, ensuring
+  the same filesystem for the final directory rename.
+- Accepted/rejected records are decoded and queried through new tabix indexes. Sample names/order
+  must be preserved, and accepted plus rejected counts must equal the preflight input count.
+  Optional primary subsets are separately indexed and validated. Only after every input passes are
+  report, manifest, logs and all products published with one directory rename. This is structural
+  validation and count conservation, not proof of allele correctness, chain suitability or accuracy.
+- Ordinary failures and SIGINT/SIGTERM leave an unpublished stage with logs and a failure manifest;
+  active tool process groups are stopped on cancellation. The final directory is untouched (or
+  remains empty if it was created in advance). There is no automatic resume: inspect retained logs
+  and rerun with a new destination after correcting the cause. Another process populating the final
+  directory prevents publication; its files are not overwritten.
+
+The manifest records resolved input paths, sample names, stat snapshots, backend paths, JVM options
+and per-input counts. Keep it external for private samples. Snapshots detect common in-flight input
+changes, not all modifications or cryptographic identity; resource hashes and tool-version provenance
+are still separate work. Reference preparation reuses `lib_liftover.sh`: missing metadata may be
+created after successful batch preflight and is not rolled back with sample outputs. Invalid existing
+sidecars are not replaced. Structural VCF preflight is not a complete VCF-spec validator; Picard and
+staged-output decoding check the remaining semantics before publication.
+Preflight and output/index validation make additional sequential passes over the VCFs. They do not
+collect all records in memory, but these safety checks are not free in I/O or elapsed time.
+
+Atomic publication is not a power-loss durability guarantee or a resumable checkpoint. SIGKILL or
+a crash can leave a stage and stale lock without an updated failure status. Inspect them before
+manual cleanup; never remove another live run's lock. A `complete` manifest in an unpublished stage
+means validation finished before publication, not that final output exists. No truncation-tolerant
+reading or confidence-block conversion bypass is offered.
+
 `--primary-only` selects target canonical contigs **after** liftover; it does not restrict the
 input scan or remove source-decoy processing beforehand.
 

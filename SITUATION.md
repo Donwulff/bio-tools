@@ -16,12 +16,16 @@ retains its 2026-10-28 date; remote status was not rechecked as part of committi
 - Subsequent comparator and shared-reference safeguards are preserved in focused local commits.
   These use 29 comparator, 27 reference and 41 resolver synthetic tests plus 40 tree checks;
   no sample analysis or registered outcome was rerun.
+- Batch liftover now preflights every input, rejects unsupported gVCF confidence records from
+  content and validates staged outputs before publishing a complete directory. This adds 26
+  synthetic lifecycle/scanner tests; no production Picard conversion or sample analysis was run.
 - Completed tooling: native gVCF block-base lookup, all-state quality thresholds, explicit filtered
   evidence and backward-compatible status-table consumption. Validation: 41 synthetic tests,
   40 tree checks and four public placement datasets reproduced without changed results.
 - Recheck with `sh annotate/run_tests.sh` and `git diff --check`. Details are in
   [the resolver follow-up](RUNLOG.md#2026-10-28---native-gvcf-resolver-and-quality-filter-regressions)
-  and [the comparator/reference checkpoint](RUNLOG.md#2026-10-29---comparator-safeguards-and-shared-reference-validation).
+  [the comparator/reference checkpoint](RUNLOG.md#2026-10-29---comparator-safeguards-and-shared-reference-validation)
+  and [the batch-safety follow-up](RUNLOG.md#2026-10-29---ordinary-vcf-batch-liftover-safety).
 - Comparator duplicate/allele safeguards, callable/expected-panel metrics and shared reference
   validation are implemented below. Next: resource/config/backend consolidation, panel provenance
   and AD/liftover-loss evidence. Full gVCF block liftover is separate
@@ -225,7 +229,7 @@ rule after its outcome is known.
 | Z6135/Z6209 (protocol D) | Post-hoc observation; prospective validation or explicit disposition remains required |
 | FC3, supplement parsing | FC3 repair needs a separate registration/rerun; independent spreadsheet-parser check remains unrecorded |
 | Modern three-way QC | Repeat with identical marker definitions, native gVCF evidence, explicit missingness and trusted expected-path definitions; keep every result external |
-| Liftover tooling | Reference/sidecar checks and staging guards implemented; resource/config/backend consolidation and transaction safety remain open, as does gVCF block conversion |
+| Liftover tooling | Reference checks and ordinary-VCF batch preflight/staged publication implemented; resource/config/backend consolidation and other drivers' publication safety remain open, as does gVCF block conversion |
 | Marker comparator | Duplicate/allele guards and callable/expected-panel reports implemented; verified crosswalks, AD and exact reject provenance remain open |
 | Marker resolution/quality | Native-reference block lookup and all-state thresholds implemented with synthetic tests; matched-panel sample QC, panel hashes and broader allele validation remain pending |
 | Ranking output | Separate marker evidence from clade placement; retain current heuristic weights as descriptive, not learned probabilities |

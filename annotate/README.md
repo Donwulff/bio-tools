@@ -248,11 +248,13 @@ Canonical usage:
 - It is the maintained modern Y entrypoint.
 
 ### liftover_to_hg38_batch.sh
-Batch liftover helper for hs1/CHM13 sample VCF/gVCF files to GRCh38.
+Batch liftover helper for ordinary hs1/CHM13 sample VCF files to GRCh38.
 Designed for generating GRCh38 callsets for downstream tools (Exomiser/PharmCAT).
-Ordinary VCF conversion and experimental gVCF input have different validation status: **reference
-block preservation has not been established**. See the [Picard gVCF limitation](LIFTOVER.md#picard-gvcf-limitation)
-before using a lifted gVCF for reference/no-call evidence.
+The shell entry point delegates to `liftover_to_hg38_batch.py`; there is one batch implementation.
+Full gVCF conversion is **unsupported**: a streaming content check rejects `<NON_REF>`, `<*>`,
+and nonvariant `ALT=.` records with `END`, regardless of filename or gzip suffix. Unused header
+declarations alone are allowed; literal spanning-deletion `*` is not the `<*>` confidence allele.
+See the [Picard gVCF limitation](LIFTOVER.md#picard-gvcf-limitation).
 Optional `--primary-only` emits a canonical-contig subset
 (`chr1-22,chrX,chrY,chrM`) per lifted sample.
 Supports `--java-opts` (or env `PICARD_JAVA_OPTS`) for LiftoverVcf heap sizing.
@@ -261,8 +263,24 @@ alleles are swapped between assemblies.
 Canonical usage:
 - For non-Y pipelines (including female exome), use this script for hs1 -> hg38 conversion.
 - `--ref-hg38` can be omitted if your index root is discoverable via `--ref-root` or `BIO_TOOLS_INDEX_DIR`.
-- VCF/gVCF outputs have distinct names and overwrite checks. Use a fresh output directory; run
-  reports and sidecars are not managed transactionally. `--primary-only` filters after conversion.
+- Supply a new or empty dedicated `--out-dir`; populated directories and destination symlinks
+  are refused. All inputs are scanned before reference-sidecar creation or output/report writes.
+  Duplicate inputs (including hardlinks), colliding stems and malformed/truncated streams fail early.
+- Paths containing spaces and dotted stems are preserved. An ordinary variant-only file with a
+  `.gvcf` suffix is treated as VCF, not as a validated gVCF conversion; same-stem inputs collide.
+- Accepted/rejected VCFs, indexes, optional primary subsets, `liftover_report.tsv`, `manifest.json`
+  and tool logs are staged in a hidden sibling directory. The batch is published with one directory
+  rename only after decoding, indexed reads, sample-header checks and record conservation pass.
+  `--primary-only` still filters after conversion, not before the source scan.
+- Failed/interrupted stages are retained with logs and a failure manifest, without partial final
+  products. No automatic resume or overwrite is provided. Run locks prevent cooperating runs from
+  sharing a destination; inspect stale locks after a crash rather than blindly deleting them.
+- Requires Python/pysam plus Java/Picard, samtools, bcftools and tabix. Batch lifecycle regressions:
+  `python3 annotate/test_liftover_batch.py` (also in `sh annotate/run_tests.sh`). These use a stand-in
+  Picard process and real indexing/subsetting tools, not production sample conversion.
+
+See [batch lifecycle and limits](LIFTOVER.md#what-the-existing-drivers-actually-do) for recovery and
+the difference between atomic publication, reference metadata changes and power-loss durability.
 
 ### compare_vcf_runs.sh
 General run-vs-run VCF comparator for the same sample/reference.

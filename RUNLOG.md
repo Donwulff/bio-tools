@@ -1695,3 +1695,43 @@ explicit request. Unfinished work and unrelated user edits must not be folded in
 Full gVCF block conversion, remaining config/backend consolidation and AD/reject provenance are
 still open. No private inputs, marker definitions, registrations, sample result tables or reviewed
 research snapshots were added or altered by this commit checkpoint. No changes were pushed.
+
+## 2026-10-29 - Ordinary VCF Batch Liftover Safety
+
+Implemented the batch safety follow-up, not full reference-confidence conversion or a new sample
+analysis. `liftover_to_hg38_batch.sh` is now a compatibility entry point for one Python engine.
+
+- Preflight streams every input before reference-metadata or output/report writes. It detects gzip
+  from content, checks VCF structure and rejects confidence alleles (`<NON_REF>`, `<*>`) and
+  nonvariant `END` blocks even under ordinary filenames. Unused header declarations are allowed.
+  A variant-only file named `.gvcf` is ordinary VCF content, not validated block conversion.
+- Missing/malformed later inputs, aliases/hardlinks, colliding output stems and existing destination
+  contents fail before starting tools. Dotted stems and paths with spaces survive argument handling.
+  A destination must be new or empty; no overwrite/resume switch was added.
+- A sibling lock and staging directory isolate the whole batch. Outputs are decoded, indexed and
+  read via their new indexes; sample header names/order and accepted/rejected record conservation
+  are checked. Optional canonical subsets, report, logs and manifest are published together with
+  one directory rename, not one final file at a time.
+- Backend/index/validation failures and SIGINT/SIGTERM retain the unpublished stage and diagnostics;
+  cancellation stops the child process group. Existing output/report contents are never truncated.
+  This does not promise power-loss durability, automatic crash recovery, biological correctness or
+  transaction handling for other drivers. Missing reference sidecars may still be generated after
+  input preflight; existing invalid metadata fails without replacement.
+
+Validation:
+
+```bash
+sh annotate/run_tests.sh
+/snap/shellcheck/current/usr/bin/shellcheck annotate/liftover_to_hg38_batch.sh annotate/run_tests.sh
+git diff --check
+```
+
+Passed **26 new batch/scanner unittest cases**, including backend failure on a later input,
+record loss/duplication, changed sample labels, corrupt/truncated data, input mutation, index
+failure, all-rejected/header-only cases, primary subsetting, destination conflicts and cancellation.
+Together with the existing suites this is **123 unittest cases and 40 tree checks**.
+Batch tests use tiny synthetic VCF/FASTA fixtures, a stand-in Java/Picard backend and real
+samtools/bcftools/tabix. No Picard jar was available for a real Java identity-chain smoke test;
+successful production conversion or allele correctness is not claimed. No private inputs were
+opened, no public result tables/markers/registrations/research snapshots were changed, and no
+downloads or pushes were performed. Documentation records recovery limits and the remaining work.
